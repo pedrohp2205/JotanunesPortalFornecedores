@@ -1,4 +1,7 @@
 using AutoMapper;
+using Jotanunes.Application.DTOs.Companies;
+using Jotanunes.Domain.Entities;
+using Jotanunes.Domain.Validation;
 
 namespace Jotanunes.Application.DTOs.Mapping;
 
@@ -9,5 +12,10 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
+        CreateMap<Address, AddressDto>();
+
+        CreateMap<Company, CompanyDto>()
+            .ForMember(dest => dest.FormattedCnpj, opt => opt.MapFrom(src => Cnpj.Format(src.Cnpj)))
+            .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()));
     }
 }

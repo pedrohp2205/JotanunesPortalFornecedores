@@ -40,6 +40,24 @@ O fluxo de dependência aponta sempre para dentro: as APIs conhecem a IoC, a IoC
 
 ---
 
+## Escopo implementado
+
+### Frente interna - CRUD de empresas
+
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| GET | `/api/company` | Lista paginada com filtro por razão social, nome fantasia e CNPJ |
+| GET | `/api/company/{id}` | Consulta uma empresa |
+| POST | `/api/company` | Cadastra empresa |
+| PUT | `/api/company/{id}` | Atualiza empresa (o CNPJ não é editável) |
+| DELETE | `/api/company/{id}` | Exclusão lógica |
+
+O CNPJ é validado por dígito verificador, normalizado para apenas dígitos e
+tem unicidade garantida por índice parcial, que ignora registros excluídos
+logicamente.
+
+---
+
 ## Pré-requisitos
 
 - .NET SDK 10
