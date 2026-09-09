@@ -35,6 +35,9 @@ services:
       - api-internal
     environment:
       DATABASE: Host=postgres;Database=jotanunes_portal;Username=postgres;Password=senha
+      Jwt__Issuer: Jotanunes.PortalFornecedor
+      Jwt__Audience: Jotanunes.PortalFornecedor.Client
+      Jwt__SecretKey: troque-esta-chave-em-producao-com-no-minimo-32-caracteres
     ports:
       - "80:80"
     restart: unless-stopped

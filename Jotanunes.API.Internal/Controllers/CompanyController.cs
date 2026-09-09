@@ -1,4 +1,5 @@
 using Jotanunes.Application.DTOs.Companies;
+using Jotanunes.Application.DTOs.Users;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Pagination;
@@ -11,10 +12,12 @@ namespace Jotanunes.API.Internal.Controllers;
 public class CompanyController : ControllerBase
 {
     private readonly ICompanyService _companyService;
+    private readonly ISupplierUserService _supplierUserService;
 
-    public CompanyController(ICompanyService companyService)
+    public CompanyController(ICompanyService companyService, ISupplierUserService supplierUserService)
     {
         _companyService = companyService;
+        _supplierUserService = supplierUserService;
     }
 
     [HttpGet]
@@ -52,4 +55,17 @@ public class CompanyController : ControllerBase
         return Ok(deletedCompany);
     }
 
+    [HttpGet("{id:long}/users")]
+    public async Task<ActionResult<List<SupplierUserDto>>> GetUsers(long id)
+    {
+        var users = await _supplierUserService.GetByCompany(id);
+        return Ok(users);
+    }
+
+    [HttpPost("{id:long}/users")]
+    public async Task<ActionResult<SupplierUserDto>> AddUser(long id, [FromBody] SupplierUserCreateDto userDto)
+    {
+        var createdUser = await _supplierUserService.Create(id, userDto);
+        return Ok(createdUser);
+    }
 }

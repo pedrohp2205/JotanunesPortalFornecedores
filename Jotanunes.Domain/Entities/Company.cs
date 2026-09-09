@@ -16,6 +16,7 @@ public class Company : BaseEntity
     public string ResponsibleName { get; private set; } = string.Empty;
     public CompanyStatus Status { get; private set; }
     public Address Address { get; private set; } = null!;
+    public List<SupplierUser> Users { get; private set; } = [];
 
     protected Company() { }
 
@@ -63,6 +64,15 @@ public class Company : BaseEntity
         ResponsibleName = responsibleName.Trim();
         StateRegistration = string.IsNullOrWhiteSpace(stateRegistration) ? null : stateRegistration.Trim();
         Address = address;
+    }
+
+    public void AddUser(SupplierUser user)
+    {
+        JotanunesException.When(
+            Users.Any(u => u.Email == user.Email && u.DeletedAt is null),
+            "Já existe um usuário com este e-mail nesta empresa.");
+
+        Users.Add(user);
     }
 
     private static void Validate(

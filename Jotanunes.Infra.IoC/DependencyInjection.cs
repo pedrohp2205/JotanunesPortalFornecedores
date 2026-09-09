@@ -4,6 +4,7 @@ using Jotanunes.Application.Services;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Infra.Data.Context;
 using Jotanunes.Infra.Data.Repositories;
+using Jotanunes.Infra.Security.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,7 +25,12 @@ public static class DependencyInjection
 
         service.AddScoped<IUnitOfWork, UnitOfWork>();
 
+        service.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
+        service.AddScoped<ITokenService, JwtTokenService>();
+
         service.AddScoped<ICompanyService, CompanyService>();
+        service.AddScoped<ISupplierUserService, SupplierUserService>();
+        service.AddScoped<IAuthService, AuthService>();
 
         return service;
     }

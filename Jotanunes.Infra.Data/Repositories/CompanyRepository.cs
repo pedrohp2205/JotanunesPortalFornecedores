@@ -55,6 +55,7 @@ public class CompanyRepository : GenericRepository<Company>, ICompanyRepository
     public async Task<Company?> GetById(long id)
     {
         return await _context.Companies
+                                .Include(c => c.Users)
                                 .FirstOrDefaultAsync(c => c.Id == id);
     }
 

@@ -96,4 +96,16 @@ public class CompanyTest
         Assert.Equal("Construtora Nova LTDA", company.CorporateName);
         Assert.Equal("novo@exemplo.com.br", company.Email);
     }
+
+    [Fact]
+    public void Should_Throw_Exception_When_Adding_User_With_Duplicated_Email()
+    {
+        var company = ValidCompany();
+        company.AddUser(new SupplierUser(1, "Maria Souza", "maria@exemplo.com.br", "hash"));
+
+        var ex = Assert.Throws<JotanunesException>(() =>
+            company.AddUser(new SupplierUser(1, "Maria S.", "maria@exemplo.com.br", "hash")));
+
+        Assert.Equal("Já existe um usuário com este e-mail nesta empresa.", ex.Message);
+    }
 }

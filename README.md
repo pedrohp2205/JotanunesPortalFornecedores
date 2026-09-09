@@ -51,10 +51,26 @@ O fluxo de dependência aponta sempre para dentro: as APIs conhecem a IoC, a IoC
 | POST | `/api/company` | Cadastra empresa |
 | PUT | `/api/company/{id}` | Atualiza empresa (o CNPJ não é editável) |
 | DELETE | `/api/company/{id}` | Exclusão lógica |
+| GET | `/api/company/{id}/users` | Lista os acessos da empresa |
+| POST | `/api/company/{id}/users` | Cria o acesso ao portal (pré-requisito do login) |
 
-O CNPJ é validado por dígito verificador, normalizado para apenas dígitos e
-tem unicidade garantida por índice parcial, que ignora registros excluídos
-logicamente.
+### Frente externa - autenticação do fornecedor
+
+| Método | Rota | Auth | Descrição |
+| --- | --- | --- | --- |
+| POST | `/api/auth/login` | Não | Autentica e devolve access token + refresh token |
+| POST | `/api/auth/refresh` | Não | Renova o par de tokens |
+| POST | `/api/auth/logout` | Sim | Revoga o refresh token |
+| GET | `/api/auth/me` | Sim | Dados do usuário autenticado |
+| POST | `/api/auth/change-password` | Sim | Troca de senha |
+
+Regras aplicadas na autenticação:
+
+- senha com hash **BCrypt** (work factor 12);
+- mensagem única para e-mail inexistente e senha errada, evitando enumeração de usuários;
+- bloqueio temporário de 15 minutos após 5 tentativas inválidas;
+- token carrega a claim `company_id`, base para o isolamento por empresa exigido pelo RNF01;
+- troca de senha revoga o refresh token ativo.
 
 ---
 
@@ -114,4 +130,10 @@ dotnet test
 - Identificadores, arquivos e pastas em **inglês**; mensagens de erro retornadas pela API em **português**.
 - Entidades com setters privados: escrita passa por construtor e métodos de domínio, e o AutoMapper é usado apenas no sentido entidade → DTO, para que as validações não sejam contornadas.
 - Exclusão lógica via `DeletedAt` com query filter global em `BaseEntity`.
-- Erros tratados em um único middleware: `JotanunesException` → 400, `KeyNotFoundException` → 404.
+- Erros tratados em um único middleware: `JotanunesException` → 400, `UnauthorizedAccessException` → 401, `KeyNotFoundException` → 404.
+
+---
+
+## Configuração sensível
+
+O `Jwt:SecretKey` do `appsettings.json` é um valor de desenvolvimento. Em produção ele deve vir de variável de ambiente (`Jwt__SecretKey`) ou cofre de segredos, com no mínimo 32 caracteres — a aplicação recusa subir se isso não for atendido.

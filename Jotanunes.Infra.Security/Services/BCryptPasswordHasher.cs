@@ -1,0 +1,30 @@
+using Jotanunes.Application.Interfaces;
+
+namespace Jotanunes.Infra.Security.Services;
+
+public class BCryptPasswordHasher : IPasswordHasher
+{
+    private const int WorkFactor = 12;
+
+    public string Hash(string password)
+    {
+        return BCrypt.Net.BCrypt.HashPassword(password, WorkFactor);
+    }
+
+    public bool Verify(string password, string hash)
+    {
+        if (string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(hash))
+        {
+            return false;
+        }
+
+        try
+        {
+            return BCrypt.Net.BCrypt.Verify(password, hash);
+        }
+        catch (BCrypt.Net.SaltParseException)
+        {
+            return false;
+        }
+    }
+}

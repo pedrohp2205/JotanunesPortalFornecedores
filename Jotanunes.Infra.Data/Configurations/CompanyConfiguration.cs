@@ -61,5 +61,10 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
         });
 
         builder.Navigation(c => c.Address).IsRequired();
+
+        builder.HasMany(c => c.Users)
+            .WithOne(u => u.Company)
+            .HasForeignKey(u => u.CompanyId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

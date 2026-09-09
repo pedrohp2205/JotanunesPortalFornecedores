@@ -1,5 +1,7 @@
 using AutoMapper;
+using Jotanunes.Application.DTOs.Auth;
 using Jotanunes.Application.DTOs.Companies;
+using Jotanunes.Application.DTOs.Users;
 using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Validation;
 
@@ -17,5 +19,11 @@ public class MappingProfile : Profile
         CreateMap<Company, CompanyDto>()
             .ForMember(dest => dest.FormattedCnpj, opt => opt.MapFrom(src => Cnpj.Format(src.Cnpj)))
             .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()));
+
+        CreateMap<SupplierUser, SupplierUserDto>();
+
+        CreateMap<SupplierUser, AuthenticatedUserDto>()
+            .ForMember(dest => dest.CompanyCorporateName, opt => opt.MapFrom(src => src.Company.CorporateName))
+            .ForMember(dest => dest.CompanyCnpj, opt => opt.MapFrom(src => src.Company.Cnpj));
     }
 }
