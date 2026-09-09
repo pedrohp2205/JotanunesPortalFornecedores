@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: jotanunes-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: senha
+      POSTGRES_DB: jotanunes_portal
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api-internal:
+    build:
+      context: .
+      dockerfile: Dockerfile.internal
+    container_name: jotanunes-api-internal
+    depends_on:
+      - postgres
+    environment:
+      DATABASE: Host=postgres;Database=jotanunes_portal;Username=postgres;Password=senha
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  api-external:
+    build:
+      context: .
+      dockerfile: Dockerfile.external
+    container_name: jotanunes-api-external
+    depends_on:
+      - postgres
+      - api-internal
+    environment:
+      DATABASE: Host=postgres;Database=jotanunes_portal;Username=postgres;Password=senha
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

@@ -1,0 +1,28 @@
+## .NET
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+*.user
+*.suo
+*.userprefs
+project.lock.json
+artifacts/
+
+## Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+*.sln.docstates
+
+## Testes e cobertura
+TestResults/
+coverage*.json
+coverage*.xml
+*.coverage
+
+## Ambiente
+*.env
+appsettings.Local.json

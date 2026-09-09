@@ -1,0 +1,11 @@
+<Solution>
+  <Project Path="Jotanunes.API.External/Jotanunes.API.External.csproj" />
+  <Project Path="Jotanunes.API.Internal/Jotanunes.API.Internal.csproj" />
+  <Project Path="Jotanunes.API.Shared/Jotanunes.API.Shared.csproj" />
+  <Project Path="Jotanunes.Application/Jotanunes.Application.csproj" />
+  <Project Path="Jotanunes.Domain/Jotanunes.Domain.csproj" />
+  <Project Path="Jotanunes.Infra.Data/Jotanunes.Infra.Data.csproj" />
+  <Project Path="Jotanunes.Infra.IoC/Jotanunes.Infra.IoC.csproj" />
+  <Project Path="Jotanunes.Infra.Security/Jotanunes.Infra.Security.csproj" />
+  <Project Path="Jotanunes.Tests/Jotanunes.Tests.csproj" />
+</Solution>

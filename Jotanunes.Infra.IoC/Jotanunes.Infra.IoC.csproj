@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Jotanunes.Domain\Jotanunes.Domain.csproj" />
+    <ProjectReference Include="..\Jotanunes.Application\Jotanunes.Application.csproj" />
+    <ProjectReference Include="..\Jotanunes.Infra.Data\Jotanunes.Infra.Data.csproj" />
+    <ProjectReference Include="..\Jotanunes.Infra.Security\Jotanunes.Infra.Security.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
