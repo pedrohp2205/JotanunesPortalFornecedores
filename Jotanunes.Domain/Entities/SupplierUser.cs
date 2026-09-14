@@ -3,7 +3,7 @@ using Jotanunes.Domain.Exceptions;
 namespace Jotanunes.Domain.Entities;
 
 // Usuário de acesso ao Portal do Fornecedor (frente externa).
-// Sempre vinculado a uma empresa, o que garante o isolamento exigido pelo RNF01.
+// Sempre vinculado a uma empresa.
 public class SupplierUser : BaseEntity
 {
     public const int MaxLoginAttempts = 5;
@@ -59,8 +59,7 @@ public class SupplierUser : BaseEntity
         FailedLoginAttempts = 0;
         LockedUntil = null;
     }
-
-    // Conta a falha e bloqueia temporariamente ao atingir o limite de tentativas.
+    
     public void RegisterFailedLogin()
     {
         FailedLoginAttempts++;

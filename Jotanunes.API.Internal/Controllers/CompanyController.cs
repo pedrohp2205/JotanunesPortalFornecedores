@@ -9,63 +9,55 @@ namespace Jotanunes.API.Internal.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CompanyController : ControllerBase
+public class CompanyController(ICompanyService companyService, ISupplierUserService supplierUserService)
+    : ControllerBase
 {
-    private readonly ICompanyService _companyService;
-    private readonly ISupplierUserService _supplierUserService;
-
-    public CompanyController(ICompanyService companyService, ISupplierUserService supplierUserService)
-    {
-        _companyService = companyService;
-        _supplierUserService = supplierUserService;
-    }
-
     [HttpGet]
     public async Task<ActionResult<PageList<CompanyDto>>> Get([FromQuery] PageParams pageParams, [FromQuery] CompanyFilter filter)
     {
-        var result = await _companyService.Get(pageParams, filter);
+        var result = await companyService.Get(pageParams, filter);
         return Ok(result);
     }
 
     [HttpGet("{id:long}")]
     public async Task<ActionResult<CompanyDto>> GetById(long id)
     {
-        var company = await _companyService.GetById(id);
+        var company = await companyService.GetById(id);
         return Ok(company);
     }
 
     [HttpPost]
     public async Task<ActionResult<CompanyDto>> Create([FromBody] CompanyCreateDto companyDto)
     {
-        var createdCompany = await _companyService.Create(companyDto);
+        var createdCompany = await companyService.Create(companyDto);
         return Ok(createdCompany);
     }
 
     [HttpPut("{id:long}")]
     public async Task<ActionResult<CompanyDto>> Update(long id, [FromBody] CompanyUpdateDto companyDto)
     {
-        var updatedCompany = await _companyService.Update(id, companyDto);
+        var updatedCompany = await companyService.Update(id, companyDto);
         return Ok(updatedCompany);
     }
 
     [HttpDelete("{id:long}")]
     public async Task<ActionResult<CompanyDto>> Delete(long id)
     {
-        var deletedCompany = await _companyService.Delete(id);
+        var deletedCompany = await companyService.Delete(id);
         return Ok(deletedCompany);
     }
 
     [HttpGet("{id:long}/users")]
     public async Task<ActionResult<List<SupplierUserDto>>> GetUsers(long id)
     {
-        var users = await _supplierUserService.GetByCompany(id);
+        var users = await supplierUserService.GetByCompany(id);
         return Ok(users);
     }
 
     [HttpPost("{id:long}/users")]
     public async Task<ActionResult<SupplierUserDto>> AddUser(long id, [FromBody] SupplierUserCreateDto userDto)
     {
-        var createdUser = await _supplierUserService.Create(id, userDto);
+        var createdUser = await supplierUserService.Create(id, userDto);
         return Ok(createdUser);
     }
 }

@@ -6,7 +6,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// A frente interna é a dona do schema, então é ela que aplica as migrations.
 builder.Services.ApplyPendingMigrations();
 
 builder.Services.AddControllers();

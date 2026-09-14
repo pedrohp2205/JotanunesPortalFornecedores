@@ -19,9 +19,7 @@ public static class ClaimsPrincipalExtensions
 
         return id;
     }
-
-    // Base para o isolamento por empresa exigido pelo RNF01: toda consulta da
-    // frente externa deve ser filtrada por este valor.
+    
     public static long GetCompanyId(this ClaimsPrincipal user)
     {
         var value = user.FindFirst(CompanyIdClaim)?.Value;

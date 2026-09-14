@@ -63,7 +63,14 @@ public class Company : BaseEntity
         Phone = phone;
         ResponsibleName = responsibleName.Trim();
         StateRegistration = string.IsNullOrWhiteSpace(stateRegistration) ? null : stateRegistration.Trim();
-        Address = address;
+        Address.Update(
+            address.Street,
+            address.Number,
+            address.Neighborhood,
+            address.City,
+            address.State,
+            address.ZipCode,
+            address.Complement);
     }
 
     public void AddUser(SupplierUser user)

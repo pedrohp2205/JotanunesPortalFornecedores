@@ -6,8 +6,7 @@ public static class Cnpj
 {
     private static readonly int[] FirstDigitWeights = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
     private static readonly int[] SecondDigitWeights = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-
-    // Remove máscara (pontos, barra e traço) deixando apenas os dígitos.
+    
     public static string Normalize(string? cnpj)
     {
         return string.IsNullOrWhiteSpace(cnpj) ? string.Empty : Regex.Replace(cnpj, "[^0-9]", "");
@@ -26,8 +25,7 @@ public static class Cnpj
 
         return digits == baseDigits + firstDigit + secondDigit;
     }
-
-    // Formata o CNPJ no padrão 00.000.000/0000-00.
+    
     public static string Format(string cnpj)
     {
         var digits = Normalize(cnpj);

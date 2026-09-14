@@ -2,8 +2,6 @@ using Jotanunes.Domain.Exceptions;
 
 namespace Jotanunes.Domain.Entities;
 
-// Objeto de valor com o endereço da empresa fornecedora.
-// Persistido como owned type, ou seja, colunas na própria tabela de empresas.
 public class Address
 {
     public string Street { get; private set; } = string.Empty;
@@ -17,6 +15,18 @@ public class Address
     protected Address() { }
 
     public Address(
+        string street,
+        string number,
+        string neighborhood,
+        string city,
+        string state,
+        string zipCode,
+        string? complement = null)
+    {
+        Update(street, number, neighborhood, city, state, zipCode, complement);
+    }
+    
+    public void Update(
         string street,
         string number,
         string neighborhood,
