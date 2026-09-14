@@ -35,7 +35,7 @@ public class SupplierUserService : ISupplierUserService
 
     public async Task<SupplierUserDto> Create(long companyId, SupplierUserCreateDto model)
     {
-        Company? company = await _unitOfWork.CompanyRepository.GetById(companyId);
+        Company? company = await _unitOfWork.CompanyRepository.GetByIdWithUsers(companyId);
         if (company is null)
         {
             throw new KeyNotFoundException("Empresa não encontrada");
