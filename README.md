@@ -29,6 +29,7 @@ JotanunesPortalFornecedores/
 ├── Jotanunes.Domain           # Entidades, regras de negócio, contratos de repositório
 ├── Jotanunes.Infra.Data       # DbContext, configurations, repositórios, migrations
 ├── Jotanunes.Infra.Security   # Hash de senha (BCrypt) e emissão de JWT
+├── Jotanunes.Infra.Storage    # Armazenamento de documentos (S3)
 ├── Jotanunes.Infra.IoC        # Injeção de dependências
 ├── Jotanunes.Tests            # Testes unitários de domínio (xUnit)
 ├── Dockerfile.external
@@ -134,6 +135,35 @@ dotnet test
 
 ---
 
+## Armazenamento de documentos (S3)
+
+A porta `IDocumentStorageService` (`Jotanunes.Application`) abstrai o upload, download, exclusão e checagem de existência de um documento por chave. A implementação (`Jotanunes.Infra.Storage`) usa o AWS SDK (`AWSSDK.S3`) e é registrada em `Jotanunes.Infra.IoC`, disponível para as duas frentes.
+
+O provedor usado é o **Cloudflare R2** (compatível com a API do S3), mas a implementação funciona com qualquer endpoint S3-compatível, inclusive AWS S3 real.
+
+Configuração (seção `S3` do `appsettings.json`, ou variáveis `S3__*`):
+
+| Campo | Descrição |
+| --- | --- |
+| `BucketName` | Bucket onde os documentos são salvos (obrigatório) |
+| `Region` | Região. No R2, sempre `auto` (obrigatório) |
+| `AccessKey` / `SecretKey` | Credenciais do token de API R2 (ou de um IAM key na AWS). Em produção na AWS real, podem ficar em branco para usar a cadeia padrão de credenciais (IAM role, variáveis `AWS_*`, etc.) |
+| `ServiceUrl` | Endpoint da conta no R2: `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`. Na AWS real, deixe vazio |
+| `ForcePathStyle` | Mantenha `true` para R2 e para a maioria dos endpoints S3-compatíveis |
+
+O `appsettings.json` traz apenas um `ServiceUrl` de exemplo (`https://<ACCOUNT_ID>.r2.cloudflarestorage.com`) e credenciais em branco. Para rodar localmente, preencha `AccessKey`/`SecretKey`/`ServiceUrl` com os dados do seu bucket R2 via `appsettings.Development.json` (não versionado) ou `dotnet user-secrets`. Para o `docker-compose`, crie um arquivo `.env` (já ignorado pelo git) na raiz do projeto com:
+
+```
+R2_BUCKET_NAME=jotanunes-documentos
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+```
+
+---
+
 ## Configuração sensível
 
 O `Jwt:SecretKey` do `appsettings.json` é um valor de desenvolvimento. Em produção ele deve vir de variável de ambiente (`Jwt__SecretKey`) ou cofre de segredos, com no mínimo 32 caracteres — a aplicação recusa subir se isso não for atendido.
+
+As credenciais do `S3` (`AccessKey`/`SecretKey`/`ServiceUrl`) não devem ser versionadas — preencha localmente via `appsettings.Development.json`/`dotnet user-secrets`, e em produção via variáveis de ambiente ou cofre de segredos.

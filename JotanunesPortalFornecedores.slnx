@@ -7,5 +7,6 @@
   <Project Path="Jotanunes.Infra.Data/Jotanunes.Infra.Data.csproj" />
   <Project Path="Jotanunes.Infra.IoC/Jotanunes.Infra.IoC.csproj" />
   <Project Path="Jotanunes.Infra.Security/Jotanunes.Infra.Security.csproj" />
+  <Project Path="Jotanunes.Infra.Storage/Jotanunes.Infra.Storage.csproj" />
   <Project Path="Jotanunes.Tests/Jotanunes.Tests.csproj" />
 </Solution>

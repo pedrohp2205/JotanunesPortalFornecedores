@@ -26,3 +26,6 @@ coverage*.xml
 ## Ambiente
 *.env
 appsettings.Local.json
+
+## Documentos de referência (não fazem parte do código)
+Documentos Jotanunes/
