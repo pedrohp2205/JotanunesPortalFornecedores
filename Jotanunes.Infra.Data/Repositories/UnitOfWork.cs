@@ -8,6 +8,7 @@ public class UnitOfWork : IUnitOfWork
     private readonly ApplicationDbContext _context;
     private ICompanyRepository? _companyRepository;
     private ISupplierUserRepository? _supplierUserRepository;
+    private IWorkSiteRepository? _workSiteRepository;
 
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -27,6 +28,14 @@ public class UnitOfWork : IUnitOfWork
         get
         {
             return _supplierUserRepository ??= new SupplierUserRepository(_context);
+        }
+    }
+
+    public IWorkSiteRepository WorkSiteRepository
+    {
+        get
+        {
+            return _workSiteRepository ??= new WorkSiteRepository(_context);
         }
     }
 

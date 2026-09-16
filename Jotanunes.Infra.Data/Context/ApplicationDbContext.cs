@@ -10,6 +10,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Company> Companies { get; set; }
     public DbSet<SupplierUser> SupplierUsers { get; set; }
+    public DbSet<WorkSite> WorkSites { get; set; }
+    public DbSet<CompanyWorkSite> CompanyWorkSites { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -55,9 +57,7 @@ public class ApplicationDbContext : DbContext
 
         return base.SaveChangesAsync(cancellationToken);
     }
-
-    // Exclusão lógica: toda entidade que herda de BaseEntity passa a ser
-    // consultada apenas quando DeletedAt está nulo.
+    
     private static void ApplyGlobalFilter<TBaseEntity>(ModelBuilder modelBuilder) where TBaseEntity : class
     {
         var baseEntityType = typeof(TBaseEntity);
