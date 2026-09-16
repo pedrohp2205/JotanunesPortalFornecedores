@@ -12,6 +12,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<SupplierUser> SupplierUsers { get; set; }
     public DbSet<WorkSite> WorkSites { get; set; }
     public DbSet<CompanyWorkSite> CompanyWorkSites { get; set; }
+    public DbSet<DocumentType> DocumentTypes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

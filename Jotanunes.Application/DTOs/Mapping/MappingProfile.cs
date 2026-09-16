@@ -1,6 +1,7 @@
 using AutoMapper;
 using Jotanunes.Application.DTOs.Auth;
 using Jotanunes.Application.DTOs.Companies;
+using Jotanunes.Application.DTOs.DocumentTypes;
 using Jotanunes.Application.DTOs.Users;
 using Jotanunes.Application.DTOs.WorkSites;
 using Jotanunes.Domain.Entities;
@@ -26,5 +27,10 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.CompanyCnpj, opt => opt.MapFrom(src => src.Company.Cnpj));
 
         CreateMap<WorkSite, WorkSiteDto>();
+
+        CreateMap<DocumentType, DocumentTypeDto>()
+            .ForMember(dest => dest.CategoryDescription, opt => opt.MapFrom(src => src.Category.ToString()))
+            .ForMember(dest => dest.AppliesToDescription, opt => opt.MapFrom(src => src.AppliesTo.ToString()))
+            .ForMember(dest => dest.SubjectDescription, opt => opt.MapFrom(src => src.Subject.ToString()));
     }
 }
