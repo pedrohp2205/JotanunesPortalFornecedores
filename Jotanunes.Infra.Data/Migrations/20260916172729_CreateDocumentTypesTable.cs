@@ -45,11 +45,6 @@ namespace Jotanunes.Infra.Data.Migrations
 
             var seedDate = new DateTime(2026, 9, 16, 0, 0, 0, DateTimeKind.Utc);
 
-            // Baseline dos tipos de documento evidenciados nos exemplos reais
-            // (checklist de contratação + pacote mensal de mão de obra).
-            // Category: Onboarding = 1, Recurring = 2.
-            // AppliesTo (flags): Material = 1, ManpowerLabor = 2, Ambos = 3.
-            // Subject: Company = 1, Worker = 2.
             migrationBuilder.InsertData(
                 table: "document_types",
                 columns: new[] { "Id", "Code", "Name", "Category", "AppliesTo", "Subject", "RequiresExpirationDate", "IsConditional", "ConditionDescription", "Active", "CreatedAt", "UpdatedAt" },
@@ -77,9 +72,6 @@ namespace Jotanunes.Infra.Data.Migrations
                     { 20, "PAYMENT_RECEIPT", "Recibo de Pagamento", 2, 2, 2, false, false, null!, true, seedDate, seedDate }
                 });
 
-            // Os Ids acima são explícitos (para ficarem estáveis como referência),
-            // então a sequência da coluna identity precisa ser realinhada, senão
-            // o próximo INSERT feito pela aplicação colide com esses Ids.
             migrationBuilder.Sql(
                 "SELECT setval(pg_get_serial_sequence('document_types', 'Id'), (SELECT MAX(\"Id\") FROM document_types));");
         }

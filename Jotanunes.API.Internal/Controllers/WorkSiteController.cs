@@ -1,4 +1,3 @@
-using Jotanunes.Application.DTOs.Companies;
 using Jotanunes.Application.DTOs.WorkSites;
 using Jotanunes.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -45,17 +44,24 @@ public class WorkSiteController(IWorkSiteService workSiteService) : ControllerBa
     }
 
     [HttpGet("{id:long}/companies")]
-    public async Task<ActionResult<List<CompanyDto>>> GetCompanies(long id)
+    public async Task<ActionResult<List<WorkSiteCompanyDto>>> GetCompanies(long id)
     {
         var companies = await workSiteService.GetCompanies(id);
         return Ok(companies);
     }
 
     [HttpPost("{id:long}/companies/{companyId:long}")]
-    public async Task<ActionResult> LinkCompany(long id, long companyId)
+    public async Task<ActionResult> LinkCompany(long id, long companyId, [FromBody] LinkCompanyToWorkSiteDto? linkDto)
     {
-        await workSiteService.LinkCompany(id, companyId);
+        await workSiteService.LinkCompany(id, companyId, linkDto?.RequiredWorkerCount);
         return NoContent();
+    }
+
+    [HttpPut("{id:long}/companies/{companyId:long}")]
+    public async Task<ActionResult<WorkSiteCompanyDto>> UpdateRequiredWorkerCount(long id, long companyId, [FromBody] LinkCompanyToWorkSiteDto linkDto)
+    {
+        var link = await workSiteService.UpdateRequiredWorkerCount(id, companyId, linkDto.RequiredWorkerCount);
+        return Ok(link);
     }
 
     [HttpDelete("{id:long}/companies/{companyId:long}")]

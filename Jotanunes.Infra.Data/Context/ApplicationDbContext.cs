@@ -13,6 +13,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<WorkSite> WorkSites { get; set; }
     public DbSet<CompanyWorkSite> CompanyWorkSites { get; set; }
     public DbSet<DocumentType> DocumentTypes { get; set; }
+    public DbSet<Document> Documents { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,11 +41,7 @@ public class ApplicationDbContext : DbContext
             {
                 entry.State = EntityState.Modified;
                 entry.Entity.DeletedAt = currentTime;
-
-                // O cascade do EF marca owned types (ex.: Address) como Deleted
-                // junto com o dono. Como eles ficam na mesma linha/tabela, isso
-                // gera um UPDATE zerando as colunas do owned type. Como a
-                // exclusão é lógica, essas colunas devem ser preservadas.
+                
                 foreach (var reference in entry.References)
                 {
                     if (reference.TargetEntry is { State: EntityState.Deleted } ownedEntry

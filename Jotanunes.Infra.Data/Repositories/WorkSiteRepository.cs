@@ -28,23 +28,23 @@ public class WorkSiteRepository : GenericRepository<WorkSite>, IWorkSiteReposito
                                 .FirstOrDefaultAsync(w => w.Id == id);
     }
 
-    public async Task<List<WorkSite>> GetByCompany(long companyId)
+    public async Task<List<CompanyWorkSite>> GetByCompany(long companyId)
     {
         return await _context.CompanyWorkSites
                                 .AsNoTracking()
+                                .Include(cw => cw.WorkSite)
                                 .Where(cw => cw.CompanyId == companyId)
-                                .Select(cw => cw.WorkSite)
-                                .OrderBy(w => w.Name)
+                                .OrderBy(cw => cw.WorkSite.Name)
                                 .ToListAsync();
     }
 
-    public async Task<List<Company>> GetCompanies(long workSiteId)
+    public async Task<List<CompanyWorkSite>> GetCompanies(long workSiteId)
     {
         return await _context.CompanyWorkSites
                                 .AsNoTracking()
+                                .Include(cw => cw.Company)
                                 .Where(cw => cw.WorkSiteId == workSiteId)
-                                .Select(cw => cw.Company)
-                                .OrderBy(c => c.CorporateName)
+                                .OrderBy(cw => cw.Company.CorporateName)
                                 .ToListAsync();
     }
 
@@ -52,6 +52,13 @@ public class WorkSiteRepository : GenericRepository<WorkSite>, IWorkSiteReposito
     {
         return await _context.CompanyWorkSites
                                 .FirstOrDefaultAsync(cw => cw.WorkSiteId == workSiteId && cw.CompanyId == companyId);
+    }
+
+    public async Task<CompanyWorkSite?> GetLinkById(long id)
+    {
+        return await _context.CompanyWorkSites
+                                .Include(cw => cw.WorkSite)
+                                .FirstOrDefaultAsync(cw => cw.Id == id);
     }
 
     public void AddLink(CompanyWorkSite link)

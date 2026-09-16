@@ -37,6 +37,7 @@ public static class DependencyInjection
         service.AddScoped<IAuthService, AuthService>();
         service.AddScoped<IWorkSiteService, WorkSiteService>();
         service.AddScoped<IDocumentTypeService, DocumentTypeService>();
+        service.AddScoped<IDocumentService, DocumentService>();
 
         service.AddDocumentStorage(configuration);
 

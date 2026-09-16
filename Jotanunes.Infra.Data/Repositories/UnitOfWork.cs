@@ -10,6 +10,7 @@ public class UnitOfWork : IUnitOfWork
     private ISupplierUserRepository? _supplierUserRepository;
     private IWorkSiteRepository? _workSiteRepository;
     private IDocumentTypeRepository? _documentTypeRepository;
+    private IDocumentRepository? _documentRepository;
 
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -45,6 +46,14 @@ public class UnitOfWork : IUnitOfWork
         get
         {
             return _documentTypeRepository ??= new DocumentTypeRepository(_context);
+        }
+    }
+
+    public IDocumentRepository DocumentRepository
+    {
+        get
+        {
+            return _documentRepository ??= new DocumentRepository(_context);
         }
     }
 
