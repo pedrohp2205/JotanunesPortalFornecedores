@@ -43,6 +43,10 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
             .HasConversion<int>()
             .IsRequired();
 
+        builder.Property(c => c.SupplierType)
+            .HasConversion<int>()
+            .IsRequired();
+
         // Índice único parcial: um CNPJ pode ser reaproveitado depois que o
         // registro anterior for excluído logicamente.
         builder.HasIndex(c => c.Cnpj)

@@ -42,6 +42,11 @@ public class CompanyRepository : GenericRepository<Company>, ICompanyRepository
             query = query.Where(c => c.Status == filter.Status.Value);
         }
 
+        if (filter.SupplierType.HasValue)
+        {
+            query = query.Where(c => c.SupplierType == filter.SupplierType.Value);
+        }
+
         var totalCount = await query.CountAsync();
 
         var items = await query.OrderBy(c => c.CorporateName)

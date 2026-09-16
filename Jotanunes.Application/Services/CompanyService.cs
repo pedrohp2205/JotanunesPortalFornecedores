@@ -54,6 +54,7 @@ public class CompanyService : ICompanyService
             model.Phone,
             model.ResponsibleName,
             BuildAddress(model.Address),
+            model.SupplierType,
             model.StateRegistration);
 
         _unitOfWork.CompanyRepository.Add(company);

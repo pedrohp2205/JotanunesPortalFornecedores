@@ -15,6 +15,7 @@ public class Company : BaseEntity
     public string Phone { get; private set; } = string.Empty;
     public string ResponsibleName { get; private set; } = string.Empty;
     public CompanyStatus Status { get; private set; }
+    public SupplierType SupplierType { get; private set; }
     public Address Address { get; private set; } = null!;
     public List<SupplierUser> Users { get; private set; } = [];
 
@@ -28,11 +29,12 @@ public class Company : BaseEntity
         string phone,
         string responsibleName,
         Address address,
+        SupplierType supplierType,
         string? stateRegistration = null)
     {
         cnpj = Validation.Cnpj.Normalize(cnpj);
         phone = DigitsOnly(phone);
-        Validate(cnpj, corporateName, tradeName, email, phone, responsibleName, address);
+        Validate(cnpj, corporateName, tradeName, email, phone, responsibleName, address, supplierType);
 
         Cnpj = cnpj;
         CorporateName = corporateName.Trim();
@@ -42,6 +44,7 @@ public class Company : BaseEntity
         ResponsibleName = responsibleName.Trim();
         StateRegistration = string.IsNullOrWhiteSpace(stateRegistration) ? null : stateRegistration.Trim();
         Address = address;
+        SupplierType = supplierType;
         Status = CompanyStatus.PendingDocumentation;
     }
 
@@ -55,7 +58,7 @@ public class Company : BaseEntity
         string? stateRegistration = null)
     {
         phone = DigitsOnly(phone);
-        Validate(Cnpj, corporateName, tradeName, email, phone, responsibleName, address);
+        Validate(Cnpj, corporateName, tradeName, email, phone, responsibleName, address, SupplierType);
 
         CorporateName = corporateName.Trim();
         TradeName = tradeName.Trim();
@@ -89,7 +92,8 @@ public class Company : BaseEntity
         string email,
         string phone,
         string responsibleName,
-        Address address)
+        Address address,
+        SupplierType supplierType)
     {
         JotanunesException.When(string.IsNullOrWhiteSpace(cnpj), "CNPJ não pode ser vazio.");
         JotanunesException.When(!Validation.Cnpj.IsValid(cnpj), "CNPJ inválido.");
@@ -108,6 +112,10 @@ public class Company : BaseEntity
         JotanunesException.When(string.IsNullOrWhiteSpace(responsibleName), "Nome do responsável não pode ser vazio.");
 
         JotanunesException.When(address is null, "Endereço é obrigatório.");
+
+        JotanunesException.When(
+            supplierType is not (SupplierType.Material or SupplierType.ManpowerLabor),
+            "Tipo de fornecedor inválido.");
     }
 
     private static string DigitsOnly(string? value)

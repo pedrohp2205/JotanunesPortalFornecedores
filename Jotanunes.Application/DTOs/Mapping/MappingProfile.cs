@@ -18,7 +18,8 @@ public class MappingProfile : Profile
 
         CreateMap<Company, CompanyDto>()
             .ForMember(dest => dest.FormattedCnpj, opt => opt.MapFrom(src => Cnpj.Format(src.Cnpj)))
-            .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()));
+            .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.SupplierTypeDescription, opt => opt.MapFrom(src => src.SupplierType.ToString()));
 
         CreateMap<SupplierUser, SupplierUserDto>();
 

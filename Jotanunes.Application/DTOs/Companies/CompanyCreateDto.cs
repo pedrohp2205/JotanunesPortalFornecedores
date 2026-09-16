@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Jotanunes.Domain.Enums;
 
 namespace Jotanunes.Application.DTOs.Companies;
 
@@ -27,4 +28,7 @@ public class CompanyCreateDto
 
     [Required(ErrorMessage = "Endereço é obrigatório.")]
     public AddressDto Address { get; set; } = new();
+
+    [Required(ErrorMessage = "Tipo de fornecedor é obrigatório.")]
+    public SupplierType SupplierType { get; set; }
 }

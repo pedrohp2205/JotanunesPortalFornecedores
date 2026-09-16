@@ -15,6 +15,8 @@ public class CompanyDto
     public string ResponsibleName { get; set; } = string.Empty;
     public CompanyStatus Status { get; set; }
     public string StatusDescription { get; set; } = string.Empty;
+    public SupplierType SupplierType { get; set; }
+    public string SupplierTypeDescription { get; set; } = string.Empty;
     public AddressDto Address { get; set; } = new();
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

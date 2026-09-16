@@ -8,4 +8,5 @@ public class CompanyFilter
     public string TradeName { get; set; } = string.Empty;
     public string Cnpj { get; set; } = string.Empty;
     public CompanyStatus? Status { get; set; }
+    public SupplierType? SupplierType { get; set; }
 }

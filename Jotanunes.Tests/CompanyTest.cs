@@ -11,7 +11,7 @@ public class CompanyTest
         return new Address("Rua Sao Cristovao", "123", "Centro", "Aracaju", "SE", "49000-000", "Sala 2");
     }
 
-    private static Company ValidCompany()
+    private static Company ValidCompany(SupplierType supplierType = SupplierType.Material)
     {
         return new Company(
             "11.222.333/0001-81",
@@ -20,7 +20,8 @@ public class CompanyTest
             "contato@exemplo.com.br",
             "(79) 99999-8888",
             "Maria Souza",
-            ValidAddress());
+            ValidAddress(),
+            supplierType);
     }
 
     [Fact]
@@ -32,6 +33,23 @@ public class CompanyTest
         Assert.Equal("79999998888", company.Phone);
         Assert.Equal("contato@exemplo.com.br", company.Email);
         Assert.Equal(CompanyStatus.PendingDocumentation, company.Status);
+        Assert.Equal(SupplierType.Material, company.SupplierType);
+    }
+
+    [Fact]
+    public void Should_Throw_Exception_When_SupplierType_Is_Invalid()
+    {
+        var ex = Assert.Throws<JotanunesException>(() => new Company(
+            "11.222.333/0001-81",
+            "Construtora Exemplo LTDA",
+            "Construtora Exemplo",
+            "contato@exemplo.com.br",
+            "(79) 99999-8888",
+            "Maria Souza",
+            ValidAddress(),
+            SupplierType.Material | SupplierType.ManpowerLabor));
+
+        Assert.Equal("Tipo de fornecedor inválido.", ex.Message);
     }
 
     [Fact]
@@ -44,7 +62,8 @@ public class CompanyTest
             "contato@exemplo.com.br",
             "79999998888",
             "Maria Souza",
-            ValidAddress()));
+            ValidAddress(),
+            SupplierType.Material));
 
         Assert.Equal("CNPJ inválido.", ex.Message);
     }
@@ -59,7 +78,8 @@ public class CompanyTest
             "contato-exemplo",
             "79999998888",
             "Maria Souza",
-            ValidAddress()));
+            ValidAddress(),
+            SupplierType.Material));
 
         Assert.Equal("E-mail deve conter '@' e '.'", ex.Message);
     }
@@ -74,7 +94,8 @@ public class CompanyTest
             "contato@exemplo.com.br",
             "99998888",
             "Maria Souza",
-            ValidAddress()));
+            ValidAddress(),
+            SupplierType.Material));
 
         Assert.Equal("Telefone deve ter 10 ou 11 dígitos (com DDD).", ex.Message);
     }
