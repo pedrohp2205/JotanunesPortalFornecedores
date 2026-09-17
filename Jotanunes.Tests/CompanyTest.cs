@@ -37,6 +37,16 @@ public class CompanyTest
     }
 
     [Fact]
+    public void Should_Mark_Company_Eligible_From_Pending_Documentation()
+    {
+        var company = ValidCompany();
+
+        company.MarkEligible();
+
+        Assert.Equal(CompanyStatus.Eligible, company.Status);
+    }
+
+    [Fact]
     public void Should_Throw_Exception_When_SupplierType_Is_Invalid()
     {
         var ex = Assert.Throws<JotanunesException>(() => new Company(

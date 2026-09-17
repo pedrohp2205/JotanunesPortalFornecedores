@@ -33,6 +33,18 @@ public class DocumentComplianceService : IDocumentComplianceService
         return await BuildChecklist(companyWorkSite, company);
     }
 
+    public async Task<bool> IsOnboardingComplete(long companyId)
+    {
+        var company = await _unitOfWork.CompanyRepository.GetById(companyId);
+        if (company is null)
+        {
+            return false;
+        }
+
+        var onboardingItems = await GetOnboardingItems(company);
+        return onboardingItems.Count > 0 && onboardingItems.All(i => i.IsSatisfied);
+    }
+
     public async Task<List<OverdueCompanyWorkSiteDto>> GetOverdue()
     {
         var links = await _unitOfWork.WorkSiteRepository.GetAllLinks();
@@ -70,16 +82,11 @@ public class DocumentComplianceService : IDocumentComplianceService
         return result;
     }
 
-    private async Task<ComplianceChecklistDto> BuildChecklist(CompanyWorkSite companyWorkSite, Company company)
+    private async Task<List<ChecklistItemDto>> GetOnboardingItems(Company company)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var (periodStart, periodEnd) = companyWorkSite.WorkSite.GetCurrentPeriod(today);
-
         var applicableTypes = await _unitOfWork.DocumentTypeRepository.GetApplicable(company.SupplierType);
-
         var onboardingTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Onboarding).ToList();
-        var recurringCompanyTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Recurring && t.Subject == DocumentSubject.Company).ToList();
-        var recurringWorkerTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Recurring && t.Subject == DocumentSubject.Worker).ToList();
 
         var onboardingDocs = await _unitOfWork.DocumentRepository.GetAll(new DocumentFilter
         {
@@ -87,14 +94,7 @@ public class DocumentComplianceService : IDocumentComplianceService
             Status = DocumentStatus.Approved
         });
 
-        var recurringDocs = await _unitOfWork.DocumentRepository.GetAll(new DocumentFilter
-        {
-            CompanyWorkSiteId = companyWorkSite.Id,
-            PeriodStart = periodStart,
-            PeriodEnd = periodEnd
-        });
-
-        var onboardingItems = onboardingTypes.Select(t =>
+        return onboardingTypes.Select(t =>
         {
             var doc = onboardingDocs
                 .Where(d => d.DocumentTypeId == t.Id)
@@ -111,6 +111,25 @@ public class DocumentComplianceService : IDocumentComplianceService
                 DocumentId = doc?.Id
             };
         }).ToList();
+    }
+
+    private async Task<ComplianceChecklistDto> BuildChecklist(CompanyWorkSite companyWorkSite, Company company)
+    {
+        var (periodStart, periodEnd) = companyWorkSite.WorkSite.GetCurrentPeriod(DateOnly.FromDateTime(DateTime.UtcNow));
+
+        var applicableTypes = await _unitOfWork.DocumentTypeRepository.GetApplicable(company.SupplierType);
+
+        var recurringCompanyTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Recurring && t.Subject == DocumentSubject.Company).ToList();
+        var recurringWorkerTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Recurring && t.Subject == DocumentSubject.Worker).ToList();
+
+        var onboardingItems = await GetOnboardingItems(company);
+
+        var recurringDocs = await _unitOfWork.DocumentRepository.GetAll(new DocumentFilter
+        {
+            CompanyWorkSiteId = companyWorkSite.Id,
+            PeriodStart = periodStart,
+            PeriodEnd = periodEnd
+        });
 
         var recurringCompanyItems = recurringCompanyTypes.Select(t =>
         {

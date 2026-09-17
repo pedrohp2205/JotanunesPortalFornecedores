@@ -76,6 +76,16 @@ public class Company : BaseEntity
             address.Complement);
     }
 
+    public void MarkEligible()
+    {
+        if (Status != CompanyStatus.PendingDocumentation)
+        {
+            return;
+        }
+
+        Status = CompanyStatus.Eligible;
+    }
+
     public void AddUser(SupplierUser user)
     {
         JotanunesException.When(

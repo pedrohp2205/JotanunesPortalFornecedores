@@ -14,12 +14,18 @@ public class DocumentService : IDocumentService
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IDocumentStorageService _storageService;
+    private readonly IDocumentComplianceService _complianceService;
 
-    public DocumentService(IMapper mapper, IUnitOfWork unitOfWork, IDocumentStorageService storageService)
+    public DocumentService(
+        IMapper mapper,
+        IUnitOfWork unitOfWork,
+        IDocumentStorageService storageService,
+        IDocumentComplianceService complianceService)
     {
         _mapper = mapper;
         _unitOfWork = unitOfWork;
         _storageService = storageService;
+        _complianceService = complianceService;
     }
 
     public async Task<PageList<DocumentDto>> Get(PageParams pageParams, DocumentFilter filter)
@@ -116,6 +122,11 @@ public class DocumentService : IDocumentService
         _unitOfWork.DocumentRepository.Update(document);
         await _unitOfWork.SaveChangesAsync();
 
+        if (document.DocumentType.Category == DocumentCategory.Onboarding)
+        {
+            await TryMarkCompanyEligible(document.CompanyId);
+        }
+
         return _mapper.Map<DocumentDto>(document);
     }
 
@@ -129,6 +140,25 @@ public class DocumentService : IDocumentService
         await _unitOfWork.SaveChangesAsync();
 
         return _mapper.Map<DocumentDto>(document);
+    }
+
+    private async Task TryMarkCompanyEligible(long companyId)
+    {
+        if (!await _complianceService.IsOnboardingComplete(companyId))
+        {
+            return;
+        }
+
+        var company = await _unitOfWork.CompanyRepository.GetById(companyId);
+        if (company is null)
+        {
+            return;
+        }
+
+        company.MarkEligible();
+
+        _unitOfWork.CompanyRepository.Update(company);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     private static string SanitizeFileName(string fileName)
