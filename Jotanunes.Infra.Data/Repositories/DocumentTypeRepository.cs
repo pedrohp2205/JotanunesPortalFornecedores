@@ -1,4 +1,5 @@
 using Jotanunes.Domain.Entities;
+using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Infra.Data.Context;
 using Microsoft.EntityFrameworkCore;
@@ -33,5 +34,17 @@ public class DocumentTypeRepository : GenericRepository<DocumentType>, IDocument
         var normalized = code.Trim().ToUpperInvariant();
         return await _context.DocumentTypes
                                 .AnyAsync(d => d.Code == normalized && (!ignoreDocumentTypeId.HasValue || d.Id != ignoreDocumentTypeId.Value));
+    }
+
+    public async Task<List<DocumentType>> GetApplicable(SupplierType supplierType)
+    {
+        var both = SupplierType.Material | SupplierType.ManpowerLabor;
+
+        return await _context.DocumentTypes
+                                .AsNoTracking()
+                                .Where(d => d.Active && (d.AppliesTo == supplierType || d.AppliesTo == both))
+                                .OrderBy(d => d.Category)
+                                .ThenBy(d => d.Name)
+                                .ToListAsync();
     }
 }

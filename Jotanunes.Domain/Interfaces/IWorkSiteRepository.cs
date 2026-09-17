@@ -10,6 +10,7 @@ public interface IWorkSiteRepository : IGenericRepository<WorkSite>
     Task<List<CompanyWorkSite>> GetCompanies(long workSiteId);
     Task<CompanyWorkSite?> GetLink(long workSiteId, long companyId);
     Task<CompanyWorkSite?> GetLinkById(long id);
+    Task<List<CompanyWorkSite>> GetAllLinks();
     void AddLink(CompanyWorkSite link);
     void RemoveLink(CompanyWorkSite link);
 }

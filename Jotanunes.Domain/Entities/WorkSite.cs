@@ -28,6 +28,20 @@ public class WorkSite : BaseEntity
         RenewalPeriodDays = renewalPeriodDays;
     }
 
+    public (DateOnly Start, DateOnly End) GetCurrentPeriod(DateOnly referenceDate)
+    {
+        var lastDayOfMonth = DateTime.DaysInMonth(referenceDate.Year, referenceDate.Month);
+
+        if (RenewalPeriodDays <= 15)
+        {
+            return referenceDate.Day <= 15
+                ? (new DateOnly(referenceDate.Year, referenceDate.Month, 1), new DateOnly(referenceDate.Year, referenceDate.Month, 15))
+                : (new DateOnly(referenceDate.Year, referenceDate.Month, 16), new DateOnly(referenceDate.Year, referenceDate.Month, lastDayOfMonth));
+        }
+
+        return (new DateOnly(referenceDate.Year, referenceDate.Month, 1), new DateOnly(referenceDate.Year, referenceDate.Month, lastDayOfMonth));
+    }
+
     private static void Validate(string name, int renewalPeriodDays)
     {
         JotanunesException.When(string.IsNullOrWhiteSpace(name), "Nome da obra não pode ser vazio.");

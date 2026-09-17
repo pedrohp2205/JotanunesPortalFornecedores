@@ -32,7 +32,9 @@ public class DocumentTest
             contentType: "application/pdf",
             companyWorkSiteId: 10,
             workerName: "Cicero Fernandes da Silva",
-            workerCpf: "529.982.247-25");
+            workerCpf: "529.982.247-25",
+            referencePeriodStart: new DateOnly(2026, 7, 1),
+            referencePeriodEnd: new DateOnly(2026, 7, 31));
     }
 
     [Fact]
@@ -62,7 +64,9 @@ public class DocumentTest
         var ex = Assert.Throws<JotanunesException>(() => new Document(
             1, 18, 1, DocumentCategory.Recurring, DocumentSubject.Worker,
             "companies/1/documents/abc.pdf", "ponto.pdf", "application/pdf",
-            companyWorkSiteId: 10));
+            companyWorkSiteId: 10,
+            referencePeriodStart: new DateOnly(2026, 7, 1),
+            referencePeriodEnd: new DateOnly(2026, 7, 31)));
 
         Assert.Equal("Nome do trabalhador é obrigatório para este tipo de documento.", ex.Message);
     }
@@ -73,7 +77,9 @@ public class DocumentTest
         var ex = Assert.Throws<JotanunesException>(() => new Document(
             1, 18, 1, DocumentCategory.Recurring, DocumentSubject.Worker,
             "companies/1/documents/abc.pdf", "ponto.pdf", "application/pdf",
-            companyWorkSiteId: 10, workerName: "Cicero Fernandes da Silva", workerCpf: "111.111.111-11"));
+            companyWorkSiteId: 10, workerName: "Cicero Fernandes da Silva", workerCpf: "111.111.111-11",
+            referencePeriodStart: new DateOnly(2026, 7, 1),
+            referencePeriodEnd: new DateOnly(2026, 7, 31)));
 
         Assert.Equal("CPF do trabalhador inválido.", ex.Message);
     }
@@ -97,6 +103,42 @@ public class DocumentTest
             "companies/1/documents/abc-folha.pdf", "folha.pdf", "application/pdf"));
 
         Assert.Equal("Documento recorrente precisa estar vinculado a uma solicitação (empresa e obra).", ex.Message);
+    }
+
+    [Fact]
+    public void Should_Throw_Exception_When_Recurring_Document_Has_No_Period()
+    {
+        var ex = Assert.Throws<JotanunesException>(() => new Document(
+            1, 11, 1, DocumentCategory.Recurring, DocumentSubject.Company,
+            "companies/1/documents/abc-folha.pdf", "folha.pdf", "application/pdf",
+            companyWorkSiteId: 10));
+
+        Assert.Equal("Documento recorrente precisa informar o período de referência.", ex.Message);
+    }
+
+    [Fact]
+    public void Should_Throw_Exception_When_Recurring_Document_Period_Is_Invalid()
+    {
+        var ex = Assert.Throws<JotanunesException>(() => new Document(
+            1, 11, 1, DocumentCategory.Recurring, DocumentSubject.Company,
+            "companies/1/documents/abc-folha.pdf", "folha.pdf", "application/pdf",
+            companyWorkSiteId: 10,
+            referencePeriodStart: new DateOnly(2026, 7, 31),
+            referencePeriodEnd: new DateOnly(2026, 7, 1)));
+
+        Assert.Equal("Período de referência inválido.", ex.Message);
+    }
+
+    [Fact]
+    public void Should_Throw_Exception_When_Onboarding_Document_Has_Period()
+    {
+        var ex = Assert.Throws<JotanunesException>(() => new Document(
+            1, 1, 1, DocumentCategory.Onboarding, DocumentSubject.Company,
+            "companies/1/documents/abc-cnpj.pdf", "cnpj.pdf", "application/pdf",
+            referencePeriodStart: new DateOnly(2026, 7, 1),
+            referencePeriodEnd: new DateOnly(2026, 7, 31)));
+
+        Assert.Equal("Documento de habilitação não deve ter período de referência.", ex.Message);
     }
 
     [Fact]

@@ -52,7 +52,7 @@ public class Document : BaseEntity
         DateOnly? expirationDate = null)
     {
         workerCpf = string.IsNullOrWhiteSpace(workerCpf) ? null : Cpf.Normalize(workerCpf);
-        Validate(category, subject, storageKey, originalFileName, contentType, companyWorkSiteId, workerName, workerCpf);
+        Validate(category, subject, storageKey, originalFileName, contentType, companyWorkSiteId, workerName, workerCpf, referencePeriodStart, referencePeriodEnd);
 
         CompanyId = companyId;
         DocumentTypeId = documentTypeId;
@@ -101,7 +101,9 @@ public class Document : BaseEntity
         string contentType,
         long? companyWorkSiteId,
         string? workerName,
-        string? workerCpf)
+        string? workerCpf,
+        DateOnly? referencePeriodStart,
+        DateOnly? referencePeriodEnd)
     {
         JotanunesException.When(string.IsNullOrWhiteSpace(storageKey), "Chave de armazenamento não pode ser vazia.");
         JotanunesException.When(string.IsNullOrWhiteSpace(originalFileName), "Nome do arquivo não pode ser vazio.");
@@ -110,10 +112,19 @@ public class Document : BaseEntity
         if (category == DocumentCategory.Recurring)
         {
             JotanunesException.When(companyWorkSiteId is null, "Documento recorrente precisa estar vinculado a uma solicitação (empresa e obra).");
+            JotanunesException.When(
+                referencePeriodStart is null || referencePeriodEnd is null,
+                "Documento recorrente precisa informar o período de referência.");
+            JotanunesException.When(
+                referencePeriodStart is not null && referencePeriodEnd is not null && referencePeriodStart > referencePeriodEnd,
+                "Período de referência inválido.");
         }
         else
         {
             JotanunesException.When(companyWorkSiteId is not null, "Documento de habilitação não deve estar vinculado a uma obra específica.");
+            JotanunesException.When(
+                referencePeriodStart is not null || referencePeriodEnd is not null,
+                "Documento de habilitação não deve ter período de referência.");
         }
 
         if (subject == DocumentSubject.Worker)

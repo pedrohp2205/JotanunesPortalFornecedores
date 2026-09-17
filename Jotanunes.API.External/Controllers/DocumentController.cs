@@ -1,5 +1,6 @@
 using Jotanunes.API.External.Models;
 using Jotanunes.API.Shared.Extensions;
+using Jotanunes.Application.DTOs.Compliance;
 using Jotanunes.Application.DTOs.Documents;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Filters;
@@ -12,7 +13,7 @@ namespace Jotanunes.API.External.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class DocumentController(IDocumentService documentService) : ControllerBase
+public class DocumentController(IDocumentService documentService, IDocumentComplianceService complianceService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PageList<DocumentDto>>> Get([FromQuery] PageParams pageParams, [FromQuery] DocumentFilter filter)
@@ -59,5 +60,12 @@ public class DocumentController(IDocumentService documentService) : ControllerBa
             form.File.ContentType);
 
         return Ok(document);
+    }
+
+    [HttpGet("checklist/{companyWorkSiteId:long}")]
+    public async Task<ActionResult<ComplianceChecklistDto>> GetChecklist(long companyWorkSiteId)
+    {
+        var checklist = await complianceService.GetChecklist(companyWorkSiteId, User.GetCompanyId());
+        return Ok(checklist);
     }
 }

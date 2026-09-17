@@ -2,6 +2,7 @@ using AutoMapper;
 using Jotanunes.Application.DTOs.Documents;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Entities;
+using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Domain.Pagination;
@@ -48,12 +49,22 @@ public class DocumentService : IDocumentService
             throw new KeyNotFoundException("Tipo de documento não encontrado");
         }
 
+        var referencePeriodStart = model.ReferencePeriodStart;
+        var referencePeriodEnd = model.ReferencePeriodEnd;
+
         if (model.CompanyWorkSiteId.HasValue)
         {
             var companyWorkSite = await _unitOfWork.WorkSiteRepository.GetLinkById(model.CompanyWorkSiteId.Value);
             if (companyWorkSite is null || companyWorkSite.CompanyId != companyId)
             {
                 throw new KeyNotFoundException("Solicitação (empresa e obra) não encontrada");
+            }
+
+            if (documentType.Category == DocumentCategory.Recurring && (referencePeriodStart is null || referencePeriodEnd is null))
+            {
+                var currentPeriod = companyWorkSite.WorkSite.GetCurrentPeriod(DateOnly.FromDateTime(DateTime.UtcNow));
+                referencePeriodStart ??= currentPeriod.Start;
+                referencePeriodEnd ??= currentPeriod.End;
             }
         }
 
@@ -71,8 +82,8 @@ public class DocumentService : IDocumentService
             model.CompanyWorkSiteId,
             model.WorkerName,
             model.WorkerCpf,
-            model.ReferencePeriodStart,
-            model.ReferencePeriodEnd,
+            referencePeriodStart,
+            referencePeriodEnd,
             model.ExpirationDate);
 
         await _storageService.UploadAsync(storageKey, fileContent, contentType);

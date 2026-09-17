@@ -1,3 +1,4 @@
+using Jotanunes.Application.DTOs.Compliance;
 using Jotanunes.Application.DTOs.Documents;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Filters;
@@ -8,7 +9,7 @@ namespace Jotanunes.API.Internal.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class DocumentController(IDocumentService documentService) : ControllerBase
+public class DocumentController(IDocumentService documentService, IDocumentComplianceService complianceService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PageList<DocumentDto>>> Get([FromQuery] PageParams pageParams, [FromQuery] DocumentFilter filter)
@@ -43,5 +44,19 @@ public class DocumentController(IDocumentService documentService) : ControllerBa
     {
         var document = await documentService.Reject(id, rejectDto.Reason);
         return Ok(document);
+    }
+
+    [HttpGet("checklist/{companyWorkSiteId:long}")]
+    public async Task<ActionResult<ComplianceChecklistDto>> GetChecklist(long companyWorkSiteId)
+    {
+        var checklist = await complianceService.GetChecklist(companyWorkSiteId);
+        return Ok(checklist);
+    }
+
+    [HttpGet("overdue")]
+    public async Task<ActionResult<List<OverdueCompanyWorkSiteDto>>> GetOverdue()
+    {
+        var overdue = await complianceService.GetOverdue();
+        return Ok(overdue);
     }
 }

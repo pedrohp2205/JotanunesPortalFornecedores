@@ -61,6 +61,16 @@ public class WorkSiteRepository : GenericRepository<WorkSite>, IWorkSiteReposito
                                 .FirstOrDefaultAsync(cw => cw.Id == id);
     }
 
+    public async Task<List<CompanyWorkSite>> GetAllLinks()
+    {
+        return await _context.CompanyWorkSites
+                                .AsNoTracking()
+                                .Include(cw => cw.Company)
+                                .Include(cw => cw.WorkSite)
+                                .OrderBy(cw => cw.Company.CorporateName)
+                                .ToListAsync();
+    }
+
     public void AddLink(CompanyWorkSite link)
     {
         _context.CompanyWorkSites.Add(link);
