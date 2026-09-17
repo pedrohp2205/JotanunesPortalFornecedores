@@ -23,7 +23,7 @@ public static class DependencyInjection
             ?? configuration.GetConnectionString("ConnectionString");
 
         service.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(connectionString, b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+            options.UseSqlServer(connectionString, b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
         service.AddAutoMapper(cfg => cfg.AddMaps(typeof(MappingProfile).Assembly));
 

@@ -14,7 +14,7 @@ public class CompanyWorkSiteConfiguration : IEntityTypeConfiguration<CompanyWork
         
         builder.HasIndex(cw => new { cw.CompanyId, cw.WorkSiteId })
             .IsUnique()
-            .HasFilter("\"DeletedAt\" IS NULL");
+            .HasFilter("[DeletedAt] IS NULL");
 
         builder.HasOne(cw => cw.Company)
             .WithMany()

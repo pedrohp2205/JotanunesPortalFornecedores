@@ -38,7 +38,7 @@ public class SupplierUserConfiguration : IEntityTypeConfiguration<SupplierUser>
 
         builder.HasIndex(u => u.Email)
             .IsUnique()
-            .HasFilter("\"DeletedAt\" IS NULL");
+            .HasFilter("[DeletedAt] IS NULL");
 
         builder.HasIndex(u => u.RefreshToken);
     }

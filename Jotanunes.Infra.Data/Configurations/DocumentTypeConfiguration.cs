@@ -46,6 +46,6 @@ public class DocumentTypeConfiguration : IEntityTypeConfiguration<DocumentType>
 
         builder.HasIndex(d => d.Code)
             .IsUnique()
-            .HasFilter("\"DeletedAt\" IS NULL");
+            .HasFilter("[DeletedAt] IS NULL");
     }
 }

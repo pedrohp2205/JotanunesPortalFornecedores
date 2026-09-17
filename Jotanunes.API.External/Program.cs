@@ -1,6 +1,6 @@
 using Jotanunes.API.Shared.Middlewares;
 using Jotanunes.Infra.IoC;
-using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,9 +28,19 @@ builder.Services.AddSwaggerGen(options =>
         Description = "Informe apenas o token JWT retornado no login."
     });
 
-    options.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        { new OpenApiSecuritySchemeReference("Bearer"), new List<string>() }
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
     });
 });
 

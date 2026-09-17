@@ -10,10 +10,10 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
     public ApplicationDbContext CreateDbContext(string[] args)
     {
         var connectionString = Environment.GetEnvironmentVariable("DATABASE")
-            ?? "Host=localhost;Database=jotanunes_portal;Username=postgres;Password=senha";
+            ?? "Server=localhost,1433;Database=jotanunes_portal;User Id=sa;Password=SenhaForte123!;TrustServerCertificate=True";
 
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseNpgsql(connectionString, b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName))
+            .UseSqlServer(connectionString, b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName))
             .Options;
 
         return new ApplicationDbContext(options);

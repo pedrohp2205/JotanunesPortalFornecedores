@@ -51,7 +51,7 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
         // registro anterior for excluído logicamente.
         builder.HasIndex(c => c.Cnpj)
             .IsUnique()
-            .HasFilter("\"DeletedAt\" IS NULL");
+            .HasFilter("[DeletedAt] IS NULL");
 
         builder.OwnsOne(c => c.Address, address =>
         {

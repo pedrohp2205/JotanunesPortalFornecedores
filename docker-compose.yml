@@ -1,16 +1,16 @@
 services:
-  postgres:
-    image: postgres:16
-    container_name: jotanunes-postgres
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: jotanunes-sqlserver
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: senha
-      POSTGRES_DB: jotanunes_portal
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: SenhaForte123!
+      MSSQL_PID: Express
     ports:
-      - "5432:5432"
+      - "1433:1433"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - sqlserver_data:/var/opt/mssql
 
   api-internal:
     build:
@@ -18,9 +18,9 @@ services:
       dockerfile: Dockerfile.internal
     container_name: jotanunes-api-internal
     depends_on:
-      - postgres
+      - sqlserver
     environment:
-      DATABASE: Host=postgres;Database=jotanunes_portal;Username=postgres;Password=senha
+      DATABASE: Server=sqlserver,1433;Database=jotanunes_portal;User Id=sa;Password=SenhaForte123!;TrustServerCertificate=True
       S3__BucketName: ${R2_BUCKET_NAME}
       S3__Region: auto
       S3__AccessKey: ${R2_ACCESS_KEY_ID}
@@ -37,10 +37,10 @@ services:
       dockerfile: Dockerfile.external
     container_name: jotanunes-api-external
     depends_on:
-      - postgres
+      - sqlserver
       - api-internal
     environment:
-      DATABASE: Host=postgres;Database=jotanunes_portal;Username=postgres;Password=senha
+      DATABASE: Server=sqlserver,1433;Database=jotanunes_portal;User Id=sa;Password=SenhaForte123!;TrustServerCertificate=True
       Jwt__Issuer: Jotanunes.PortalFornecedor
       Jwt__Audience: Jotanunes.PortalFornecedor.Client
       Jwt__SecretKey: troque-esta-chave-em-producao-com-no-minimo-32-caracteres
@@ -55,4 +55,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  sqlserver_data:

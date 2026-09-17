@@ -2,7 +2,7 @@
 
 Sistema de Gestão e Validação Documental de Fornecedores da Jotanunes.
 
-Projeto em **.NET 10**, seguindo **Clean Architecture**, **DDD**, **Unit of Work**, **IoC** e **Docker**, na mesma organização de camadas do projeto de referência `TClient-API`.
+Projeto em **.NET 8**, seguindo **Clean Architecture**, **DDD**, **Unit of Work**, **IoC** e **Docker**, na mesma organização de camadas do projeto de referência `TClient-API`. Banco de dados **SQL Server**.
 
 ---
 
@@ -77,9 +77,9 @@ Regras aplicadas na autenticação:
 
 ## Pré-requisitos
 
-- .NET SDK 10
+- .NET SDK 8
 - Docker e Docker Compose (para subir o ambiente completo)
-- PostgreSQL (se for rodar fora do Docker)
+- SQL Server (se for rodar fora do Docker)
 
 ---
 
@@ -89,7 +89,7 @@ Regras aplicadas na autenticação:
 docker-compose up -d --build
 ```
 
-Sobe o PostgreSQL, a API interna na porta `8080` e a API externa na porta `80`. As migrations são aplicadas automaticamente pela API interna, que é a dona do schema.
+Sobe o SQL Server, a API interna na porta `8080` e a API externa na porta `80`. As migrations são aplicadas automaticamente pela API interna, que é a dona do schema.
 
 Swagger:
 
