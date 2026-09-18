@@ -38,11 +38,9 @@ public class DocumentTypeRepository : GenericRepository<DocumentType>, IDocument
 
     public async Task<List<DocumentType>> GetApplicable(SupplierType supplierType)
     {
-        var both = SupplierType.Material | SupplierType.ManpowerLabor;
-
         return await _context.DocumentTypes
                                 .AsNoTracking()
-                                .Where(d => d.Active && (d.AppliesTo == supplierType || d.AppliesTo == both))
+                                .Where(d => d.Active && (d.AppliesTo & supplierType) != 0)
                                 .OrderBy(d => d.Category)
                                 .ThenBy(d => d.Name)
                                 .ToListAsync();

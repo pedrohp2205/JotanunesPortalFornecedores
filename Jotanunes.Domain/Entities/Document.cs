@@ -9,8 +9,8 @@ public class Document : BaseEntity
     public long CompanyId { get; private set; }
     public Company Company { get; private set; } = null!;
 
-    public long? CompanyWorkSiteId { get; private set; }
-    public CompanyWorkSite? CompanyWorkSite { get; private set; }
+    public long? SupplyRequestId { get; private set; }
+    public SupplyRequest? SupplyRequest { get; private set; }
 
     public long DocumentTypeId { get; private set; }
     public DocumentType DocumentType { get; private set; } = null!;
@@ -44,7 +44,7 @@ public class Document : BaseEntity
         string storageKey,
         string originalFileName,
         string contentType,
-        long? companyWorkSiteId = null,
+        long? supplyRequestId = null,
         string? workerName = null,
         string? workerCpf = null,
         DateOnly? referencePeriodStart = null,
@@ -52,12 +52,12 @@ public class Document : BaseEntity
         DateOnly? expirationDate = null)
     {
         workerCpf = string.IsNullOrWhiteSpace(workerCpf) ? null : Cpf.Normalize(workerCpf);
-        Validate(category, subject, storageKey, originalFileName, contentType, companyWorkSiteId, workerName, workerCpf, referencePeriodStart, referencePeriodEnd);
+        Validate(category, subject, storageKey, originalFileName, contentType, supplyRequestId, workerName, workerCpf, referencePeriodStart, referencePeriodEnd);
 
         CompanyId = companyId;
         DocumentTypeId = documentTypeId;
         UploadedBySupplierUserId = uploadedBySupplierUserId;
-        CompanyWorkSiteId = companyWorkSiteId;
+        SupplyRequestId = supplyRequestId;
         WorkerName = string.IsNullOrWhiteSpace(workerName) ? null : workerName.Trim();
         WorkerCpf = workerCpf;
         StorageKey = storageKey;
@@ -99,7 +99,7 @@ public class Document : BaseEntity
         string storageKey,
         string originalFileName,
         string contentType,
-        long? companyWorkSiteId,
+        long? supplyRequestId,
         string? workerName,
         string? workerCpf,
         DateOnly? referencePeriodStart,
@@ -111,7 +111,7 @@ public class Document : BaseEntity
 
         if (category == DocumentCategory.Recurring)
         {
-            JotanunesException.When(companyWorkSiteId is null, "Documento recorrente precisa estar vinculado a uma solicitação (empresa e obra).");
+            JotanunesException.When(supplyRequestId is null, "Documento recorrente precisa estar vinculado a uma solicitação.");
             JotanunesException.When(
                 referencePeriodStart is null || referencePeriodEnd is null,
                 "Documento recorrente precisa informar o período de referência.");
@@ -121,7 +121,7 @@ public class Document : BaseEntity
         }
         else
         {
-            JotanunesException.When(companyWorkSiteId is not null, "Documento de habilitação não deve estar vinculado a uma obra específica.");
+            JotanunesException.When(supplyRequestId is not null, "Documento de habilitação não deve estar vinculado a uma obra específica.");
             JotanunesException.When(
                 referencePeriodStart is not null || referencePeriodEnd is not null,
                 "Documento de habilitação não deve ter período de referência.");

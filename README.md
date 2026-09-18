@@ -51,6 +51,7 @@ O fluxo de dependência aponta sempre para dentro: as APIs conhecem a IoC, a IoC
 | GET | `/api/company/{id}` | Consulta uma empresa |
 | POST | `/api/company` | Cadastra empresa |
 | PUT | `/api/company/{id}` | Atualiza empresa (o CNPJ não é editável) |
+| PUT | `/api/company/{id}/supplier-type` | Altera o tipo de fornecimento (1 material, 2 mão de obra, 3 os dois). Recusa remover um tipo que ainda tenha solicitação ativa |
 | DELETE | `/api/company/{id}` | Exclusão lógica |
 | GET | `/api/company/{id}/users` | Lista os acessos da empresa |
 | POST | `/api/company/{id}/users` | Cria o acesso ao portal (pré-requisito do login) |
@@ -72,6 +73,29 @@ Regras aplicadas na autenticação:
 - bloqueio temporário de 15 minutos após 5 tentativas inválidas;
 - token carrega a claim `company_id`, base para o isolamento por empresa exigido pelo RNF01;
 - troca de senha revoga o refresh token ativo.
+
+---
+
+### Solicitação (intermedia a Jotanunes e o fornecedor)
+
+A **solicitação** (`SupplyRequest`) é o pedido da Jotanunes a uma empresa para uma obra. Ela define o tipo de fornecimento (`Material` = 1 ou `ManpowerLabor` = 2) e é a âncora dos documentos recorrentes. Uma empresa pode fornecer os dois tipos (`supplierType: 3` no cadastro da empresa); nesse caso a Jotanunes abre **uma solicitação por tipo**, cada uma com seu checklist. A habilitação da empresa usa a união dos tipos dela.
+
+Status: `Open` (1) → `InProgress` (2, no primeiro documento enviado) → `Completed` (3) ou `Cancelled` (4). Solicitação encerrada não recebe documentos e sai da lista de atrasados. `Complete` só é aceito quando a solicitação não teria pendências no período corrente (mesmo critério de `GET /api/document/overdue`); com pendências, a resposta é 400 explicando o que falta, e o caminho é `Cancel`. Só pode existir uma solicitação ativa por empresa, obra e tipo.
+
+| Frente | Método | Rota | Descrição |
+| --- | --- | --- | --- |
+| Interna | GET | `/api/supplyrequest` | Lista, com filtros `companyId`, `workSiteId`, `supplierType` e `status` |
+| Interna | GET | `/api/supplyrequest/{id}` | Consulta uma solicitação |
+| Interna | POST | `/api/supplyrequest` | Abre a solicitação (`companyId`, `workSiteId`, `supplierType`, `requiredWorkerCount`) |
+| Interna | PUT | `/api/supplyrequest/{id}` | Ajusta a quantidade de trabalhadores (só mão de obra) |
+| Interna | POST | `/api/supplyrequest/{id}/complete` | Conclui |
+| Interna | POST | `/api/supplyrequest/{id}/cancel` | Cancela |
+| Externa | GET | `/api/supplyrequest` | Solicitações da empresa do token |
+| Externa | GET | `/api/supplyrequest/{id}` | Consulta uma solicitação da empresa |
+
+O upload de documento (`POST /api/document`) recebe `supplyRequestId` nos documentos recorrentes; o checklist fica em `GET /api/document/checklist/{supplyRequestId}` nas duas frentes.
+
+Regras de conferência no envio: o tipo de documento precisa se aplicar ao tipo de fornecimento da solicitação (ou aos tipos da empresa, na habilitação). Documentos condicionais não entram na conta da habilitação e a data de validade é apenas armazenada, não avaliada.
 
 ---
 

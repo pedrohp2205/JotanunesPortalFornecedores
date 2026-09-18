@@ -11,7 +11,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Company> Companies { get; set; }
     public DbSet<SupplierUser> SupplierUsers { get; set; }
     public DbSet<WorkSite> WorkSites { get; set; }
-    public DbSet<CompanyWorkSite> CompanyWorkSites { get; set; }
+    public DbSet<SupplyRequest> SupplyRequests { get; set; }
     public DbSet<DocumentType> DocumentTypes { get; set; }
     public DbSet<Document> Documents { get; set; }
 

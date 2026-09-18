@@ -48,7 +48,7 @@ public class DocumentController(IDocumentService documentService, IDocumentCompl
             new DocumentUploadDto
             {
                 DocumentTypeId = form.DocumentTypeId,
-                CompanyWorkSiteId = form.CompanyWorkSiteId,
+                SupplyRequestId = form.SupplyRequestId,
                 WorkerName = form.WorkerName,
                 WorkerCpf = form.WorkerCpf,
                 ReferencePeriodStart = form.ReferencePeriodStart,
@@ -62,10 +62,10 @@ public class DocumentController(IDocumentService documentService, IDocumentCompl
         return Ok(document);
     }
 
-    [HttpGet("checklist/{companyWorkSiteId:long}")]
-    public async Task<ActionResult<ComplianceChecklistDto>> GetChecklist(long companyWorkSiteId)
+    [HttpGet("checklist/{supplyRequestId:long}")]
+    public async Task<ActionResult<ComplianceChecklistDto>> GetChecklist(long supplyRequestId)
     {
-        var checklist = await complianceService.GetChecklist(companyWorkSiteId, User.GetCompanyId());
+        var checklist = await complianceService.GetChecklist(supplyRequestId, User.GetCompanyId());
         return Ok(checklist);
     }
 }

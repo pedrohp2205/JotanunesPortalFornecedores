@@ -40,6 +40,13 @@ public class CompanyController(ICompanyService companyService, ISupplierUserServ
         return Ok(updatedCompany);
     }
 
+    [HttpPut("{id:long}/supplier-type")]
+    public async Task<ActionResult<CompanyDto>> ChangeSupplierType(long id, [FromBody] CompanyChangeSupplierTypeDto supplierTypeDto)
+    {
+        var company = await companyService.ChangeSupplierType(id, supplierTypeDto);
+        return Ok(company);
+    }
+
     [HttpDelete("{id:long}")]
     public async Task<ActionResult<CompanyDto>> Delete(long id)
     {

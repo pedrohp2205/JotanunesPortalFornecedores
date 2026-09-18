@@ -1,8 +1,12 @@
+using Jotanunes.Domain.Enums;
+
 namespace Jotanunes.Application.DTOs.Compliance;
 
 public class ComplianceChecklistDto
 {
-    public long CompanyWorkSiteId { get; set; }
+    public long SupplyRequestId { get; set; }
+    public SupplierType SupplierType { get; set; }
+    public SupplyRequestStatus Status { get; set; }
     public long CompanyId { get; set; }
     public string CompanyCorporateName { get; set; } = string.Empty;
     public long WorkSiteId { get; set; }

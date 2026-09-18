@@ -1,12 +1,15 @@
+using Jotanunes.Domain.Enums;
+
 namespace Jotanunes.Application.DTOs.Compliance;
 
-public class OverdueCompanyWorkSiteDto
+public class OverdueSupplyRequestDto
 {
-    public long CompanyWorkSiteId { get; set; }
+    public long SupplyRequestId { get; set; }
     public long CompanyId { get; set; }
     public string CompanyCorporateName { get; set; } = string.Empty;
     public long WorkSiteId { get; set; }
     public string WorkSiteName { get; set; } = string.Empty;
+    public SupplierType SupplierType { get; set; }
     public DateOnly PeriodStart { get; set; }
     public DateOnly PeriodEnd { get; set; }
     public int MissingOnboardingCount { get; set; }

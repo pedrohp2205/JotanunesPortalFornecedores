@@ -23,7 +23,7 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
                 .AsNoTracking()
                 .Include(d => d.Company)
                 .Include(d => d.DocumentType)
-                .Include(d => d.CompanyWorkSite!).ThenInclude(cw => cw.WorkSite)
+                .Include(d => d.SupplyRequest!).ThenInclude(sr => sr.WorkSite)
                 .Include(d => d.UploadedBySupplierUser),
             filter);
 
@@ -49,7 +49,7 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
         return await _context.Documents
                                 .Include(d => d.Company)
                                 .Include(d => d.DocumentType)
-                                .Include(d => d.CompanyWorkSite!).ThenInclude(cw => cw.WorkSite)
+                                .Include(d => d.SupplyRequest!).ThenInclude(sr => sr.WorkSite)
                                 .Include(d => d.UploadedBySupplierUser)
                                 .FirstOrDefaultAsync(d => d.Id == id);
     }
@@ -63,12 +63,12 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
 
         if (filter.WorkSiteId.HasValue)
         {
-            query = query.Where(d => d.CompanyWorkSite != null && d.CompanyWorkSite.WorkSiteId == filter.WorkSiteId.Value);
+            query = query.Where(d => d.SupplyRequest != null && d.SupplyRequest.WorkSiteId == filter.WorkSiteId.Value);
         }
 
-        if (filter.CompanyWorkSiteId.HasValue)
+        if (filter.SupplyRequestId.HasValue)
         {
-            query = query.Where(d => d.CompanyWorkSiteId == filter.CompanyWorkSiteId.Value);
+            query = query.Where(d => d.SupplyRequestId == filter.SupplyRequestId.Value);
         }
 
         if (filter.DocumentTypeId.HasValue)

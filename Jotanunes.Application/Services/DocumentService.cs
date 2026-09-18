@@ -3,6 +3,7 @@ using Jotanunes.Application.DTOs.Documents;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Enums;
+using Jotanunes.Domain.Exceptions;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Domain.Pagination;
@@ -55,24 +56,43 @@ public class DocumentService : IDocumentService
             throw new KeyNotFoundException("Tipo de documento não encontrado");
         }
 
+        var company = await _unitOfWork.CompanyRepository.GetById(companyId);
+        if (company is null)
+        {
+            throw new KeyNotFoundException("Empresa não encontrada");
+        }
+
         var referencePeriodStart = model.ReferencePeriodStart;
         var referencePeriodEnd = model.ReferencePeriodEnd;
 
-        if (model.CompanyWorkSiteId.HasValue)
+        SupplyRequest? supplyRequest = null;
+
+        if (model.SupplyRequestId.HasValue)
         {
-            var companyWorkSite = await _unitOfWork.WorkSiteRepository.GetLinkById(model.CompanyWorkSiteId.Value);
-            if (companyWorkSite is null || companyWorkSite.CompanyId != companyId)
+            supplyRequest = await _unitOfWork.SupplyRequestRepository.GetById(model.SupplyRequestId.Value);
+            if (supplyRequest is null || supplyRequest.CompanyId != companyId)
             {
-                throw new KeyNotFoundException("Solicitação (empresa e obra) não encontrada");
+                throw new KeyNotFoundException("Solicitação não encontrada");
             }
+
+            supplyRequest.EnsureNotClosed();
 
             if (documentType.Category == DocumentCategory.Recurring && (referencePeriodStart is null || referencePeriodEnd is null))
             {
-                var currentPeriod = companyWorkSite.WorkSite.GetCurrentPeriod(DateOnly.FromDateTime(DateTime.UtcNow));
+                var currentPeriod = supplyRequest.WorkSite.GetCurrentPeriod(DateOnly.FromDateTime(DateTime.UtcNow));
                 referencePeriodStart ??= currentPeriod.Start;
                 referencePeriodEnd ??= currentPeriod.End;
             }
         }
+
+        // Documento de solicitação segue o tipo de fornecimento dela; documento de habilitação segue os tipos da empresa.
+        JotanunesException.When(
+            supplyRequest is null
+                ? (documentType.AppliesTo & company.SupplierType) == 0
+                : (documentType.AppliesTo & supplyRequest.SupplierType) == 0,
+            supplyRequest is null
+                ? "Este tipo de documento não se aplica ao tipo de fornecedor da empresa."
+                : "Este tipo de documento não se aplica ao tipo de fornecimento da solicitação.");
 
         var storageKey = $"companies/{companyId}/documents/{Guid.NewGuid()}-{SanitizeFileName(originalFileName)}";
 
@@ -85,12 +105,14 @@ public class DocumentService : IDocumentService
             storageKey,
             originalFileName,
             contentType,
-            model.CompanyWorkSiteId,
+            model.SupplyRequestId,
             model.WorkerName,
             model.WorkerCpf,
             referencePeriodStart,
             referencePeriodEnd,
             model.ExpirationDate);
+
+        supplyRequest?.MarkInProgress();
 
         await _storageService.UploadAsync(storageKey, fileContent, contentType);
 

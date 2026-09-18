@@ -16,21 +16,15 @@ public class DocumentComplianceService : IDocumentComplianceService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<ComplianceChecklistDto> GetChecklist(long companyWorkSiteId, long? companyId = null)
+    public async Task<ComplianceChecklistDto> GetChecklist(long supplyRequestId, long? companyId = null)
     {
-        var companyWorkSite = await _unitOfWork.WorkSiteRepository.GetLinkById(companyWorkSiteId);
-        if (companyWorkSite is null || (companyId.HasValue && companyWorkSite.CompanyId != companyId.Value))
+        var supplyRequest = await _unitOfWork.SupplyRequestRepository.GetById(supplyRequestId);
+        if (supplyRequest is null || (companyId.HasValue && supplyRequest.CompanyId != companyId.Value))
         {
-            throw new KeyNotFoundException("Solicitação (empresa e obra) não encontrada");
+            throw new KeyNotFoundException("Solicitação não encontrada");
         }
 
-        var company = await _unitOfWork.CompanyRepository.GetById(companyWorkSite.CompanyId);
-        if (company is null)
-        {
-            throw new KeyNotFoundException("Empresa não encontrada");
-        }
-
-        return await BuildChecklist(companyWorkSite, company);
+        return await BuildChecklist(supplyRequest, supplyRequest.Company);
     }
 
     public async Task<bool> IsOnboardingComplete(long companyId)
@@ -45,48 +39,74 @@ public class DocumentComplianceService : IDocumentComplianceService
         return onboardingItems.Count > 0 && onboardingItems.All(i => i.IsSatisfied);
     }
 
-    public async Task<List<OverdueCompanyWorkSiteDto>> GetOverdue()
+    // Só solicitações ativas (abertas ou em andamento) entram nos atrasados.
+    public async Task<List<OverdueSupplyRequestDto>> GetOverdue()
     {
-        var links = await _unitOfWork.WorkSiteRepository.GetAllLinks();
-        var result = new List<OverdueCompanyWorkSiteDto>();
+        var supplyRequests = await _unitOfWork.SupplyRequestRepository.GetActive();
+        var result = new List<OverdueSupplyRequestDto>();
 
-        foreach (var link in links)
+        foreach (var supplyRequest in supplyRequests)
         {
-            var checklist = await BuildChecklist(link, link.Company);
+            var checklist = await BuildChecklist(supplyRequest, supplyRequest.Company);
 
-            var missingOnboarding = checklist.OnboardingItems.Count(i => !i.IsSatisfied);
-            var missingRecurringCompany = checklist.RecurringCompanyItems.Count(i => !i.IsSatisfied);
-            var belowTarget = checklist.RequiredWorkerCount.HasValue && checklist.WorkersUpToDate < checklist.RequiredWorkerCount.Value;
-
-            if (missingOnboarding == 0 && missingRecurringCompany == 0 && !belowTarget)
+            var pending = ToPending(checklist);
+            if (pending is not null)
             {
-                continue;
+                result.Add(pending);
             }
-
-            result.Add(new OverdueCompanyWorkSiteDto
-            {
-                CompanyWorkSiteId = checklist.CompanyWorkSiteId,
-                CompanyId = checklist.CompanyId,
-                CompanyCorporateName = checklist.CompanyCorporateName,
-                WorkSiteId = checklist.WorkSiteId,
-                WorkSiteName = checklist.WorkSiteName,
-                PeriodStart = checklist.PeriodStart,
-                PeriodEnd = checklist.PeriodEnd,
-                MissingOnboardingCount = missingOnboarding,
-                MissingRecurringCompanyCount = missingRecurringCompany,
-                RequiredWorkerCount = checklist.RequiredWorkerCount,
-                WorkersUpToDate = checklist.WorkersUpToDate
-            });
         }
 
         return result;
     }
 
+    public async Task<OverdueSupplyRequestDto?> GetPending(long supplyRequestId)
+    {
+        var supplyRequest = await _unitOfWork.SupplyRequestRepository.GetById(supplyRequestId);
+        if (supplyRequest is null)
+        {
+            throw new KeyNotFoundException("Solicitação não encontrada");
+        }
+
+        var checklist = await BuildChecklist(supplyRequest, supplyRequest.Company);
+        return ToPending(checklist);
+    }
+
+    // Critério único de pendência, usado nos atrasados e na conclusão da solicitação.
+    private static OverdueSupplyRequestDto? ToPending(ComplianceChecklistDto checklist)
+    {
+        var missingOnboarding = checklist.OnboardingItems.Count(i => !i.IsSatisfied);
+        var missingRecurringCompany = checklist.RecurringCompanyItems.Count(i => !i.IsSatisfied);
+        var belowTarget = checklist.RequiredWorkerCount.HasValue && checklist.WorkersUpToDate < checklist.RequiredWorkerCount.Value;
+
+        if (missingOnboarding == 0 && missingRecurringCompany == 0 && !belowTarget)
+        {
+            return null;
+        }
+
+        return new OverdueSupplyRequestDto
+        {
+            SupplyRequestId = checklist.SupplyRequestId,
+            SupplierType = checklist.SupplierType,
+            CompanyId = checklist.CompanyId,
+            CompanyCorporateName = checklist.CompanyCorporateName,
+            WorkSiteId = checklist.WorkSiteId,
+            WorkSiteName = checklist.WorkSiteName,
+            PeriodStart = checklist.PeriodStart,
+            PeriodEnd = checklist.PeriodEnd,
+            MissingOnboardingCount = missingOnboarding,
+            MissingRecurringCompanyCount = missingRecurringCompany,
+            RequiredWorkerCount = checklist.RequiredWorkerCount,
+            WorkersUpToDate = checklist.WorkersUpToDate
+        };
+    }
+
     private async Task<List<ChecklistItemDto>> GetOnboardingItems(Company company)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var applicableTypes = await _unitOfWork.DocumentTypeRepository.GetApplicable(company.SupplierType);
-        var onboardingTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Onboarding).ToList();
+        
+        var onboardingTypes = applicableTypes
+            .Where(t => t.Category == DocumentCategory.Onboarding && !t.IsConditional)
+            .ToList();
 
         var onboardingDocs = await _unitOfWork.DocumentRepository.GetAll(new DocumentFilter
         {
@@ -98,7 +118,6 @@ public class DocumentComplianceService : IDocumentComplianceService
         {
             var doc = onboardingDocs
                 .Where(d => d.DocumentTypeId == t.Id)
-                .Where(d => !t.RequiresExpirationDate || !d.ExpirationDate.HasValue || d.ExpirationDate.Value >= today)
                 .OrderByDescending(d => d.CreatedAt)
                 .FirstOrDefault();
 
@@ -113,11 +132,12 @@ public class DocumentComplianceService : IDocumentComplianceService
         }).ToList();
     }
 
-    private async Task<ComplianceChecklistDto> BuildChecklist(CompanyWorkSite companyWorkSite, Company company)
+    private async Task<ComplianceChecklistDto> BuildChecklist(SupplyRequest supplyRequest, Company company)
     {
-        var (periodStart, periodEnd) = companyWorkSite.WorkSite.GetCurrentPeriod(DateOnly.FromDateTime(DateTime.UtcNow));
+        var (periodStart, periodEnd) = supplyRequest.WorkSite.GetCurrentPeriod(DateOnly.FromDateTime(DateTime.UtcNow));
 
-        var applicableTypes = await _unitOfWork.DocumentTypeRepository.GetApplicable(company.SupplierType);
+        // Os recorrentes seguem o tipo de fornecimento da solicitação; a habilitação, os tipos da empresa.
+        var applicableTypes = await _unitOfWork.DocumentTypeRepository.GetApplicable(supplyRequest.SupplierType);
 
         var recurringCompanyTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Recurring && t.Subject == DocumentSubject.Company).ToList();
         var recurringWorkerTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Recurring && t.Subject == DocumentSubject.Worker).ToList();
@@ -126,7 +146,7 @@ public class DocumentComplianceService : IDocumentComplianceService
 
         var recurringDocs = await _unitOfWork.DocumentRepository.GetAll(new DocumentFilter
         {
-            CompanyWorkSiteId = companyWorkSite.Id,
+            SupplyRequestId = supplyRequest.Id,
             PeriodStart = periodStart,
             PeriodEnd = periodEnd
         });
@@ -175,14 +195,16 @@ public class DocumentComplianceService : IDocumentComplianceService
 
         return new ComplianceChecklistDto
         {
-            CompanyWorkSiteId = companyWorkSite.Id,
+            SupplyRequestId = supplyRequest.Id,
+            SupplierType = supplyRequest.SupplierType,
+            Status = supplyRequest.Status,
             CompanyId = company.Id,
             CompanyCorporateName = company.CorporateName,
-            WorkSiteId = companyWorkSite.WorkSiteId,
-            WorkSiteName = companyWorkSite.WorkSite.Name,
+            WorkSiteId = supplyRequest.WorkSiteId,
+            WorkSiteName = supplyRequest.WorkSite.Name,
             PeriodStart = periodStart,
             PeriodEnd = periodEnd,
-            RequiredWorkerCount = companyWorkSite.RequiredWorkerCount,
+            RequiredWorkerCount = supplyRequest.RequiredWorkerCount,
             WorkersUpToDate = workers.Count(w => w.IsUpToDate),
             OnboardingItems = onboardingItems,
             RecurringCompanyItems = recurringCompanyItems,

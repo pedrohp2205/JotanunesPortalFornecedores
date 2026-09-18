@@ -54,9 +54,9 @@ public class DocumentConfiguration : IEntityTypeConfiguration<Document>
             .HasForeignKey(d => d.UploadedBySupplierUserId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(d => d.CompanyWorkSite)
+        builder.HasOne(d => d.SupplyRequest)
             .WithMany()
-            .HasForeignKey(d => d.CompanyWorkSiteId)
+            .HasForeignKey(d => d.SupplyRequestId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

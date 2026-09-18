@@ -9,6 +9,7 @@ public class UnitOfWork : IUnitOfWork
     private ICompanyRepository? _companyRepository;
     private ISupplierUserRepository? _supplierUserRepository;
     private IWorkSiteRepository? _workSiteRepository;
+    private ISupplyRequestRepository? _supplyRequestRepository;
     private IDocumentTypeRepository? _documentTypeRepository;
     private IDocumentRepository? _documentRepository;
 
@@ -38,6 +39,14 @@ public class UnitOfWork : IUnitOfWork
         get
         {
             return _workSiteRepository ??= new WorkSiteRepository(_context);
+        }
+    }
+
+    public ISupplyRequestRepository SupplyRequestRepository
+    {
+        get
+        {
+            return _supplyRequestRepository ??= new SupplyRequestRepository(_context);
         }
     }
 

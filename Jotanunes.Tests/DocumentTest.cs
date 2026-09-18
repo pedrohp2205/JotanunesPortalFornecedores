@@ -30,7 +30,7 @@ public class DocumentTest
             storageKey: "companies/1/documents/abc-ponto.pdf",
             originalFileName: "ponto.pdf",
             contentType: "application/pdf",
-            companyWorkSiteId: 10,
+            supplyRequestId: 10,
             workerName: "Cicero Fernandes da Silva",
             workerCpf: "529.982.247-25",
             referencePeriodStart: new DateOnly(2026, 7, 1),
@@ -45,7 +45,7 @@ public class DocumentTest
         Assert.Equal(DocumentStatus.Pending, document.Status);
         Assert.Null(document.WorkerName);
         Assert.Null(document.WorkerCpf);
-        Assert.Null(document.CompanyWorkSiteId);
+        Assert.Null(document.SupplyRequestId);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class DocumentTest
 
         Assert.Equal("Cicero Fernandes da Silva", document.WorkerName);
         Assert.Equal("52998224725", document.WorkerCpf);
-        Assert.Equal(10, document.CompanyWorkSiteId);
+        Assert.Equal(10, document.SupplyRequestId);
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public class DocumentTest
         var ex = Assert.Throws<JotanunesException>(() => new Document(
             1, 18, 1, DocumentCategory.Recurring, DocumentSubject.Worker,
             "companies/1/documents/abc.pdf", "ponto.pdf", "application/pdf",
-            companyWorkSiteId: 10,
+            supplyRequestId: 10,
             referencePeriodStart: new DateOnly(2026, 7, 1),
             referencePeriodEnd: new DateOnly(2026, 7, 31)));
 
@@ -77,7 +77,7 @@ public class DocumentTest
         var ex = Assert.Throws<JotanunesException>(() => new Document(
             1, 18, 1, DocumentCategory.Recurring, DocumentSubject.Worker,
             "companies/1/documents/abc.pdf", "ponto.pdf", "application/pdf",
-            companyWorkSiteId: 10, workerName: "Cicero Fernandes da Silva", workerCpf: "111.111.111-11",
+            supplyRequestId: 10, workerName: "Cicero Fernandes da Silva", workerCpf: "111.111.111-11",
             referencePeriodStart: new DateOnly(2026, 7, 1),
             referencePeriodEnd: new DateOnly(2026, 7, 31)));
 
@@ -96,13 +96,13 @@ public class DocumentTest
     }
 
     [Fact]
-    public void Should_Throw_Exception_When_Recurring_Document_Has_No_CompanyWorkSite()
+    public void Should_Throw_Exception_When_Recurring_Document_Has_No_SupplyRequest()
     {
         var ex = Assert.Throws<JotanunesException>(() => new Document(
             1, 11, 1, DocumentCategory.Recurring, DocumentSubject.Company,
             "companies/1/documents/abc-folha.pdf", "folha.pdf", "application/pdf"));
 
-        Assert.Equal("Documento recorrente precisa estar vinculado a uma solicitação (empresa e obra).", ex.Message);
+        Assert.Equal("Documento recorrente precisa estar vinculado a uma solicitação.", ex.Message);
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class DocumentTest
         var ex = Assert.Throws<JotanunesException>(() => new Document(
             1, 11, 1, DocumentCategory.Recurring, DocumentSubject.Company,
             "companies/1/documents/abc-folha.pdf", "folha.pdf", "application/pdf",
-            companyWorkSiteId: 10));
+            supplyRequestId: 10));
 
         Assert.Equal("Documento recorrente precisa informar o período de referência.", ex.Message);
     }
@@ -122,7 +122,7 @@ public class DocumentTest
         var ex = Assert.Throws<JotanunesException>(() => new Document(
             1, 11, 1, DocumentCategory.Recurring, DocumentSubject.Company,
             "companies/1/documents/abc-folha.pdf", "folha.pdf", "application/pdf",
-            companyWorkSiteId: 10,
+            supplyRequestId: 10,
             referencePeriodStart: new DateOnly(2026, 7, 31),
             referencePeriodEnd: new DateOnly(2026, 7, 1)));
 
@@ -142,12 +142,12 @@ public class DocumentTest
     }
 
     [Fact]
-    public void Should_Throw_Exception_When_Onboarding_Document_Has_CompanyWorkSite()
+    public void Should_Throw_Exception_When_Onboarding_Document_Has_SupplyRequest()
     {
         var ex = Assert.Throws<JotanunesException>(() => new Document(
             1, 1, 1, DocumentCategory.Onboarding, DocumentSubject.Company,
             "companies/1/documents/abc-cnpj.pdf", "cnpj.pdf", "application/pdf",
-            companyWorkSiteId: 10));
+            supplyRequestId: 10));
 
         Assert.Equal("Documento de habilitação não deve estar vinculado a uma obra específica.", ex.Message);
     }

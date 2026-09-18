@@ -46,15 +46,15 @@ public class DocumentController(IDocumentService documentService, IDocumentCompl
         return Ok(document);
     }
 
-    [HttpGet("checklist/{companyWorkSiteId:long}")]
-    public async Task<ActionResult<ComplianceChecklistDto>> GetChecklist(long companyWorkSiteId)
+    [HttpGet("checklist/{supplyRequestId:long}")]
+    public async Task<ActionResult<ComplianceChecklistDto>> GetChecklist(long supplyRequestId)
     {
-        var checklist = await complianceService.GetChecklist(companyWorkSiteId);
+        var checklist = await complianceService.GetChecklist(supplyRequestId);
         return Ok(checklist);
     }
 
     [HttpGet("overdue")]
-    public async Task<ActionResult<List<OverdueCompanyWorkSiteDto>>> GetOverdue()
+    public async Task<ActionResult<List<OverdueSupplyRequestDto>>> GetOverdue()
     {
         var overdue = await complianceService.GetOverdue();
         return Ok(overdue);

@@ -57,9 +57,60 @@ public class CompanyTest
             "(79) 99999-8888",
             "Maria Souza",
             ValidAddress(),
-            SupplierType.Material | SupplierType.ManpowerLabor));
+            (SupplierType)0));
 
         Assert.Equal("Tipo de fornecedor inválido.", ex.Message);
+    }
+
+    [Fact]
+    public void Should_Accept_Company_That_Supplies_Both_Types()
+    {
+        var company = ValidCompany(SupplierType.Material | SupplierType.ManpowerLabor);
+
+        Assert.True(company.Supplies(SupplierType.Material));
+        Assert.True(company.Supplies(SupplierType.ManpowerLabor));
+    }
+
+    [Fact]
+    public void Should_Widen_Supplier_Type_From_Material_To_Both()
+    {
+        var company = ValidCompany(SupplierType.Material);
+
+        company.ChangeSupplierType(SupplierType.Material | SupplierType.ManpowerLabor);
+
+        Assert.True(company.Supplies(SupplierType.Material));
+        Assert.True(company.Supplies(SupplierType.ManpowerLabor));
+    }
+
+    [Fact]
+    public void Should_Narrow_Supplier_Type_From_Both_To_One()
+    {
+        var company = ValidCompany(SupplierType.Material | SupplierType.ManpowerLabor);
+
+        company.ChangeSupplierType(SupplierType.ManpowerLabor);
+
+        Assert.False(company.Supplies(SupplierType.Material));
+        Assert.True(company.Supplies(SupplierType.ManpowerLabor));
+    }
+
+    [Fact]
+    public void Should_Throw_Exception_When_Changing_To_Invalid_Supplier_Type()
+    {
+        var company = ValidCompany(SupplierType.Material);
+
+        var ex = Assert.Throws<JotanunesException>(() => company.ChangeSupplierType((SupplierType)0));
+
+        Assert.Equal("Tipo de fornecedor inválido.", ex.Message);
+        Assert.Equal(SupplierType.Material, company.SupplierType);
+    }
+
+    [Fact]
+    public void Should_Not_Supply_Type_That_Company_Was_Not_Registered_For()
+    {
+        var company = ValidCompany(SupplierType.Material);
+
+        Assert.True(company.Supplies(SupplierType.Material));
+        Assert.False(company.Supplies(SupplierType.ManpowerLabor));
     }
 
     [Fact]

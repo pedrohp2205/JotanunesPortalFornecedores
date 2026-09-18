@@ -75,6 +75,21 @@ public class Company : BaseEntity
             address.ZipCode,
             address.Complement);
     }
+    
+    public void ChangeSupplierType(SupplierType supplierType)
+    {
+        JotanunesException.When(
+            supplierType is not (SupplierType.Material or SupplierType.ManpowerLabor or (SupplierType.Material | SupplierType.ManpowerLabor)),
+            "Tipo de fornecedor inválido.");
+
+        SupplierType = supplierType;
+    }
+
+    // Uma empresa pode fornecer material, mão de obra ou os dois.
+    public bool Supplies(SupplierType supplierType)
+    {
+        return (SupplierType & supplierType) == supplierType;
+    }
 
     public void MarkEligible()
     {
@@ -124,7 +139,7 @@ public class Company : BaseEntity
         JotanunesException.When(address is null, "Endereço é obrigatório.");
 
         JotanunesException.When(
-            supplierType is not (SupplierType.Material or SupplierType.ManpowerLabor),
+            supplierType is not (SupplierType.Material or SupplierType.ManpowerLabor or (SupplierType.Material | SupplierType.ManpowerLabor)),
             "Tipo de fornecedor inválido.");
     }
 

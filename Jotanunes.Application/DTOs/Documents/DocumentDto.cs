@@ -7,7 +7,7 @@ public class DocumentDto
     public long Id { get; set; }
     public long CompanyId { get; set; }
     public string CompanyCorporateName { get; set; } = string.Empty;
-    public long? CompanyWorkSiteId { get; set; }
+    public long? SupplyRequestId { get; set; }
     public long? WorkSiteId { get; set; }
     public string? WorkSiteName { get; set; }
     public long DocumentTypeId { get; set; }

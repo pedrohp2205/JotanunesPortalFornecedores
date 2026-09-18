@@ -8,7 +8,7 @@ public class WorkSite : BaseEntity
 
     public string Name { get; private set; } = string.Empty;
     public int RenewalPeriodDays { get; private set; }
-    public List<CompanyWorkSite> Companies { get; private set; } = [];
+    public List<SupplyRequest> SupplyRequests { get; private set; } = [];
 
     protected WorkSite() { }
 
