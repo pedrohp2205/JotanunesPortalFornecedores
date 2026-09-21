@@ -30,6 +30,12 @@ public class SupplyRequest : BaseEntity
         RequiredWorkerCount = requiredWorkerCount;
         Status = SupplyRequestStatus.Open;
     }
+    
+    public SupplyRequest(Company company, long workSiteId, SupplierType supplierType, int? requiredWorkerCount = null)
+        : this(company.Id, workSiteId, supplierType, requiredWorkerCount)
+    {
+        Company = company;
+    }
 
     public bool IsClosed => Status is SupplyRequestStatus.Completed or SupplyRequestStatus.Cancelled;
 

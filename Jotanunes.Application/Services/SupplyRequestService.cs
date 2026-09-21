@@ -6,6 +6,7 @@ using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Exceptions;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
+using Jotanunes.Domain.Validation;
 
 namespace Jotanunes.Application.Services;
 
@@ -15,17 +16,20 @@ public class SupplyRequestService : ISupplyRequestService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IDocumentComplianceService _complianceService;
     private readonly ISupplierNotificationService _notificationService;
+    private readonly IPasswordHasher _passwordHasher;
 
     public SupplyRequestService(
         IMapper mapper,
         IUnitOfWork unitOfWork,
         IDocumentComplianceService complianceService,
-        ISupplierNotificationService notificationService)
+        ISupplierNotificationService notificationService,
+        IPasswordHasher passwordHasher)
     {
         _mapper = mapper;
         _unitOfWork = unitOfWork;
         _complianceService = complianceService;
         _notificationService = notificationService;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<List<SupplyRequestDto>> Get(SupplyRequestFilter filter)
@@ -70,6 +74,46 @@ public class SupplyRequestService : ISupplyRequestService
         // Recarrega com Company e WorkSite para montar o e-mail.
         var created = await GetExisting(supplyRequest.Id);
 
+        await _notificationService.SupplyRequestCreated(created);
+
+        return _mapper.Map<SupplyRequestDto>(created);
+    }
+    
+    public async Task<SupplyRequestDto> CreateWithNewCompany(SupplyRequestWithNewCompanyCreateDto model)
+    {
+        var workSite = await _unitOfWork.WorkSiteRepository.GetById(model.WorkSiteId);
+        if (workSite is null)
+        {
+            throw new KeyNotFoundException("Obra não encontrada");
+        }
+
+        JotanunesException.When(
+            await _unitOfWork.CompanyRepository.CnpjInUse(Cnpj.Normalize(model.Company.Cnpj)),
+            "Já existe uma empresa cadastrada com este CNPJ. Abra a solicitação informando o CompanyId da empresa existente.");
+
+        JotanunesException.When(
+            await _unitOfWork.SupplierUserRepository.EmailInUse(model.User.Email),
+            "Já existe um usuário cadastrado com este e-mail.");
+
+        var company = CompanyFactory.Build(model.Company);
+
+        JotanunesException.When(
+            !company.Supplies(model.SupplierType),
+            "A empresa não está cadastrada para fornecer este tipo de serviço.");
+
+        var user = new SupplierUser(0, model.User.Name, model.User.Email, _passwordHasher.Hash(model.User.TemporaryPassword));
+        company.AddUser(user);
+
+        var supplyRequest = new SupplyRequest(company, model.WorkSiteId, model.SupplierType, model.RequiredWorkerCount);
+
+        _unitOfWork.CompanyRepository.Add(company);
+        _unitOfWork.SupplyRequestRepository.Add(supplyRequest);
+        await _unitOfWork.SaveChangesAsync();
+
+        // Recarrega com Company e WorkSite para montar o e-mail.
+        var created = await GetExisting(supplyRequest.Id);
+
+        await _notificationService.Welcome(user, model.User.TemporaryPassword);
         await _notificationService.SupplyRequestCreated(created);
 
         return _mapper.Map<SupplyRequestDto>(created);

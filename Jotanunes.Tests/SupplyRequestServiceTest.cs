@@ -1,5 +1,9 @@
 using AutoMapper;
+using Jotanunes.Application.DTOs;
+using Jotanunes.Application.DTOs.Companies;
 using Jotanunes.Application.DTOs.Compliance;
+using Jotanunes.Application.DTOs.SupplyRequests;
+using Jotanunes.Application.DTOs.Users;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Application.Services;
 using Jotanunes.Domain.Entities;
@@ -17,14 +21,23 @@ public class SupplyRequestServiceTest
     private readonly Mock<IDocumentComplianceService> _compliance = new();
     private readonly Mock<ISupplierNotificationService> _notifications = new();
     private readonly Mock<IMapper> _mapper = new();
+    private readonly Mock<ICompanyRepository> _companies = new();
+    private readonly Mock<ISupplierUserRepository> _users = new();
+    private readonly Mock<IWorkSiteRepository> _workSites = new();
+    private readonly Mock<IPasswordHasher> _passwordHasher = new();
     private readonly SupplyRequest _request = new(1, 1, SupplierType.ManpowerLabor, 3);
     private readonly SupplyRequestService _service;
 
     public SupplyRequestServiceTest()
     {
         _unitOfWork.SetupGet(u => u.SupplyRequestRepository).Returns(_repository.Object);
+        _unitOfWork.SetupGet(u => u.CompanyRepository).Returns(_companies.Object);
+        _unitOfWork.SetupGet(u => u.SupplierUserRepository).Returns(_users.Object);
+        _unitOfWork.SetupGet(u => u.WorkSiteRepository).Returns(_workSites.Object);
         _repository.Setup(r => r.GetById(It.IsAny<long>())).ReturnsAsync(_request);
-        _service = new SupplyRequestService(_mapper.Object, _unitOfWork.Object, _compliance.Object, _notifications.Object);
+        _workSites.Setup(w => w.GetById(It.IsAny<long>())).ReturnsAsync(new WorkSite("Obra Teste"));
+        _passwordHasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("hash");
+        _service = new SupplyRequestService(_mapper.Object, _unitOfWork.Object, _compliance.Object, _notifications.Object, _passwordHasher.Object);
     }
 
     private static OverdueSupplyRequestDto Pending(int onboarding = 0, int recurring = 0, int? required = null, int upToDate = 0)
@@ -96,5 +109,103 @@ public class SupplyRequestServiceTest
 
         Assert.Equal(SupplyRequestStatus.Cancelled, _request.Status);
         _compliance.Verify(c => c.GetPending(It.IsAny<long>()), Times.Never);
+    }
+
+    private static SupplyRequestWithNewCompanyCreateDto NewCompanyModel(
+        SupplierType companyType = SupplierType.Material | SupplierType.ManpowerLabor,
+        SupplierType requestType = SupplierType.Material)
+    {
+        return new SupplyRequestWithNewCompanyCreateDto
+        {
+            Company = new CompanyCreateDto
+            {
+                Cnpj = "11.222.333/0001-81",
+                CorporateName = "Construtora Alfa Ltda",
+                TradeName = "Alfa",
+                Email = "contato@alfa.com.br",
+                Phone = "81999998888",
+                ResponsibleName = "Maria Souza",
+                Address = new AddressDto
+                {
+                    Street = "Rua A", Number = "10", Neighborhood = "Centro", City = "Recife", State = "PE", ZipCode = "50000000"
+                },
+                SupplierType = companyType
+            },
+            User = new SupplierUserCreateDto { Name = "Maria Souza", Email = "maria@alfa.com.br", TemporaryPassword = "Senha@1234" },
+            WorkSiteId = 1,
+            SupplierType = requestType
+        };
+    }
+
+    [Fact]
+    public async Task Should_Create_Company_User_And_Request_In_A_Single_Save_And_Notify()
+    {
+        Company? addedCompany = null;
+        SupplyRequest? addedRequest = null;
+        _companies.Setup(c => c.Add(It.IsAny<Company>())).Callback<Company>(c => addedCompany = c);
+        _repository.Setup(r => r.Add(It.IsAny<SupplyRequest>())).Callback<SupplyRequest>(r => addedRequest = r);
+
+        await _service.CreateWithNewCompany(NewCompanyModel());
+
+        Assert.NotNull(addedCompany);
+        Assert.Equal(CompanyStatus.PendingDocumentation, addedCompany!.Status);
+        var user = Assert.Single(addedCompany.Users);
+        Assert.Equal("maria@alfa.com.br", user.Email);
+        Assert.Equal("hash", user.PasswordHash);
+        Assert.Same(addedCompany, addedRequest!.Company);
+        Assert.Equal(SupplyRequestStatus.Open, addedRequest.Status);
+        _unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Once);
+        _notifications.Verify(n => n.Welcome(user, "Senha@1234"), Times.Once);
+        _notifications.Verify(n => n.SupplyRequestCreated(It.IsAny<SupplyRequest>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Should_Block_New_Company_When_Cnpj_Already_Exists()
+    {
+        _companies.Setup(c => c.CnpjInUse(It.IsAny<string>(), null)).ReturnsAsync(true);
+
+        var ex = await Assert.ThrowsAsync<JotanunesException>(() => _service.CreateWithNewCompany(NewCompanyModel()));
+
+        Assert.Contains("Já existe uma empresa cadastrada com este CNPJ", ex.Message);
+        AssertNothingSaved();
+    }
+
+    [Fact]
+    public async Task Should_Block_New_Company_When_Work_Site_Does_Not_Exist()
+    {
+        _workSites.Setup(w => w.GetById(It.IsAny<long>())).ReturnsAsync((WorkSite?)null);
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.CreateWithNewCompany(NewCompanyModel()));
+
+        AssertNothingSaved();
+    }
+
+    [Fact]
+    public async Task Should_Block_New_Company_When_User_Email_Is_In_Use()
+    {
+        _users.Setup(u => u.EmailInUse(It.IsAny<string>(), null)).ReturnsAsync(true);
+
+        var ex = await Assert.ThrowsAsync<JotanunesException>(() => _service.CreateWithNewCompany(NewCompanyModel()));
+
+        Assert.Equal("Já existe um usuário cadastrado com este e-mail.", ex.Message);
+        AssertNothingSaved();
+    }
+
+    [Fact]
+    public async Task Should_Block_New_Company_When_Request_Type_Is_Not_Supplied_By_Company()
+    {
+        var model = NewCompanyModel(companyType: SupplierType.Material, requestType: SupplierType.ManpowerLabor);
+
+        var ex = await Assert.ThrowsAsync<JotanunesException>(() => _service.CreateWithNewCompany(model));
+
+        Assert.Equal("A empresa não está cadastrada para fornecer este tipo de serviço.", ex.Message);
+        AssertNothingSaved();
+    }
+
+    private void AssertNothingSaved()
+    {
+        _unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+        _notifications.Verify(n => n.Welcome(It.IsAny<SupplierUser>(), It.IsAny<string>()), Times.Never);
+        _notifications.Verify(n => n.SupplyRequestCreated(It.IsAny<SupplyRequest>()), Times.Never);
     }
 }

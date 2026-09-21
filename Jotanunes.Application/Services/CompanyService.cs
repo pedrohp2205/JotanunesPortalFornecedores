@@ -46,16 +46,7 @@ public class CompanyService : ICompanyService
             await _unitOfWork.CompanyRepository.CnpjInUse(cnpj),
             "Já existe uma empresa cadastrada com este CNPJ.");
 
-        var company = new Company(
-            model.Cnpj,
-            model.CorporateName,
-            model.TradeName,
-            model.Email,
-            model.Phone,
-            model.ResponsibleName,
-            BuildAddress(model.Address),
-            model.SupplierType,
-            model.StateRegistration);
+        var company = CompanyFactory.Build(model);
 
         _unitOfWork.CompanyRepository.Add(company);
         await _unitOfWork.SaveChangesAsync();
@@ -77,7 +68,7 @@ public class CompanyService : ICompanyService
             model.Email,
             model.Phone,
             model.ResponsibleName,
-            BuildAddress(model.Address),
+            CompanyFactory.BuildAddress(model.Address),
             model.StateRegistration);
 
         _unitOfWork.CompanyRepository.Update(company);
@@ -120,19 +111,5 @@ public class CompanyService : ICompanyService
         await _unitOfWork.SaveChangesAsync();
 
         return _mapper.Map<CompanyDto>(company);
-    }
-
-    private static Address BuildAddress(AddressDto model)
-    {
-        JotanunesException.When(model is null, "Endereço é obrigatório.");
-
-        return new Address(
-            model!.Street,
-            model.Number,
-            model.Neighborhood,
-            model.City,
-            model.State,
-            model.ZipCode,
-            model.Complement);
     }
 }

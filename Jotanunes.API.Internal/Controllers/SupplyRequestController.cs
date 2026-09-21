@@ -29,6 +29,13 @@ public class SupplyRequestController(ISupplyRequestService supplyRequestService)
         var created = await supplyRequestService.Create(supplyRequestDto);
         return Ok(created);
     }
+    
+    [HttpPost("with-new-company")]
+    public async Task<ActionResult<SupplyRequestDto>> CreateWithNewCompany([FromBody] SupplyRequestWithNewCompanyCreateDto supplyRequestDto)
+    {
+        var created = await supplyRequestService.CreateWithNewCompany(supplyRequestDto);
+        return Ok(created);
+    }
 
     [HttpPut("{id:long}")]
     public async Task<ActionResult<SupplyRequestDto>> Update(long id, [FromBody] SupplyRequestUpdateDto supplyRequestDto)
