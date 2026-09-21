@@ -27,6 +27,11 @@ services:
       S3__SecretKey: ${R2_SECRET_ACCESS_KEY}
       S3__ServiceUrl: ${R2_ENDPOINT}
       S3__ForcePathStyle: "true"
+      Email__Enabled: ${EMAIL_ENABLED:-false}
+      Email__ApiKey: ${RESEND_API_KEY:-}
+      Email__FromAddress: ${EMAIL_FROM_ADDRESS:-onboarding@resend.dev}
+      Email__FromName: Portal do Fornecedor Jotanunes
+      Email__PortalUrl: ${PORTAL_URL:-}
     ports:
       - "8080:80"
     restart: unless-stopped
@@ -50,6 +55,11 @@ services:
       S3__SecretKey: ${R2_SECRET_ACCESS_KEY}
       S3__ServiceUrl: ${R2_ENDPOINT}
       S3__ForcePathStyle: "true"
+      Email__Enabled: ${EMAIL_ENABLED:-false}
+      Email__ApiKey: ${RESEND_API_KEY:-}
+      Email__FromAddress: ${EMAIL_FROM_ADDRESS:-onboarding@resend.dev}
+      Email__FromName: Portal do Fornecedor Jotanunes
+      Email__PortalUrl: ${PORTAL_URL:-}
     ports:
       - "80:80"
     restart: unless-stopped

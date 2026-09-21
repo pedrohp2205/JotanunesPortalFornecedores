@@ -5,6 +5,7 @@
   <Project Path="Jotanunes.Application/Jotanunes.Application.csproj" />
   <Project Path="Jotanunes.Domain/Jotanunes.Domain.csproj" />
   <Project Path="Jotanunes.Infra.Data/Jotanunes.Infra.Data.csproj" />
+  <Project Path="Jotanunes.Infra.Email/Jotanunes.Infra.Email.csproj" />
   <Project Path="Jotanunes.Infra.IoC/Jotanunes.Infra.IoC.csproj" />
   <Project Path="Jotanunes.Infra.Security/Jotanunes.Infra.Security.csproj" />
   <Project Path="Jotanunes.Infra.Storage/Jotanunes.Infra.Storage.csproj" />

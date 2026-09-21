@@ -3,9 +3,12 @@ using Amazon.S3;
 using Jotanunes.Application.DTOs.Mapping;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Application.Services;
+using Jotanunes.Application.Settings;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Infra.Data.Context;
 using Jotanunes.Infra.Data.Repositories;
+using Jotanunes.Infra.Email.Services;
+using Jotanunes.Infra.Email.Settings;
 using Jotanunes.Infra.Security.Services;
 using Jotanunes.Infra.Storage.Services;
 using Jotanunes.Infra.Storage.Settings;
@@ -42,6 +45,40 @@ public static class DependencyInjection
         service.AddScoped<IDocumentComplianceService, DocumentComplianceService>();
 
         service.AddDocumentStorage(configuration);
+        service.AddEmail(configuration);
+
+        return service;
+    }
+
+    private static IServiceCollection AddEmail(this IServiceCollection service, IConfiguration configuration)
+    {
+        var section = configuration.GetSection(EmailSettings.SectionName);
+        var settings = section.Get<EmailSettings>() ?? new EmailSettings();
+
+        service.Configure<EmailSettings>(section);
+        service.Configure<NotificationSettings>(section);
+
+        if (settings.Enabled)
+        {
+            if (string.IsNullOrWhiteSpace(settings.ApiKey))
+            {
+                throw new InvalidOperationException("Email:ApiKey é obrigatório quando Email:Enabled=true.");
+            }
+
+            if (string.IsNullOrWhiteSpace(settings.FromAddress))
+            {
+                throw new InvalidOperationException("Email:FromAddress é obrigatório quando Email:Enabled=true.");
+            }
+
+            // O envio é síncrono na request; timeout curto para não travar a API se o provedor estiver lento.
+            service.AddHttpClient<IEmailSender, ResendEmailSender>(client => client.Timeout = TimeSpan.FromSeconds(15));
+        }
+        else
+        {
+            service.AddScoped<IEmailSender, LogEmailSender>();
+        }
+
+        service.AddScoped<ISupplierNotificationService, SupplierNotificationService>();
 
         return service;
     }

@@ -30,9 +30,9 @@ public class JwtTokenService : ITokenService
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(JwtRegisteredClaimNames.Name, user.Name),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JotanunesClaims.CompanyId, user.CompanyId.ToString()),
-            new(JotanunesClaims.MustChangePassword, user.MustChangePassword.ToString().ToLowerInvariant()),
-            new(ClaimTypes.Role, JotanunesClaims.SupplierRole)
+            new(SupplierUserClaims.CompanyId, user.CompanyId.ToString()),
+            new(SupplierUserClaims.MustChangePassword, user.MustChangePassword.ToString().ToLowerInvariant()),
+            new(ClaimTypes.Role, SupplierUserClaims.SupplierRole)
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.SecretKey));

@@ -15,6 +15,7 @@ public class SupplyRequestServiceTest
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<ISupplyRequestRepository> _repository = new();
     private readonly Mock<IDocumentComplianceService> _compliance = new();
+    private readonly Mock<ISupplierNotificationService> _notifications = new();
     private readonly Mock<IMapper> _mapper = new();
     private readonly SupplyRequest _request = new(1, 1, SupplierType.ManpowerLabor, 3);
     private readonly SupplyRequestService _service;
@@ -23,7 +24,7 @@ public class SupplyRequestServiceTest
     {
         _unitOfWork.SetupGet(u => u.SupplyRequestRepository).Returns(_repository.Object);
         _repository.Setup(r => r.GetById(It.IsAny<long>())).ReturnsAsync(_request);
-        _service = new SupplyRequestService(_mapper.Object, _unitOfWork.Object, _compliance.Object);
+        _service = new SupplyRequestService(_mapper.Object, _unitOfWork.Object, _compliance.Object, _notifications.Object);
     }
 
     private static OverdueSupplyRequestDto Pending(int onboarding = 0, int recurring = 0, int? required = null, int upToDate = 0)

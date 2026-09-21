@@ -13,12 +13,18 @@ public class SupplierUserService : ISupplierUserService
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ISupplierNotificationService _notificationService;
 
-    public SupplierUserService(IMapper mapper, IUnitOfWork unitOfWork, IPasswordHasher passwordHasher)
+    public SupplierUserService(
+        IMapper mapper,
+        IUnitOfWork unitOfWork,
+        IPasswordHasher passwordHasher,
+        ISupplierNotificationService notificationService)
     {
         _mapper = mapper;
         _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
+        _notificationService = notificationService;
     }
 
     public async Task<List<SupplierUserDto>> GetByCompany(long companyId)
@@ -55,6 +61,8 @@ public class SupplierUserService : ISupplierUserService
 
         _unitOfWork.CompanyRepository.Update(company);
         await _unitOfWork.SaveChangesAsync();
+
+        await _notificationService.Welcome(user, model.TemporaryPassword);
 
         return _mapper.Map<SupplierUserDto>(user);
     }

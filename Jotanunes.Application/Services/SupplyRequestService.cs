@@ -14,12 +14,18 @@ public class SupplyRequestService : ISupplyRequestService
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IDocumentComplianceService _complianceService;
+    private readonly ISupplierNotificationService _notificationService;
 
-    public SupplyRequestService(IMapper mapper, IUnitOfWork unitOfWork, IDocumentComplianceService complianceService)
+    public SupplyRequestService(
+        IMapper mapper,
+        IUnitOfWork unitOfWork,
+        IDocumentComplianceService complianceService,
+        ISupplierNotificationService notificationService)
     {
         _mapper = mapper;
         _unitOfWork = unitOfWork;
         _complianceService = complianceService;
+        _notificationService = notificationService;
     }
 
     public async Task<List<SupplyRequestDto>> Get(SupplyRequestFilter filter)
@@ -61,7 +67,12 @@ public class SupplyRequestService : ISupplyRequestService
         _unitOfWork.SupplyRequestRepository.Add(supplyRequest);
         await _unitOfWork.SaveChangesAsync();
 
-        return await GetById(supplyRequest.Id);
+        // Recarrega com Company e WorkSite para montar o e-mail.
+        var created = await GetExisting(supplyRequest.Id);
+
+        await _notificationService.SupplyRequestCreated(created);
+
+        return _mapper.Map<SupplyRequestDto>(created);
     }
 
     public async Task<SupplyRequestDto> Update(long id, SupplyRequestUpdateDto model)
@@ -92,6 +103,8 @@ public class SupplyRequestService : ISupplyRequestService
 
         await _unitOfWork.SaveChangesAsync();
 
+        await _notificationService.SupplyRequestCompleted(supplyRequest);
+
         return _mapper.Map<SupplyRequestDto>(supplyRequest);
     }
 
@@ -102,6 +115,8 @@ public class SupplyRequestService : ISupplyRequestService
         supplyRequest.Cancel();
 
         await _unitOfWork.SaveChangesAsync();
+
+        await _notificationService.SupplyRequestCancelled(supplyRequest);
 
         return _mapper.Map<SupplyRequestDto>(supplyRequest);
     }

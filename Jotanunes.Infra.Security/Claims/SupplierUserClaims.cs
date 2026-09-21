@@ -1,6 +1,6 @@
 namespace Jotanunes.Infra.Security.Claims;
 
-public static class JotanunesClaims
+public static class SupplierUserClaims
 {
     public const string CompanyId = "company_id";
     public const string MustChangePassword = "must_change_password";

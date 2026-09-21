@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Jotanunes.Domain\Jotanunes.Domain.csproj" />
     <ProjectReference Include="..\Jotanunes.Application\Jotanunes.Application.csproj" />
+    <ProjectReference Include="..\Jotanunes.Infra.Email\Jotanunes.Infra.Email.csproj" />
   </ItemGroup>
 
 </Project>

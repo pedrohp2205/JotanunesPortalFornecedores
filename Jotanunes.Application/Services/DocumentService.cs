@@ -16,17 +16,20 @@ public class DocumentService : IDocumentService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IDocumentStorageService _storageService;
     private readonly IDocumentComplianceService _complianceService;
+    private readonly ISupplierNotificationService _notificationService;
 
     public DocumentService(
         IMapper mapper,
         IUnitOfWork unitOfWork,
         IDocumentStorageService storageService,
-        IDocumentComplianceService complianceService)
+        IDocumentComplianceService complianceService,
+        ISupplierNotificationService notificationService)
     {
         _mapper = mapper;
         _unitOfWork = unitOfWork;
         _storageService = storageService;
         _complianceService = complianceService;
+        _notificationService = notificationService;
     }
 
     public async Task<PageList<DocumentDto>> Get(PageParams pageParams, DocumentFilter filter)
@@ -144,6 +147,8 @@ public class DocumentService : IDocumentService
         _unitOfWork.DocumentRepository.Update(document);
         await _unitOfWork.SaveChangesAsync();
 
+        await _notificationService.DocumentApproved(document);
+
         if (document.DocumentType.Category == DocumentCategory.Onboarding)
         {
             await TryMarkCompanyEligible(document.CompanyId);
@@ -161,6 +166,8 @@ public class DocumentService : IDocumentService
         _unitOfWork.DocumentRepository.Update(document);
         await _unitOfWork.SaveChangesAsync();
 
+        await _notificationService.DocumentRejected(document);
+
         return _mapper.Map<DocumentDto>(document);
     }
 
@@ -177,10 +184,18 @@ public class DocumentService : IDocumentService
             return;
         }
 
+        var wasEligible = company.Status == CompanyStatus.Eligible;
+
         company.MarkEligible();
 
         _unitOfWork.CompanyRepository.Update(company);
         await _unitOfWork.SaveChangesAsync();
+
+        // MarkEligible é no-op fora de PendingDocumentation: só avisa quando o status de fato mudou.
+        if (!wasEligible && company.Status == CompanyStatus.Eligible)
+        {
+            await _notificationService.CompanyEligible(company);
+        }
     }
 
     private static string SanitizeFileName(string fileName)
