@@ -9,4 +9,6 @@ public interface IAuthService
     Task Logout(long userId);
     Task<AuthenticatedUserDto> GetAuthenticatedUser(long userId);
     Task ChangePassword(long userId, ChangePasswordDto model);
+    Task ForgotPassword(ForgotPasswordDto model);
+    Task ResetPassword(ResetPasswordDto model);
 }

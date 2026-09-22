@@ -54,4 +54,9 @@ public class JwtTokenService : ITokenService
         var bytes = RandomNumberGenerator.GetBytes(64);
         return (Convert.ToBase64String(bytes), DateTime.UtcNow.AddDays(_settings.RefreshTokenDays));
     }
+
+    public string GeneratePasswordResetToken()
+    {
+        return Base64UrlEncoder.Encode(RandomNumberGenerator.GetBytes(32));
+    }
 }

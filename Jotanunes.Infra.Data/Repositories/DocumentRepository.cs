@@ -44,6 +44,15 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
         return await query.OrderByDescending(d => d.CreatedAt).ToListAsync();
     }
 
+    public async Task<List<Document>> GetBySupplyRequests(IReadOnlyCollection<long> supplyRequestIds)
+    {
+        return await _context.Documents
+                                .AsNoTracking()
+                                .Where(d => d.SupplyRequestId != null && supplyRequestIds.Contains(d.SupplyRequestId.Value))
+                                .OrderByDescending(d => d.CreatedAt)
+                                .ToListAsync();
+    }
+
     public async Task<Document?> GetById(long id)
     {
         return await _context.Documents
@@ -69,6 +78,11 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
         if (filter.SupplyRequestId.HasValue)
         {
             query = query.Where(d => d.SupplyRequestId == filter.SupplyRequestId.Value);
+        }
+
+        if (filter.WithoutSupplyRequest == true)
+        {
+            query = query.Where(d => d.SupplyRequestId == null);
         }
 
         if (filter.DocumentTypeId.HasValue)

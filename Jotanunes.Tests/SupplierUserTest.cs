@@ -113,4 +113,82 @@ public class SupplierUserTest
         Assert.False(user.Active);
         Assert.Null(user.RefreshToken);
     }
+
+    [Fact]
+    public void Should_Require_Password_Change_And_Clear_Lock_When_Password_Is_Reset_By_Admin()
+    {
+        var user = ValidUser();
+        user.SetPassword("hash-atual");
+        user.AssignRefreshToken("token-abc", DateTime.UtcNow.AddDays(1));
+        for (var i = 0; i < SupplierUser.MaxLoginAttempts; i++)
+        {
+            user.RegisterFailedLogin();
+        }
+
+        user.ResetPassword("hash-provisorio");
+
+        Assert.Equal("hash-provisorio", user.PasswordHash);
+        Assert.True(user.MustChangePassword);
+        Assert.False(user.IsLocked());
+        Assert.Null(user.RefreshToken);
+    }
+
+    [Fact]
+    public void Should_Accept_Password_Reset_Token_Only_While_Valid_And_Matching()
+    {
+        var user = ValidUser();
+        user.AssignPasswordResetToken("hash-do-token");
+
+        Assert.True(user.IsPasswordResetTokenValid("hash-do-token"));
+        Assert.False(user.IsPasswordResetTokenValid("outro-hash"));
+
+        user.ClearPasswordResetToken();
+        Assert.False(user.IsPasswordResetTokenValid("hash-do-token"));
+    }
+
+    [Fact]
+    public void Should_Invalidate_Password_Reset_Token_When_Password_Changes()
+    {
+        var user = ValidUser();
+        user.AssignPasswordResetToken("hash-do-token");
+
+        user.SetPassword("novo-hash");
+
+        Assert.Null(user.PasswordResetTokenHash);
+        Assert.False(user.IsPasswordResetTokenValid("hash-do-token"));
+    }
+
+    [Fact]
+    public void Should_Invalidate_Password_Reset_Token_When_Deactivated()
+    {
+        var user = ValidUser();
+        user.AssignPasswordResetToken("hash-do-token");
+
+        user.Deactivate();
+
+        Assert.Null(user.PasswordResetTokenHash);
+    }
+
+    [Fact]
+    public void Should_Throttle_Password_Reset_Requests_During_Cooldown()
+    {
+        var user = ValidUser();
+        Assert.True(user.CanRequestPasswordReset());
+
+        user.AssignPasswordResetToken("hash-do-token");
+
+        Assert.False(user.CanRequestPasswordReset());
+    }
+
+    [Fact]
+    public void Should_Allow_New_Password_Reset_Request_After_Cooldown()
+    {
+        var user = ValidUser();
+        user.AssignPasswordResetToken("hash-do-token");
+
+        typeof(SupplierUser).GetProperty(nameof(SupplierUser.PasswordResetExpiresAt))!
+            .SetValue(user, DateTime.UtcNow.AddMinutes(SupplierUser.PasswordResetTokenMinutes - SupplierUser.PasswordResetCooldownMinutes - 1));
+
+        Assert.True(user.CanRequestPasswordReset());
+    }
 }

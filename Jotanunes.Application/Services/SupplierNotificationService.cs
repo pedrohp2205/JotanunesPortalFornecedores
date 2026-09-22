@@ -124,6 +124,45 @@ public class SupplierNotificationService : ISupplierNotificationService
             });
     }
 
+    public Task TemporaryPasswordIssued(SupplierUser user, string temporaryPassword)
+    {
+        return Send(
+            user.Email,
+            "Sua senha foi redefinida",
+            "Senha redefinida",
+            new[]
+            {
+                $"Olá, {user.Name}. A Jotanunes redefiniu a sua senha de acesso ao portal.",
+                $"Login: {user.Email}",
+                $"Senha temporária: {temporaryPassword}",
+                "Você deverá trocar a senha no próximo acesso."
+            });
+    }
+
+    public Task PasswordResetRequested(SupplierUser user, string token)
+    {
+        var link = BuildResetLink(user.Email, token);
+
+        var lines = new List<string>
+        {
+            $"Olá, {user.Name}. Recebemos um pedido para redefinir a sua senha do Portal do Fornecedor.",
+            $"O link vale por {SupplierUser.PasswordResetTokenMinutes} minutos e só pode ser usado uma vez.",
+            "Se você não fez esse pedido, ignore este e-mail: a sua senha continua a mesma."
+        };
+
+        if (link is null)
+        {
+            lines.Insert(1, $"Código de redefinição: {token}");
+        }
+
+        return Send(
+            user.Email,
+            "Redefinição de senha",
+            "Redefinição de senha",
+            lines,
+            link is null ? null : ("Redefinir minha senha", link));
+    }
+
     private async Task NotifyCompany(Company company, string subject, string title, IReadOnlyList<string> lines)
     {
         try
@@ -142,11 +181,16 @@ public class SupplierNotificationService : ISupplierNotificationService
         }
     }
 
-    private async Task Send(string recipient, string subject, string title, IReadOnlyList<string> lines)
+    private async Task Send(
+        string recipient,
+        string subject,
+        string title,
+        IReadOnlyList<string> lines,
+        (string Text, string Url)? action = null)
     {
         try
         {
-            await _emailSender.SendAsync(Build(new[] { recipient }, subject, title, lines));
+            await _emailSender.SendAsync(Build(new[] { recipient }, subject, title, lines, action));
         }
         catch (Exception ex)
         {
@@ -168,7 +212,23 @@ public class SupplierNotificationService : ISupplierNotificationService
             .ToList();
     }
 
-    private EmailMessage Build(IReadOnlyList<string> recipients, string subject, string title, IReadOnlyList<string> lines)
+    private string? BuildResetLink(string email, string token)
+    {
+        if (string.IsNullOrWhiteSpace(_settings.PortalUrl))
+        {
+            return null;
+        }
+
+        var path = _settings.ResetPasswordPath.StartsWith('/') ? _settings.ResetPasswordPath : "/" + _settings.ResetPasswordPath;
+        return $"{_settings.PortalUrl.TrimEnd('/')}{path}?email={Uri.EscapeDataString(email)}&token={Uri.EscapeDataString(token)}";
+    }
+
+    private EmailMessage Build(
+        IReadOnlyList<string> recipients,
+        string subject,
+        string title,
+        IReadOnlyList<string> lines,
+        (string Text, string Url)? action = null)
     {
         var html = new StringBuilder();
         html.Append("<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#222\">");
@@ -186,12 +246,14 @@ public class SupplierNotificationService : ISupplierNotificationService
             text.AppendLine(line);
         }
 
-        if (!string.IsNullOrWhiteSpace(_settings.PortalUrl))
+        var linkText = action?.Text ?? "Acessar o portal";
+        var linkUrl = action?.Url ?? _settings.PortalUrl;
+
+        if (!string.IsNullOrWhiteSpace(linkUrl))
         {
-            var url = Encoder.Encode(_settings.PortalUrl);
-            html.Append($"<p><a href=\"{url}\">Acessar o portal</a></p>");
+            html.Append($"<p><a href=\"{Encoder.Encode(linkUrl)}\">{Encoder.Encode(linkText)}</a></p>");
             text.AppendLine();
-            text.AppendLine($"Acessar o portal: {_settings.PortalUrl}");
+            text.AppendLine($"{linkText}: {linkUrl}");
         }
 
         html.Append("</div>");

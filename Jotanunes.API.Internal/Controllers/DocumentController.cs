@@ -52,11 +52,4 @@ public class DocumentController(IDocumentService documentService, IDocumentCompl
         var checklist = await complianceService.GetChecklist(supplyRequestId);
         return Ok(checklist);
     }
-
-    [HttpGet("overdue")]
-    public async Task<ActionResult<List<OverdueSupplyRequestDto>>> GetOverdue()
-    {
-        var overdue = await complianceService.GetOverdue();
-        return Ok(overdue);
-    }
 }

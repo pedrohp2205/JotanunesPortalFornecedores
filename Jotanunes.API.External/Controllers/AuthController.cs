@@ -33,6 +33,22 @@ public class AuthController : ControllerBase
         return Ok(token);
     }
 
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)
+    {
+        await _authService.ForgotPassword(forgotPasswordDto);
+        return NoContent();
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
+    {
+        await _authService.ResetPassword(resetPasswordDto);
+        return NoContent();
+    }
+
     [HttpPost("logout")]
     [Authorize]
     public async Task<ActionResult> Logout()

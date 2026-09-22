@@ -7,4 +7,6 @@ public interface ITokenService
 {
     (string Token, DateTime ExpiresAt) GenerateAccessToken(SupplierUser user);
     (string Token, DateTime ExpiresAt) GenerateRefreshToken();
+
+    string GeneratePasswordResetToken();
 }

@@ -66,4 +66,53 @@ public class SupplierUserService : ISupplierUserService
 
         return _mapper.Map<SupplierUserDto>(user);
     }
+
+    public async Task<SupplierUserDto> Activate(long companyId, long userId)
+    {
+        var user = await GetUser(companyId, userId);
+
+        user.Activate();
+
+        _unitOfWork.SupplierUserRepository.Update(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        return _mapper.Map<SupplierUserDto>(user);
+    }
+
+    public async Task<SupplierUserDto> Deactivate(long companyId, long userId)
+    {
+        var user = await GetUser(companyId, userId);
+
+        user.Deactivate();
+
+        _unitOfWork.SupplierUserRepository.Update(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        return _mapper.Map<SupplierUserDto>(user);
+    }
+
+    public async Task<SupplierUserDto> ResetPassword(long companyId, long userId, SupplierUserResetPasswordDto model)
+    {
+        var user = await GetUser(companyId, userId);
+
+        user.ResetPassword(_passwordHasher.Hash(model.TemporaryPassword));
+
+        _unitOfWork.SupplierUserRepository.Update(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        await _notificationService.TemporaryPasswordIssued(user, model.TemporaryPassword);
+
+        return _mapper.Map<SupplierUserDto>(user);
+    }
+
+    private async Task<SupplierUser> GetUser(long companyId, long userId)
+    {
+        SupplierUser? user = await _unitOfWork.SupplierUserRepository.GetById(userId);
+        if (user is null || user.CompanyId != companyId)
+        {
+            throw new KeyNotFoundException("Usuário não encontrado");
+        }
+
+        return user;
+    }
 }

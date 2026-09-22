@@ -1,4 +1,6 @@
 using AutoMapper;
+using System.Security.Cryptography;
+using System.Text;
 using Jotanunes.Application.DTOs.Auth;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Entities;
@@ -12,22 +14,26 @@ public class AuthService : IAuthService
     // Mensagem única para e-mail inexistente e senha errada, para não permitir
     // descobrir quais e-mails estão cadastrados no portal.
     private const string InvalidCredentials = "E-mail ou senha inválidos.";
+    private const string InvalidResetToken = "Link de redefinição inválido ou expirado. Solicite um novo.";
 
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
+    private readonly ISupplierNotificationService _notificationService;
 
     public AuthService(
         IMapper mapper,
         IUnitOfWork unitOfWork,
         IPasswordHasher passwordHasher,
-        ITokenService tokenService)
+        ITokenService tokenService,
+        ISupplierNotificationService notificationService)
     {
         _mapper = mapper;
         _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
+        _notificationService = notificationService;
     }
 
     public async Task<TokenDto> Login(LoginDto model)
@@ -122,6 +128,42 @@ public class AuthService : IAuthService
 
         _unitOfWork.SupplierUserRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task ForgotPassword(ForgotPasswordDto model)
+    {
+        SupplierUser? user = await _unitOfWork.SupplierUserRepository.GetByEmail(model.Email);
+        if (user is null || !user.Active || !user.CanRequestPasswordReset())
+        {
+            return;
+        }
+
+        var token = _tokenService.GeneratePasswordResetToken();
+
+        user.AssignPasswordResetToken(HashToken(token));
+        _unitOfWork.SupplierUserRepository.Update(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        await _notificationService.PasswordResetRequested(user, token);
+    }
+
+    public async Task ResetPassword(ResetPasswordDto model)
+    {
+        SupplierUser? user = await _unitOfWork.SupplierUserRepository.GetByEmail(model.Email);
+        if (user is null || !user.Active || !user.IsPasswordResetTokenValid(HashToken(model.Token)))
+        {
+            throw new JotanunesException(InvalidResetToken);
+        }
+
+        user.SetPassword(_passwordHasher.Hash(model.NewPassword));
+
+        _unitOfWork.SupplierUserRepository.Update(user);
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    private static string HashToken(string token)
+    {
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
     }
 
     private async Task<TokenDto> IssueTokens(SupplierUser user)

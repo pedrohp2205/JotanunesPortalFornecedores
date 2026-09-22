@@ -33,6 +33,9 @@ public class SupplierUserConfiguration : IEntityTypeConfiguration<SupplierUser>
         builder.Property(u => u.RefreshToken)
             .HasMaxLength(255);
 
+        builder.Property(u => u.PasswordResetTokenHash)
+            .HasMaxLength(64);
+
         builder.Property(u => u.FailedLoginAttempts)
             .IsRequired();
 

@@ -35,13 +35,19 @@ public class SupplyRequestService : ISupplyRequestService
     public async Task<List<SupplyRequestDto>> Get(SupplyRequestFilter filter)
     {
         var supplyRequests = await _unitOfWork.SupplyRequestRepository.Get(filter);
-        return _mapper.Map<List<SupplyRequestDto>>(supplyRequests);
+        var pendingById = await _complianceService.GetPendingBatch(supplyRequests);
+
+        var dtos = supplyRequests.Select(sr => ToDto(sr, pendingById)).ToList();
+
+        return filter.HasPending.HasValue
+            ? dtos.Where(d => (d.Pending is not null) == filter.HasPending.Value).ToList()
+            : dtos;
     }
 
     public async Task<SupplyRequestDto> GetById(long id, long? companyId = null)
     {
         var supplyRequest = await GetExisting(id, companyId);
-        return _mapper.Map<SupplyRequestDto>(supplyRequest);
+        return await ToDto(supplyRequest);
     }
 
     public async Task<SupplyRequestDto> Create(SupplyRequestCreateDto model)
@@ -76,7 +82,7 @@ public class SupplyRequestService : ISupplyRequestService
 
         await _notificationService.SupplyRequestCreated(created);
 
-        return _mapper.Map<SupplyRequestDto>(created);
+        return await ToDto(created);
     }
     
     public async Task<SupplyRequestDto> CreateWithNewCompany(SupplyRequestWithNewCompanyCreateDto model)
@@ -116,7 +122,7 @@ public class SupplyRequestService : ISupplyRequestService
         await _notificationService.Welcome(user, model.User.TemporaryPassword);
         await _notificationService.SupplyRequestCreated(created);
 
-        return _mapper.Map<SupplyRequestDto>(created);
+        return await ToDto(created);
     }
 
     public async Task<SupplyRequestDto> Update(long id, SupplyRequestUpdateDto model)
@@ -127,7 +133,7 @@ public class SupplyRequestService : ISupplyRequestService
 
         await _unitOfWork.SaveChangesAsync();
 
-        return _mapper.Map<SupplyRequestDto>(supplyRequest);
+        return await ToDto(supplyRequest);
     }
 
     public async Task<SupplyRequestDto> Complete(long id)
@@ -165,7 +171,20 @@ public class SupplyRequestService : ISupplyRequestService
         return _mapper.Map<SupplyRequestDto>(supplyRequest);
     }
 
-    private static string BuildPendingMessage(OverdueSupplyRequestDto pending)
+    private SupplyRequestDto ToDto(SupplyRequest supplyRequest, IReadOnlyDictionary<long, SupplyRequestPendingDto> pendingById)
+    {
+        var dto = _mapper.Map<SupplyRequestDto>(supplyRequest);
+        dto.Pending = pendingById.GetValueOrDefault(supplyRequest.Id);
+        return dto;
+    }
+
+    private async Task<SupplyRequestDto> ToDto(SupplyRequest supplyRequest)
+    {
+        var pendingById = await _complianceService.GetPendingBatch(new[] { supplyRequest });
+        return ToDto(supplyRequest, pendingById);
+    }
+
+    private static string BuildPendingMessage(SupplyRequestPendingDto pending)
     {
         var parts = new List<string>();
 

@@ -59,18 +59,6 @@ public class SupplyRequestRepository : GenericRepository<SupplyRequest>, ISupply
                                 .FirstOrDefaultAsync(sr => sr.Id == id);
     }
 
-    public async Task<List<SupplyRequest>> GetActive()
-    {
-        return await _context.SupplyRequests
-                                .AsNoTracking()
-                                .Include(sr => sr.Company)
-                                .Include(sr => sr.WorkSite)
-                                .Where(sr => sr.Status == SupplyRequestStatus.Open || sr.Status == SupplyRequestStatus.InProgress)
-                                .OrderBy(sr => sr.Company.CorporateName)
-                                .ThenBy(sr => sr.WorkSite.Name)
-                                .ToListAsync();
-    }
-
     // Indica se há solicitação ativa da empresa em algum dos tipos informados (aceita flags).
     public async Task<bool> HasActive(long companyId, SupplierType supplierTypes)
     {

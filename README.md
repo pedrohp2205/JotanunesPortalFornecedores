@@ -55,6 +55,9 @@ O fluxo de dependência aponta sempre para dentro: as APIs conhecem a IoC, a IoC
 | DELETE | `/api/company/{id}` | Exclusão lógica |
 | GET | `/api/company/{id}/users` | Lista os acessos da empresa |
 | POST | `/api/company/{id}/users` | Cria o acesso ao portal (pré-requisito do login) |
+| POST | `/api/company/{id}/users/{userId}/deactivate` | Desativa o acesso e revoga a sessão ativa |
+| POST | `/api/company/{id}/users/{userId}/activate` | Reativa o acesso |
+| POST | `/api/company/{id}/users/{userId}/reset-password` | Define uma senha provisória (`temporaryPassword`), destrava o usuário, revoga a sessão, exige troca no próximo login e avisa o usuário por e-mail |
 
 ### Frente externa - autenticação do fornecedor
 
@@ -65,6 +68,8 @@ O fluxo de dependência aponta sempre para dentro: as APIs conhecem a IoC, a IoC
 | POST | `/api/auth/logout` | Sim | Revoga o refresh token |
 | GET | `/api/auth/me` | Sim | Dados do usuário autenticado |
 | POST | `/api/auth/change-password` | Sim | Troca de senha |
+| POST | `/api/auth/forgot-password` | Não | Envia por e-mail um link de redefinição. Responde sempre 204, exista o e-mail ou não |
+| POST | `/api/auth/reset-password` | Não | Define a nova senha com `email` + `token` recebido por e-mail |
 
 Regras aplicadas na autenticação:
 
@@ -73,6 +78,7 @@ Regras aplicadas na autenticação:
 - bloqueio temporário de 15 minutos após 5 tentativas inválidas;
 - token carrega a claim `company_id`, base para o isolamento por empresa exigido pelo RNF01;
 - troca de senha revoga o refresh token ativo.
+- "esqueci minha senha": o token é aleatório, vale 60 minutos, é de uso único e só o hash (SHA-256) fica no banco. Novo pedido só é aceito após 2 minutos, para não inundar a caixa de e-mail. O link aponta para `Email:PortalUrl` + `Email:ResetPasswordPath` (padrão `/redefinir-senha`) com `?email=...&token=...`; sem `PortalUrl`, o token segue em texto no e-mail.
 
 ---
 
@@ -80,11 +86,11 @@ Regras aplicadas na autenticação:
 
 A **solicitação** (`SupplyRequest`) é o pedido da Jotanunes a uma empresa para uma obra. Ela define o tipo de fornecimento (`Material` = 1 ou `ManpowerLabor` = 2) e é a âncora dos documentos recorrentes. Uma empresa pode fornecer os dois tipos (`supplierType: 3` no cadastro da empresa); nesse caso a Jotanunes abre **uma solicitação por tipo**, cada uma com seu checklist. A habilitação da empresa usa a união dos tipos dela.
 
-Status: `Open` (1) → `InProgress` (2, no primeiro documento enviado) → `Completed` (3) ou `Cancelled` (4). Solicitação encerrada não recebe documentos e sai da lista de atrasados. `Complete` só é aceito quando a solicitação não teria pendências no período corrente (mesmo critério de `GET /api/document/overdue`); com pendências, a resposta é 400 explicando o que falta, e o caminho é `Cancel`. Só pode existir uma solicitação ativa por empresa, obra e tipo.
+Status: `Open` (1) → `InProgress` (2, no primeiro documento enviado) → `Completed` (3) ou `Cancelled` (4). Solicitação encerrada não recebe documentos e nunca tem pendência. `Complete` só é aceito quando a solicitação não tem pendências no período corrente (o mesmo critério do campo `pending`, abaixo); com pendências, a resposta é 400 explicando o que falta, e o caminho é `Cancel`. Só pode existir uma solicitação ativa por empresa, obra e tipo.
 
 | Frente | Método | Rota | Descrição |
 | --- | --- | --- | --- |
-| Interna | GET | `/api/supplyrequest` | Lista, com filtros `companyId`, `workSiteId`, `supplierType` e `status` |
+| Interna | GET | `/api/supplyrequest` | Lista, com filtros `companyId`, `workSiteId`, `supplierType`, `status` e `hasPending` |
 | Interna | GET | `/api/supplyrequest/{id}` | Consulta uma solicitação |
 | Interna | POST | `/api/supplyrequest` | Abre a solicitação (`companyId`, `workSiteId`, `supplierType`, `requiredWorkerCount`) |
 | Interna | PUT | `/api/supplyrequest/{id}` | Ajusta a quantidade de trabalhadores (só mão de obra) |
@@ -92,6 +98,12 @@ Status: `Open` (1) → `InProgress` (2, no primeiro documento enviado) → `Comp
 | Interna | POST | `/api/supplyrequest/{id}/cancel` | Cancela |
 | Externa | GET | `/api/supplyrequest` | Solicitações da empresa do token |
 | Externa | GET | `/api/supplyrequest/{id}` | Consulta uma solicitação da empresa |
+
+**Pendências (`pending`).** Toda solicitação devolvida pelas duas frentes traz o campo `pending`, calculado para o período corrente da obra: `periodStart`/`periodEnd`, `missingOnboardingCount`, `missingRecurringCompanyCount`, `requiredWorkerCount` e `workersUpToDate`. Vem `null` quando a solicitação está em dia ou encerrada. Só documento **aprovado** conta como entregue. O filtro `hasPending=true|false` em `GET /api/supplyrequest` lista só as solicitações com (ou sem) pendência, e substitui o antigo `GET /api/document/overdue`. O detalhe do que falta continua em `GET /api/document/checklist/{supplyRequestId}`. O cálculo é feito em lote (3 consultas para a lista inteira, independentemente do tamanho).
+
+**Checklist por item.** Cada item de `GET /api/document/checklist/{supplyRequestId}` traz `status` (`NotSent` 0, `Pending` 1, `Rejected` 2, `Approved` 3), `statusDescription`, `documentId` do envio que define o estado (o aprovado; senão o último em análise; senão o último recusado) e `rejectionReason` quando recusado. Aprovado prevalece sobre em análise, que prevalece sobre recusado: um reenvio já tira o item de "recusado". `isSatisfied` continua significando "há documento aprovado". Tipos condicionais (`isConditional`) entram como itens **opcionais** (`isRequired: false`, com `conditionDescription`): podem ser enviados e acompanhados, mas não contam como pendência nem na habilitação.
+
+**Catálogo para o fornecedor.** `GET /api/documenttype` (frente externa) lista os tipos ativos aplicáveis à empresa do token, com `category`, `subject` (`Company` ou `Worker`), `requiresExpirationDate`, `isConditional` e `conditionDescription`. O parâmetro opcional `supplierType` (1 material, 2 mão de obra) restringe a um dos tipos que a empresa fornece. É com ele que o front monta o formulário de "informar trabalhador" (tipos com `subject = Worker`) mesmo antes de existir qualquer trabalhador no checklist.
 
 O upload de documento (`POST /api/document`) recebe `supplyRequestId` nos documentos recorrentes; o checklist fica em `GET /api/document/checklist/{supplyRequestId}` nas duas frentes.
 

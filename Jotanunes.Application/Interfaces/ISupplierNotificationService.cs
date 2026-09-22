@@ -12,4 +12,6 @@ public interface ISupplierNotificationService
     Task SupplyRequestCompleted(SupplyRequest supplyRequest);
     Task SupplyRequestCancelled(SupplyRequest supplyRequest);
     Task Welcome(SupplierUser user, string temporaryPassword);
+    Task TemporaryPasswordIssued(SupplierUser user, string temporaryPassword);
+    Task PasswordResetRequested(SupplierUser user, string token);
 }

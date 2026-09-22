@@ -8,4 +8,5 @@ public class SupplyRequestFilter
     public long? WorkSiteId { get; set; }
     public SupplierType? SupplierType { get; set; }
     public SupplyRequestStatus? Status { get; set; }
+    public bool? HasPending { get; set; }
 }

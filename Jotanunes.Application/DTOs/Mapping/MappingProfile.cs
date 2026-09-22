@@ -39,6 +39,11 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.SupplierTypeDescription, opt => opt.MapFrom(src => src.SupplierType.ToString()))
             .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()));
 
+        CreateMap<DocumentType, SupplierDocumentTypeDto>()
+            .ForMember(dest => dest.CategoryDescription, opt => opt.MapFrom(src => src.Category.ToString()))
+            .ForMember(dest => dest.AppliesToDescription, opt => opt.MapFrom(src => src.AppliesTo.ToString()))
+            .ForMember(dest => dest.SubjectDescription, opt => opt.MapFrom(src => src.Subject.ToString()));
+
         CreateMap<DocumentType, DocumentTypeDto>()
             .ForMember(dest => dest.CategoryDescription, opt => opt.MapFrom(src => src.Category.ToString()))
             .ForMember(dest => dest.AppliesToDescription, opt => opt.MapFrom(src => src.AppliesTo.ToString()))

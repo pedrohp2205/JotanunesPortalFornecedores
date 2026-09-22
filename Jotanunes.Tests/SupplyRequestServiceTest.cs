@@ -9,6 +9,7 @@ using Jotanunes.Application.Services;
 using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Exceptions;
+using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
 using Moq;
 
@@ -37,12 +38,16 @@ public class SupplyRequestServiceTest
         _repository.Setup(r => r.GetById(It.IsAny<long>())).ReturnsAsync(_request);
         _workSites.Setup(w => w.GetById(It.IsAny<long>())).ReturnsAsync(new WorkSite("Obra Teste"));
         _passwordHasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("hash");
+        _mapper.Setup(m => m.Map<SupplyRequestDto>(It.IsAny<object>()))
+            .Returns<object>(source => new SupplyRequestDto { Id = ((SupplyRequest)source).Id });
+        _compliance.Setup(c => c.GetPendingBatch(It.IsAny<IReadOnlyCollection<SupplyRequest>>()))
+            .ReturnsAsync(new Dictionary<long, SupplyRequestPendingDto>());
         _service = new SupplyRequestService(_mapper.Object, _unitOfWork.Object, _compliance.Object, _notifications.Object, _passwordHasher.Object);
     }
 
-    private static OverdueSupplyRequestDto Pending(int onboarding = 0, int recurring = 0, int? required = null, int upToDate = 0)
+    private static SupplyRequestPendingDto Pending(int onboarding = 0, int recurring = 0, int? required = null, int upToDate = 0)
     {
-        return new OverdueSupplyRequestDto
+        return new SupplyRequestPendingDto
         {
             MissingOnboardingCount = onboarding,
             MissingRecurringCompanyCount = recurring,
@@ -56,7 +61,7 @@ public class SupplyRequestServiceTest
     [Fact]
     public async Task Should_Complete_When_Checklist_Has_No_Pending_Items()
     {
-        _compliance.Setup(c => c.GetPending(It.IsAny<long>())).ReturnsAsync((OverdueSupplyRequestDto?)null);
+        _compliance.Setup(c => c.GetPending(It.IsAny<long>())).ReturnsAsync((SupplyRequestPendingDto?)null);
 
         await _service.Complete(1);
 
@@ -207,5 +212,59 @@ public class SupplyRequestServiceTest
         _unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
         _notifications.Verify(n => n.Welcome(It.IsAny<SupplierUser>(), It.IsAny<string>()), Times.Never);
         _notifications.Verify(n => n.SupplyRequestCreated(It.IsAny<SupplyRequest>()), Times.Never);
+    }
+
+    private static SupplyRequest WithId(long id, SupplyRequestStatus? closeAs = null)
+    {
+        var request = new SupplyRequest(1, 1, SupplierType.ManpowerLabor, 3) { Id = id };
+        if (closeAs == SupplyRequestStatus.Cancelled)
+        {
+            request.Cancel();
+        }
+
+        return request;
+    }
+
+    [Fact]
+    public async Task Should_Attach_Pending_To_Each_Request_In_The_List()
+    {
+        var withPending = WithId(1);
+        var upToDate = WithId(2);
+        _repository.Setup(r => r.Get(It.IsAny<SupplyRequestFilter>())).ReturnsAsync(new List<SupplyRequest> { withPending, upToDate });
+        _compliance.Setup(c => c.GetPendingBatch(It.IsAny<IReadOnlyCollection<SupplyRequest>>()))
+            .ReturnsAsync(new Dictionary<long, SupplyRequestPendingDto> { [1] = Pending(recurring: 2) });
+
+        var result = await _service.Get(new SupplyRequestFilter());
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal(2, result.Single(r => r.Id == 1).Pending!.MissingRecurringCompanyCount);
+        Assert.Null(result.Single(r => r.Id == 2).Pending);
+    }
+
+    [Theory]
+    [InlineData(true, new long[] { 1 })]
+    [InlineData(false, new long[] { 2, 3 })]
+    public async Task Should_Filter_List_By_Pending(bool hasPending, long[] expectedIds)
+    {
+        _repository.Setup(r => r.Get(It.IsAny<SupplyRequestFilter>()))
+            .ReturnsAsync(new List<SupplyRequest> { WithId(1), WithId(2), WithId(3, SupplyRequestStatus.Cancelled) });
+        _compliance.Setup(c => c.GetPendingBatch(It.IsAny<IReadOnlyCollection<SupplyRequest>>()))
+            .ReturnsAsync(new Dictionary<long, SupplyRequestPendingDto> { [1] = Pending(onboarding: 1) });
+
+        var result = await _service.Get(new SupplyRequestFilter { HasPending = hasPending });
+
+        Assert.Equal(expectedIds, result.Select(r => r.Id).OrderBy(id => id));
+    }
+
+    [Fact]
+    public async Task Should_Attach_Pending_When_Getting_A_Single_Request()
+    {
+        _request.Id = 7;
+        _compliance.Setup(c => c.GetPendingBatch(It.IsAny<IReadOnlyCollection<SupplyRequest>>()))
+            .ReturnsAsync(new Dictionary<long, SupplyRequestPendingDto> { [7] = Pending(onboarding: 2) });
+
+        var result = await _service.GetById(7);
+
+        Assert.Equal(2, result.Pending!.MissingOnboardingCount);
     }
 }

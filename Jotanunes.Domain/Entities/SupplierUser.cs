@@ -8,6 +8,8 @@ public class SupplierUser : BaseEntity
 {
     public const int MaxLoginAttempts = 5;
     public const int LockoutMinutes = 15;
+    public const int PasswordResetTokenMinutes = 60;
+    public const int PasswordResetCooldownMinutes = 2;
 
     public long CompanyId { get; private set; }
     public Company Company { get; private set; } = null!;
@@ -21,6 +23,8 @@ public class SupplierUser : BaseEntity
     public DateTime? RefreshTokenExpiresAt { get; private set; }
     public int FailedLoginAttempts { get; private set; }
     public DateTime? LockedUntil { get; private set; }
+    public string? PasswordResetTokenHash { get; private set; }
+    public DateTime? PasswordResetExpiresAt { get; private set; }
 
     protected SupplierUser() { }
 
@@ -51,6 +55,43 @@ public class SupplierUser : BaseEntity
         LockedUntil = null;
         RefreshToken = null;
         RefreshTokenExpiresAt = null;
+        ClearPasswordResetToken();
+    }
+
+    public void ResetPassword(string temporaryPasswordHash)
+    {
+        JotanunesException.When(string.IsNullOrWhiteSpace(temporaryPasswordHash), "Hash de senha não pode ser vazio.");
+
+        SetPassword(temporaryPasswordHash);
+        MustChangePassword = true;
+    }
+
+    public void AssignPasswordResetToken(string tokenHash)
+    {
+        JotanunesException.When(string.IsNullOrWhiteSpace(tokenHash), "Token de redefinição não pode ser vazio.");
+
+        PasswordResetTokenHash = tokenHash;
+        PasswordResetExpiresAt = DateTime.UtcNow.AddMinutes(PasswordResetTokenMinutes);
+    }
+
+    public bool IsPasswordResetTokenValid(string tokenHash)
+    {
+        return !string.IsNullOrWhiteSpace(PasswordResetTokenHash)
+            && PasswordResetTokenHash == tokenHash
+            && PasswordResetExpiresAt.HasValue
+            && PasswordResetExpiresAt.Value > DateTime.UtcNow;
+    }
+
+    public bool CanRequestPasswordReset()
+    {
+        return !PasswordResetExpiresAt.HasValue
+            || PasswordResetExpiresAt.Value.AddMinutes(-PasswordResetTokenMinutes + PasswordResetCooldownMinutes) <= DateTime.UtcNow;
+    }
+
+    public void ClearPasswordResetToken()
+    {
+        PasswordResetTokenHash = null;
+        PasswordResetExpiresAt = null;
     }
 
     public void RegisterAccess()
@@ -102,6 +143,7 @@ public class SupplierUser : BaseEntity
     {
         Active = false;
         RevokeRefreshToken();
+        ClearPasswordResetToken();
     }
 
     private static void Validate(string name, string email, string passwordHash)

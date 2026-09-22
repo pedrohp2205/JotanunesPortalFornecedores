@@ -140,4 +140,59 @@ public class SupplierNotificationServiceTest
         Assert.Contains("Temp#1234", sent.TextBody);
         _users.Verify(r => r.GetByCompany(It.IsAny<long>()), Times.Never);
     }
+
+    [Fact]
+    public async Task Should_Send_Password_Reset_Link_With_Escaped_Email_And_Token()
+    {
+        EmailMessage? sent = null;
+        _emailSender
+            .Setup(s => s.SendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
+            .Callback<EmailMessage, CancellationToken>((m, _) => sent = m)
+            .Returns(Task.CompletedTask);
+
+        await _service.PasswordResetRequested(User("maria+teste@exemplo.com.br"), "tok-en_123");
+
+        Assert.NotNull(sent);
+        Assert.Equal(new[] { "maria+teste@exemplo.com.br" }, sent!.To);
+        Assert.Contains("https://portal.exemplo.com/redefinir-senha?email=maria%2Bteste%40exemplo.com.br&amp;token=tok-en_123", sent.HtmlBody);
+        Assert.Contains("Redefinir minha senha", sent.HtmlBody);
+        Assert.DoesNotContain("Acessar o portal", sent.HtmlBody);
+    }
+
+    [Fact]
+    public async Task Should_Send_Reset_Code_In_Text_When_Portal_Url_Is_Not_Configured()
+    {
+        var service = new SupplierNotificationService(
+            _unitOfWork.Object,
+            _emailSender.Object,
+            Options.Create(new NotificationSettings()),
+            NullLogger<SupplierNotificationService>.Instance);
+
+        EmailMessage? sent = null;
+        _emailSender
+            .Setup(s => s.SendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
+            .Callback<EmailMessage, CancellationToken>((m, _) => sent = m)
+            .Returns(Task.CompletedTask);
+
+        await service.PasswordResetRequested(User("maria@exemplo.com.br"), "tok-en_123");
+
+        Assert.NotNull(sent);
+        Assert.Contains("tok-en_123", sent!.HtmlBody);
+    }
+
+    [Fact]
+    public async Task Should_Send_Temporary_Password_To_The_User_Only()
+    {
+        EmailMessage? sent = null;
+        _emailSender
+            .Setup(s => s.SendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
+            .Callback<EmailMessage, CancellationToken>((m, _) => sent = m)
+            .Returns(Task.CompletedTask);
+
+        await _service.TemporaryPasswordIssued(User("maria@exemplo.com.br"), "Provisoria#123");
+
+        Assert.NotNull(sent);
+        Assert.Equal(new[] { "maria@exemplo.com.br" }, sent!.To);
+        Assert.Contains("Provisoria#123", sent.HtmlBody);
+    }
 }

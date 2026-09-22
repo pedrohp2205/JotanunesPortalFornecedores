@@ -67,4 +67,25 @@ public class CompanyController(ICompanyService companyService, ISupplierUserServ
         var createdUser = await supplierUserService.Create(id, userDto);
         return Ok(createdUser);
     }
+
+    [HttpPost("{id:long}/users/{userId:long}/activate")]
+    public async Task<ActionResult<SupplierUserDto>> ActivateUser(long id, long userId)
+    {
+        var user = await supplierUserService.Activate(id, userId);
+        return Ok(user);
+    }
+
+    [HttpPost("{id:long}/users/{userId:long}/deactivate")]
+    public async Task<ActionResult<SupplierUserDto>> DeactivateUser(long id, long userId)
+    {
+        var user = await supplierUserService.Deactivate(id, userId);
+        return Ok(user);
+    }
+
+    [HttpPost("{id:long}/users/{userId:long}/reset-password")]
+    public async Task<ActionResult<SupplierUserDto>> ResetUserPassword(long id, long userId, [FromBody] SupplierUserResetPasswordDto resetDto)
+    {
+        var user = await supplierUserService.ResetPassword(id, userId, resetDto);
+        return Ok(user);
+    }
 }

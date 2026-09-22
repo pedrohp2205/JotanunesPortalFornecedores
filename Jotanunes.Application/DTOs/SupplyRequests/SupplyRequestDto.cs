@@ -1,3 +1,4 @@
+using Jotanunes.Application.DTOs.Compliance;
 using Jotanunes.Domain.Enums;
 
 namespace Jotanunes.Application.DTOs.SupplyRequests;
@@ -18,6 +19,7 @@ public class SupplyRequestDto
     public SupplyRequestStatus Status { get; set; }
     public string StatusDescription { get; set; } = string.Empty;
     public DateTime? ClosedAt { get; set; }
+    public SupplyRequestPendingDto? Pending { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

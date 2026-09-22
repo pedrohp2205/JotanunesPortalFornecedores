@@ -2,6 +2,7 @@ using AutoMapper;
 using Jotanunes.Application.DTOs.DocumentTypes;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Entities;
+using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Exceptions;
 using Jotanunes.Domain.Interfaces;
 
@@ -22,6 +23,24 @@ public class DocumentTypeService : IDocumentTypeService
     {
         var documentTypes = await _unitOfWork.DocumentTypeRepository.Get();
         return _mapper.Map<List<DocumentTypeDto>>(documentTypes);
+    }
+
+    public async Task<List<SupplierDocumentTypeDto>> GetForCompany(long companyId, SupplierType? supplierType = null)
+    {
+        var company = await _unitOfWork.CompanyRepository.GetById(companyId);
+        if (company is null)
+        {
+            throw new KeyNotFoundException("Empresa não encontrada");
+        }
+
+        var types = supplierType.HasValue ? supplierType.Value & company.SupplierType : company.SupplierType;
+        if (types == 0)
+        {
+            return [];
+        }
+
+        var documentTypes = await _unitOfWork.DocumentTypeRepository.GetApplicable(types);
+        return _mapper.Map<List<SupplierDocumentTypeDto>>(documentTypes);
     }
 
     public async Task<DocumentTypeDto> GetById(long id)
