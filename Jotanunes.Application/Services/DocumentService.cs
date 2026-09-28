@@ -50,9 +50,10 @@ public class DocumentService : IDocumentService
         long uploadedBySupplierUserId,
         DocumentUploadDto model,
         Stream fileContent,
-        string originalFileName,
-        string contentType)
+        string originalFileName)
     {
+        var contentType = await DocumentFileInspector.Inspect(fileContent);
+
         var documentType = await _unitOfWork.DocumentTypeRepository.GetById(model.DocumentTypeId);
         if (documentType is null || !documentType.Active)
         {
@@ -120,7 +121,16 @@ public class DocumentService : IDocumentService
         await _storageService.UploadAsync(storageKey, fileContent, contentType);
 
         _unitOfWork.DocumentRepository.Add(document);
-        await _unitOfWork.SaveChangesAsync();
+
+        try
+        {
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch
+        {
+            await TryDeleteStoredFile(storageKey);
+            throw;
+        }
 
         return await GetById(document.Id);
     }
@@ -195,6 +205,17 @@ public class DocumentService : IDocumentService
         if (!wasEligible && company.Status == CompanyStatus.Eligible)
         {
             await _notificationService.CompanyEligible(company);
+        }
+    }
+
+    private async Task TryDeleteStoredFile(string storageKey)
+    {
+        try
+        {
+            await _storageService.DeleteAsync(storageKey);
+        }
+        catch
+        {
         }
     }
 

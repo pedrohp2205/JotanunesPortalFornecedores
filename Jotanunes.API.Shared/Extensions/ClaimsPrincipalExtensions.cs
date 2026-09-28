@@ -20,6 +20,19 @@ public static class ClaimsPrincipalExtensions
         return id;
     }
     
+    public static long GetSessionId(this ClaimsPrincipal user)
+    {
+        var value = user.FindFirst(JwtRegisteredClaimNames.Sid)?.Value
+            ?? user.FindFirst(ClaimTypes.Sid)?.Value;
+
+        if (!long.TryParse(value, out var id))
+        {
+            throw new UnauthorizedAccessException("Token sem identificação da sessão.");
+        }
+
+        return id;
+    }
+
     public static long GetCompanyId(this ClaimsPrincipal user)
     {
         var value = user.FindFirst(CompanyIdClaim)?.Value;

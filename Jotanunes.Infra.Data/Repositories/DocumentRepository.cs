@@ -44,11 +44,25 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
         return await query.OrderByDescending(d => d.CreatedAt).ToListAsync();
     }
 
-    public async Task<List<Document>> GetBySupplyRequests(IReadOnlyCollection<long> supplyRequestIds)
+    public async Task<List<Document>> GetBySupplyRequests(IReadOnlyCollection<long> supplyRequestIds, DateOnly? referencePeriodFrom = null)
+    {
+        var query = _context.Documents
+                                .AsNoTracking()
+                                .Where(d => d.SupplyRequestId != null && supplyRequestIds.Contains(d.SupplyRequestId.Value));
+
+        if (referencePeriodFrom.HasValue)
+        {
+            query = query.Where(d => d.ReferencePeriodEnd == null || d.ReferencePeriodEnd >= referencePeriodFrom.Value);
+        }
+
+        return await query.OrderByDescending(d => d.CreatedAt).ToListAsync();
+    }
+
+    public async Task<List<Document>> GetOnboardingByCompanies(IReadOnlyCollection<long> companyIds)
     {
         return await _context.Documents
                                 .AsNoTracking()
-                                .Where(d => d.SupplyRequestId != null && supplyRequestIds.Contains(d.SupplyRequestId.Value))
+                                .Where(d => d.SupplyRequestId == null && companyIds.Contains(d.CompanyId))
                                 .OrderByDescending(d => d.CreatedAt)
                                 .ToListAsync();
     }

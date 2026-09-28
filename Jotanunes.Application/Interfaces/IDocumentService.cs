@@ -13,8 +13,7 @@ public interface IDocumentService
         long uploadedBySupplierUserId,
         DocumentUploadDto model,
         Stream fileContent,
-        string originalFileName,
-        string contentType);
+        string originalFileName);
     Task<DocumentDownloadDto> Download(long id, long? companyId = null);
     Task<DocumentDto> Approve(long id);
     Task<DocumentDto> Reject(long id, string reason);

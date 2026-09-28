@@ -6,6 +6,7 @@ using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Exceptions;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
+using Jotanunes.Domain.Pagination;
 using Jotanunes.Domain.Validation;
 
 namespace Jotanunes.Application.Services;
@@ -32,16 +33,34 @@ public class SupplyRequestService : ISupplyRequestService
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<List<SupplyRequestDto>> Get(SupplyRequestFilter filter)
+    public async Task<PageList<SupplyRequestDto>> Get(PageParams pageParams, SupplyRequestFilter filter)
     {
-        var supplyRequests = await _unitOfWork.SupplyRequestRepository.Get(filter);
+        if (!filter.HasPending.HasValue)
+        {
+            var page = await _unitOfWork.SupplyRequestRepository.Get(pageParams, filter);
+            var pagePending = await _complianceService.GetPendingBatch(page.Items);
+
+            return new PageList<SupplyRequestDto>(
+                page.Items.Select(sr => ToDto(sr, pagePending)).ToList(),
+                page.TotalCount,
+                pageParams.PageNumber,
+                pageParams.PageSize);
+        }
+
+        var supplyRequests = await _unitOfWork.SupplyRequestRepository.GetAll(filter, activeOnly: filter.HasPending.Value);
         var pendingById = await _complianceService.GetPendingBatch(supplyRequests);
 
-        var dtos = supplyRequests.Select(sr => ToDto(sr, pendingById)).ToList();
+        var matching = supplyRequests
+            .Where(sr => pendingById.ContainsKey(sr.Id) == filter.HasPending.Value)
+            .ToList();
 
-        return filter.HasPending.HasValue
-            ? dtos.Where(d => (d.Pending is not null) == filter.HasPending.Value).ToList()
-            : dtos;
+        var items = matching
+            .Skip((pageParams.PageNumber - 1) * pageParams.PageSize)
+            .Take(pageParams.PageSize)
+            .Select(sr => ToDto(sr, pendingById))
+            .ToList();
+
+        return new PageList<SupplyRequestDto>(items, matching.Count, pageParams.PageNumber, pageParams.PageSize);
     }
 
     public async Task<SupplyRequestDto> GetById(long id, long? companyId = null)

@@ -1,6 +1,7 @@
 using Jotanunes.Application.DTOs.SupplyRequests;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Filters;
+using Jotanunes.Domain.Pagination;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Jotanunes.API.Internal.Controllers;
@@ -10,9 +11,9 @@ namespace Jotanunes.API.Internal.Controllers;
 public class SupplyRequestController(ISupplyRequestService supplyRequestService) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<SupplyRequestDto>>> Get([FromQuery] SupplyRequestFilter filter)
+    public async Task<ActionResult<PageList<SupplyRequestDto>>> Get([FromQuery] PageParams pageParams, [FromQuery] SupplyRequestFilter filter)
     {
-        var result = await supplyRequestService.Get(filter);
+        var result = await supplyRequestService.Get(pageParams, filter);
         return Ok(result);
     }
 

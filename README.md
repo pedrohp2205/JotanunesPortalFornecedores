@@ -64,10 +64,10 @@ O fluxo de dependência aponta sempre para dentro: as APIs conhecem a IoC, a IoC
 | Método | Rota | Auth | Descrição |
 | --- | --- | --- | --- |
 | POST | `/api/auth/login` | Não | Autentica e devolve access token + refresh token |
-| POST | `/api/auth/refresh` | Não | Renova o par de tokens |
-| POST | `/api/auth/logout` | Sim | Revoga o refresh token |
+| POST | `/api/auth/refresh` | Não | Renova o par de tokens (o refresh token é rotacionado a cada uso) |
+| POST | `/api/auth/logout` | Sim | Encerra a sessão atual (as de outros dispositivos continuam) |
 | GET | `/api/auth/me` | Sim | Dados do usuário autenticado |
-| POST | `/api/auth/change-password` | Sim | Troca de senha |
+| POST | `/api/auth/change-password` | Sim | Troca de senha. Encerra todas as sessões e devolve um par de tokens novo |
 | POST | `/api/auth/forgot-password` | Não | Envia por e-mail um link de redefinição. Responde sempre 204, exista o e-mail ou não |
 | POST | `/api/auth/reset-password` | Não | Define a nova senha com `email` + `token` recebido por e-mail |
 
@@ -76,8 +76,10 @@ Regras aplicadas na autenticação:
 - senha com hash **BCrypt** (work factor 12);
 - mensagem única para e-mail inexistente e senha errada, evitando enumeração de usuários;
 - bloqueio temporário de 15 minutos após 5 tentativas inválidas;
-- token carrega a claim `company_id`, base para o isolamento por empresa exigido pelo RNF01;
-- troca de senha revoga o refresh token ativo.
+- token carrega a claim `company_id`, base para o isolamento por empresa exigido pelo RNF01, e `sid`, a sessão que o emitiu;
+- **senha provisória**: enquanto `mustChangePassword` for verdadeiro, só `me`, `change-password` e `logout` respondem; os demais endpoints devolvem 403 com `{"Message": "...", "MustChangePassword": true}`. Como a troca derruba a sessão atual, `change-password` devolve tokens novos (já sem a restrição);
+- **sessões**: cada login abre uma sessão (`supplier_user_sessions`), então o mesmo usuário pode estar em vários dispositivos. Só o hash SHA-256 do refresh token fica no banco. Cada `refresh` rotaciona o token; reapresentar o token anterior depois de 30 segundos da rotação é tratado como vazamento e encerra a sessão (dentro dos 30 segundos, é tratado como duas abas renovando juntas e só recusado);
+- troca de senha, redefinição e desativação do usuário encerram todas as sessões (via `SecurityStamp` do usuário).
 - "esqueci minha senha": o token é aleatório, vale 60 minutos, é de uso único e só o hash (SHA-256) fica no banco. Novo pedido só é aceito após 2 minutos, para não inundar a caixa de e-mail. O link aponta para `Email:PortalUrl` + `Email:ResetPasswordPath` (padrão `/redefinir-senha`) com `?email=...&token=...`; sem `PortalUrl`, o token segue em texto no e-mail.
 
 ---
@@ -90,22 +92,24 @@ Status: `Open` (1) → `InProgress` (2, no primeiro documento enviado) → `Comp
 
 | Frente | Método | Rota | Descrição |
 | --- | --- | --- | --- |
-| Interna | GET | `/api/supplyrequest` | Lista, com filtros `companyId`, `workSiteId`, `supplierType`, `status` e `hasPending` |
+| Interna | GET | `/api/supplyrequest` | Lista paginada (`pageNumber`, `pageSize`), com filtros `companyId`, `workSiteId`, `supplierType`, `status` e `hasPending` |
 | Interna | GET | `/api/supplyrequest/{id}` | Consulta uma solicitação |
 | Interna | POST | `/api/supplyrequest` | Abre a solicitação (`companyId`, `workSiteId`, `supplierType`, `requiredWorkerCount`) |
 | Interna | PUT | `/api/supplyrequest/{id}` | Ajusta a quantidade de trabalhadores (só mão de obra) |
 | Interna | POST | `/api/supplyrequest/{id}/complete` | Conclui |
 | Interna | POST | `/api/supplyrequest/{id}/cancel` | Cancela |
-| Externa | GET | `/api/supplyrequest` | Solicitações da empresa do token |
+| Externa | GET | `/api/supplyrequest` | Solicitações da empresa do token (paginada) |
 | Externa | GET | `/api/supplyrequest/{id}` | Consulta uma solicitação da empresa |
 
-**Pendências (`pending`).** Toda solicitação devolvida pelas duas frentes traz o campo `pending`, calculado para o período corrente da obra: `periodStart`/`periodEnd`, `missingOnboardingCount`, `missingRecurringCompanyCount`, `requiredWorkerCount` e `workersUpToDate`. Vem `null` quando a solicitação está em dia ou encerrada. Só documento **aprovado** conta como entregue. O filtro `hasPending=true|false` em `GET /api/supplyrequest` lista só as solicitações com (ou sem) pendência, e substitui o antigo `GET /api/document/overdue`. O detalhe do que falta continua em `GET /api/document/checklist/{supplyRequestId}`. O cálculo é feito em lote (3 consultas para a lista inteira, independentemente do tamanho).
+**Pendências (`pending`).** Toda solicitação devolvida pelas duas frentes traz o campo `pending`, calculado para o período corrente da obra: `periodStart`/`periodEnd`, `missingOnboardingCount`, `missingRecurringCompanyCount`, `requiredWorkerCount` e `workersUpToDate`. Vem `null` quando a solicitação está em dia ou encerrada. Só documento **aprovado** conta como entregue. O filtro `hasPending=true|false` em `GET /api/supplyrequest` lista só as solicitações com (ou sem) pendência, e substitui o antigo `GET /api/document/overdue`. O detalhe do que falta continua em `GET /api/document/checklist/{supplyRequestId}`. O cálculo é feito em lote: uma consulta para os documentos recorrentes (só os que alcançam o período corrente), uma para a habilitação de todas as empresas e uma por tipo de fornecimento para o catálogo, independentemente do tamanho da lista. Sem `hasPending`, a paginação é feita no banco e só a página é calculada. Com `hasPending`, a pendência precisa ser calculada antes de filtrar: `hasPending=true` carrega só as solicitações ativas (encerradas nunca têm pendência) e pagina em memória.
 
 **Checklist por item.** Cada item de `GET /api/document/checklist/{supplyRequestId}` traz `status` (`NotSent` 0, `Pending` 1, `Rejected` 2, `Approved` 3), `statusDescription`, `documentId` do envio que define o estado (o aprovado; senão o último em análise; senão o último recusado) e `rejectionReason` quando recusado. Aprovado prevalece sobre em análise, que prevalece sobre recusado: um reenvio já tira o item de "recusado". `isSatisfied` continua significando "há documento aprovado". Tipos condicionais (`isConditional`) entram como itens **opcionais** (`isRequired: false`, com `conditionDescription`): podem ser enviados e acompanhados, mas não contam como pendência nem na habilitação.
 
 **Catálogo para o fornecedor.** `GET /api/documenttype` (frente externa) lista os tipos ativos aplicáveis à empresa do token, com `category`, `subject` (`Company` ou `Worker`), `requiresExpirationDate`, `isConditional` e `conditionDescription`. O parâmetro opcional `supplierType` (1 material, 2 mão de obra) restringe a um dos tipos que a empresa fornece. É com ele que o front monta o formulário de "informar trabalhador" (tipos com `subject = Worker`) mesmo antes de existir qualquer trabalhador no checklist.
 
 O upload de documento (`POST /api/document`) recebe `supplyRequestId` nos documentos recorrentes; o checklist fica em `GET /api/document/checklist/{supplyRequestId}` nas duas frentes.
+
+Regras do arquivo no upload: até 20 MB, não vazio, e só PDF, PNG ou JPEG. O formato é conferido pela assinatura dos primeiros bytes, não pela extensão nem pelo `Content-Type` enviado; o tipo gravado (e devolvido no download) é o detectado. Se o registro não puder ser salvo no banco depois do envio ao bucket, o arquivo é removido do bucket.
 
 Regras de conferência no envio: o tipo de documento precisa se aplicar ao tipo de fornecimento da solicitação (ou aos tipos da empresa, na habilitação). Documentos condicionais não entram na conta da habilitação e a data de validade é apenas armazenada, não avaliada.
 
@@ -168,6 +172,7 @@ dotnet test
 - Entidades com setters privados: escrita passa por construtor e métodos de domínio, e o AutoMapper é usado apenas no sentido entidade → DTO, para que as validações não sejam contornadas.
 - Exclusão lógica via `DeletedAt` com query filter global em `BaseEntity`.
 - Erros tratados em um único middleware: `JotanunesException` → 400, `UnauthorizedAccessException` → 401, `KeyNotFoundException` → 404.
+- Unicidade garantida também no banco (CNPJ, e-mail de usuário, código de tipo de documento, solicitação ativa por empresa/obra/tipo). Quando duas requisições simultâneas passam pela checagem do serviço, o `UnitOfWork` converte a violação de índice único em `JotanunesException` (400) com a mesma mensagem.
 
 ---
 

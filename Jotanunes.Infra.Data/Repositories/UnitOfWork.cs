@@ -1,13 +1,27 @@
+using Jotanunes.Domain.Exceptions;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Infra.Data.Context;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jotanunes.Infra.Data.Repositories;
 
 public class UnitOfWork : IUnitOfWork
 {
+    private static readonly int[] UniqueViolationErrors = [2601, 2627];
+
+    private static readonly Dictionary<string, string> UniqueIndexMessages = new()
+    {
+        ["IX_supply_requests_CompanyId_WorkSiteId_SupplierType"] = "Já existe uma solicitação ativa desta empresa para esta obra e este tipo de fornecimento.",
+        ["IX_companies_Cnpj"] = "Já existe uma empresa cadastrada com este CNPJ.",
+        ["IX_supplier_users_Email"] = "Já existe um usuário cadastrado com este e-mail.",
+        ["IX_document_types_Code"] = "Já existe um tipo de documento com este código."
+    };
+
     private readonly ApplicationDbContext _context;
     private ICompanyRepository? _companyRepository;
     private ISupplierUserRepository? _supplierUserRepository;
+    private ISupplierUserSessionRepository? _supplierUserSessionRepository;
     private IWorkSiteRepository? _workSiteRepository;
     private ISupplyRequestRepository? _supplyRequestRepository;
     private IDocumentTypeRepository? _documentTypeRepository;
@@ -31,6 +45,14 @@ public class UnitOfWork : IUnitOfWork
         get
         {
             return _supplierUserRepository ??= new SupplierUserRepository(_context);
+        }
+    }
+
+    public ISupplierUserSessionRepository SupplierUserSessionRepository
+    {
+        get
+        {
+            return _supplierUserSessionRepository ??= new SupplierUserSessionRepository(_context);
         }
     }
 
@@ -68,6 +90,18 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task<bool> SaveChangesAsync()
     {
-        return await _context.SaveChangesAsync() > 0;
+        try
+        {
+            return await _context.SaveChangesAsync() > 0;
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException sql && UniqueViolationErrors.Contains(sql.Number))
+        {
+            var message = UniqueIndexMessages
+                .Where(m => sql.Message.Contains(m.Key, StringComparison.OrdinalIgnoreCase))
+                .Select(m => m.Value)
+                .FirstOrDefault() ?? "Já existe um registro com estes dados.";
+
+            throw new JotanunesException(message);
+        }
     }
 }

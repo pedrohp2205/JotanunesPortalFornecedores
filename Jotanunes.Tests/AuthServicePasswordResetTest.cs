@@ -100,14 +100,14 @@ public class AuthServicePasswordResetTest
     public async Task Should_Reset_Password_With_A_Valid_Token_And_Consume_It()
     {
         await _service.ForgotPassword(new ForgotPasswordDto { Email = "maria@exemplo.com.br" });
-        _user.AssignRefreshToken("token-abc", DateTime.UtcNow.AddDays(1));
+        var stamp = _user.SecurityStamp;
 
         await _service.ResetPassword(ResetDto());
 
         Assert.Equal("hash-novo", _user.PasswordHash);
         Assert.False(_user.MustChangePassword);
         Assert.Null(_user.PasswordResetTokenHash);
-        Assert.Null(_user.RefreshToken);
+        Assert.NotEqual(stamp, _user.SecurityStamp);
 
         await Assert.ThrowsAsync<JotanunesException>(() => _service.ResetPassword(ResetDto()));
     }

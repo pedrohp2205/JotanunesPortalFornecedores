@@ -3,6 +3,7 @@ using Jotanunes.API.Shared.Extensions;
 using Jotanunes.Application.DTOs.Compliance;
 using Jotanunes.Application.DTOs.Documents;
 using Jotanunes.Application.Interfaces;
+using Jotanunes.Application.Services;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Pagination;
 using Microsoft.AspNetCore.Authorization;
@@ -37,7 +38,11 @@ public class DocumentController(IDocumentService documentService, IDocumentCompl
         return File(download.Content, download.ContentType, download.FileName);
     }
 
+    private const long MaxRequestBytes = DocumentFileInspector.MaxFileSizeBytes + 1024 * 1024;
+
     [HttpPost]
+    [RequestSizeLimit(MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxRequestBytes)]
     public async Task<ActionResult<DocumentDto>> Upload([FromForm] DocumentUploadForm form)
     {
         await using var stream = form.File.OpenReadStream();
@@ -56,8 +61,7 @@ public class DocumentController(IDocumentService documentService, IDocumentCompl
                 ExpirationDate = form.ExpirationDate
             },
             stream,
-            form.File.FileName,
-            form.File.ContentType);
+            form.File.FileName);
 
         return Ok(document);
     }

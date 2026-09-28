@@ -2,7 +2,6 @@ using Jotanunes.Application.DTOs.Compliance;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Enums;
-using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
 
 namespace Jotanunes.Application.Services;
@@ -37,7 +36,8 @@ public class DocumentComplianceService : IDocumentComplianceService
         }
 
         var data = new ChecklistData();
-        var required = (await GetOnboardingItems(company, data)).Where(i => i.IsRequired).ToList();
+        var documents = await _unitOfWork.DocumentRepository.GetOnboardingByCompanies(new[] { company.Id });
+        var required = (await GetOnboardingItems(company, documents, data)).Where(i => i.IsRequired).ToList();
         return required.Count > 0 && required.All(i => i.IsSatisfied);
     }
 
@@ -102,16 +102,25 @@ public class DocumentComplianceService : IDocumentComplianceService
     private async Task<ChecklistData> LoadData(IReadOnlyCollection<SupplyRequest> supplyRequests)
     {
         var data = new ChecklistData();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        var documents = await _unitOfWork.DocumentRepository.GetBySupplyRequests(supplyRequests.Select(sr => sr.Id).ToList());
+        var earliestPeriodStart = supplyRequests.Min(sr => sr.WorkSite.GetCurrentPeriod(today).Start);
+
+        var documents = await _unitOfWork.DocumentRepository.GetBySupplyRequests(
+            supplyRequests.Select(sr => sr.Id).ToList(),
+            earliestPeriodStart);
         foreach (var group in documents.GroupBy(d => d.SupplyRequestId!.Value))
         {
             data.DocumentsBySupplyRequest[group.Key] = group.ToList();
         }
 
-        foreach (var company in supplyRequests.Select(sr => sr.Company).DistinctBy(c => c.Id))
+        var companies = supplyRequests.Select(sr => sr.Company).DistinctBy(c => c.Id).ToList();
+        var onboardingDocs = await _unitOfWork.DocumentRepository.GetOnboardingByCompanies(companies.Select(c => c.Id).ToList());
+        var onboardingDocsByCompany = onboardingDocs.ToLookup(d => d.CompanyId);
+
+        foreach (var company in companies)
         {
-            data.OnboardingByCompany[company.Id] = await GetOnboardingItems(company, data);
+            data.OnboardingByCompany[company.Id] = await GetOnboardingItems(company, onboardingDocsByCompany[company.Id].ToList(), data);
         }
 
         foreach (var supplierType in supplyRequests.Select(sr => sr.SupplierType).Distinct())
@@ -133,17 +142,11 @@ public class DocumentComplianceService : IDocumentComplianceService
         return types;
     }
 
-    private async Task<List<ChecklistItemDto>> GetOnboardingItems(Company company, ChecklistData data)
+    private async Task<List<ChecklistItemDto>> GetOnboardingItems(Company company, IReadOnlyCollection<Document> onboardingDocs, ChecklistData data)
     {
         var applicableTypes = await GetApplicableTypes(company.SupplierType, data);
 
         var onboardingTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Onboarding).ToList();
-
-        var onboardingDocs = await _unitOfWork.DocumentRepository.GetAll(new DocumentFilter
-        {
-            CompanyId = company.Id,
-            WithoutSupplyRequest = true
-        });
 
         return BuildItems(onboardingTypes, onboardingDocs);
     }

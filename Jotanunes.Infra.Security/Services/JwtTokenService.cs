@@ -20,7 +20,7 @@ public class JwtTokenService : ITokenService
         _settings = settings.Value;
     }
 
-    public (string Token, DateTime ExpiresAt) GenerateAccessToken(SupplierUser user)
+    public (string Token, DateTime ExpiresAt) GenerateAccessToken(SupplierUser user, long sessionId)
     {
         var expiresAt = DateTime.UtcNow.AddMinutes(_settings.AccessTokenMinutes);
 
@@ -30,6 +30,7 @@ public class JwtTokenService : ITokenService
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(JwtRegisteredClaimNames.Name, user.Name),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Sid, sessionId.ToString()),
             new(SupplierUserClaims.CompanyId, user.CompanyId.ToString()),
             new(SupplierUserClaims.MustChangePassword, user.MustChangePassword.ToString().ToLowerInvariant()),
             new(ClaimTypes.Role, SupplierUserClaims.SupplierRole)

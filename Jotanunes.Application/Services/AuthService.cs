@@ -15,6 +15,7 @@ public class AuthService : IAuthService
     // descobrir quais e-mails estão cadastrados no portal.
     private const string InvalidCredentials = "E-mail ou senha inválidos.";
     private const string InvalidResetToken = "Link de redefinição inválido ou expirado. Solicite um novo.";
+    private const string InvalidRefreshToken = "Sessão inválida ou expirada. Faça login novamente.";
 
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
@@ -65,35 +66,51 @@ public class AuthService : IAuthService
         }
 
         user.RegisterAccess();
-        return await IssueTokens(user);
+        return await StartSession(user);
     }
 
     public async Task<TokenDto> Refresh(RefreshTokenDto model)
     {
-        SupplierUser? user = await _unitOfWork.SupplierUserRepository.GetByRefreshToken(model.RefreshToken);
-        if (user is null || !user.IsRefreshTokenValid(model.RefreshToken))
+        var tokenHash = HashToken(model.RefreshToken);
+
+        var session = await _unitOfWork.SupplierUserSessionRepository.GetByRefreshTokenHash(tokenHash);
+        if (session is null || session.RevokedAt is not null)
         {
-            throw new UnauthorizedAccessException("Refresh token inválido ou expirado.");
+            throw new UnauthorizedAccessException(InvalidRefreshToken);
         }
 
-        if (!user.Active)
+        if (session.IsPreviousToken(tokenHash))
         {
-            throw new UnauthorizedAccessException("Usuário inativo. Procure o responsável da Jotanunes.");
+            if (!session.IsWithinReuseGrace())
+            {
+                session.Revoke();
+                await _unitOfWork.SaveChangesAsync();
+            }
+
+            throw new UnauthorizedAccessException(InvalidRefreshToken);
         }
 
-        return await IssueTokens(user);
+        if (!session.IsActive())
+        {
+            throw new UnauthorizedAccessException(InvalidRefreshToken);
+        }
+
+        var refreshToken = _tokenService.GenerateRefreshToken();
+        session.Rotate(HashToken(refreshToken.Token), refreshToken.ExpiresAt);
+        await _unitOfWork.SaveChangesAsync();
+
+        return BuildTokens(session, refreshToken.Token);
     }
 
-    public async Task Logout(long userId)
+    public async Task Logout(long userId, long sessionId)
     {
-        SupplierUser? user = await _unitOfWork.SupplierUserRepository.GetById(userId);
-        if (user is null)
+        var session = await _unitOfWork.SupplierUserSessionRepository.GetById(sessionId);
+        if (session is null || session.SupplierUserId != userId)
         {
-            throw new KeyNotFoundException("Usuário não encontrado");
+            throw new KeyNotFoundException("Sessão não encontrada");
         }
 
-        user.RevokeRefreshToken();
-        _unitOfWork.SupplierUserRepository.Update(user);
+        session.Revoke();
         await _unitOfWork.SaveChangesAsync();
     }
 
@@ -108,7 +125,7 @@ public class AuthService : IAuthService
         return _mapper.Map<AuthenticatedUserDto>(user);
     }
 
-    public async Task ChangePassword(long userId, ChangePasswordDto model)
+    public async Task<TokenDto> ChangePassword(long userId, ChangePasswordDto model)
     {
         SupplierUser? user = await _unitOfWork.SupplierUserRepository.GetById(userId);
         if (user is null)
@@ -127,7 +144,7 @@ public class AuthService : IAuthService
         user.SetPassword(_passwordHasher.Hash(model.NewPassword));
 
         _unitOfWork.SupplierUserRepository.Update(user);
-        await _unitOfWork.SaveChangesAsync();
+        return await StartSession(user);
     }
 
     public async Task ForgotPassword(ForgotPasswordDto model)
@@ -166,22 +183,27 @@ public class AuthService : IAuthService
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
     }
 
-    private async Task<TokenDto> IssueTokens(SupplierUser user)
+    private async Task<TokenDto> StartSession(SupplierUser user)
     {
-        var accessToken = _tokenService.GenerateAccessToken(user);
         var refreshToken = _tokenService.GenerateRefreshToken();
+        var session = new SupplierUserSession(user, HashToken(refreshToken.Token), refreshToken.ExpiresAt);
 
-        user.AssignRefreshToken(refreshToken.Token, refreshToken.ExpiresAt);
-
-        _unitOfWork.SupplierUserRepository.Update(user);
+        _unitOfWork.SupplierUserSessionRepository.Add(session);
         await _unitOfWork.SaveChangesAsync();
+
+        return BuildTokens(session, refreshToken.Token);
+    }
+
+    private TokenDto BuildTokens(SupplierUserSession session, string refreshToken)
+    {
+        var accessToken = _tokenService.GenerateAccessToken(session.SupplierUser, session.Id);
 
         return new TokenDto
         {
             AccessToken = accessToken.Token,
-            RefreshToken = refreshToken.Token,
+            RefreshToken = refreshToken,
             ExpiresAt = accessToken.ExpiresAt,
-            User = _mapper.Map<AuthenticatedUserDto>(user)
+            User = _mapper.Map<AuthenticatedUserDto>(session.SupplierUser)
         };
     }
 }

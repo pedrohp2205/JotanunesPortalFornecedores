@@ -68,50 +68,28 @@ public class SupplierUserTest
     }
 
     [Fact]
-    public void Should_Validate_Refresh_Token_Only_While_Not_Expired()
-    {
-        var user = ValidUser();
-        user.AssignRefreshToken("token-abc", DateTime.UtcNow.AddDays(1));
-
-        Assert.True(user.IsRefreshTokenValid("token-abc"));
-        Assert.False(user.IsRefreshTokenValid("outro-token"));
-
-        user.RevokeRefreshToken();
-        Assert.False(user.IsRefreshTokenValid("token-abc"));
-    }
-
-    [Fact]
-    public void Should_Invalidate_Refresh_Token_When_Expired()
-    {
-        var user = ValidUser();
-        user.AssignRefreshToken("token-abc", DateTime.UtcNow.AddMinutes(-1));
-
-        Assert.False(user.IsRefreshTokenValid("token-abc"));
-    }
-
-    [Fact]
     public void Should_Reset_Session_State_When_Password_Is_Changed()
     {
         var user = ValidUser();
-        user.AssignRefreshToken("token-abc", DateTime.UtcNow.AddDays(1));
+        var stamp = user.SecurityStamp;
 
         user.SetPassword("novo-hash");
 
         Assert.Equal("novo-hash", user.PasswordHash);
         Assert.False(user.MustChangePassword);
-        Assert.Null(user.RefreshToken);
+        Assert.NotEqual(stamp, user.SecurityStamp);
     }
 
     [Fact]
-    public void Should_Revoke_Refresh_Token_When_Deactivated()
+    public void Should_Revoke_Sessions_When_Deactivated()
     {
         var user = ValidUser();
-        user.AssignRefreshToken("token-abc", DateTime.UtcNow.AddDays(1));
+        var stamp = user.SecurityStamp;
 
         user.Deactivate();
 
         Assert.False(user.Active);
-        Assert.Null(user.RefreshToken);
+        Assert.NotEqual(stamp, user.SecurityStamp);
     }
 
     [Fact]
@@ -119,7 +97,7 @@ public class SupplierUserTest
     {
         var user = ValidUser();
         user.SetPassword("hash-atual");
-        user.AssignRefreshToken("token-abc", DateTime.UtcNow.AddDays(1));
+        var stamp = user.SecurityStamp;
         for (var i = 0; i < SupplierUser.MaxLoginAttempts; i++)
         {
             user.RegisterFailedLogin();
@@ -130,7 +108,7 @@ public class SupplierUserTest
         Assert.Equal("hash-provisorio", user.PasswordHash);
         Assert.True(user.MustChangePassword);
         Assert.False(user.IsLocked());
-        Assert.Null(user.RefreshToken);
+        Assert.NotEqual(stamp, user.SecurityStamp);
     }
 
     [Fact]

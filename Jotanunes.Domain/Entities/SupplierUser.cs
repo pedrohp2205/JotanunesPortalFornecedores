@@ -19,8 +19,7 @@ public class SupplierUser : BaseEntity
     public bool Active { get; private set; }
     public bool MustChangePassword { get; private set; }
     public DateTime? LastAccessAt { get; private set; }
-    public string? RefreshToken { get; private set; }
-    public DateTime? RefreshTokenExpiresAt { get; private set; }
+    public string SecurityStamp { get; private set; } = string.Empty;
     public int FailedLoginAttempts { get; private set; }
     public DateTime? LockedUntil { get; private set; }
     public string? PasswordResetTokenHash { get; private set; }
@@ -38,6 +37,7 @@ public class SupplierUser : BaseEntity
         PasswordHash = passwordHash;
         Active = true;
         MustChangePassword = mustChangePassword;
+        SecurityStamp = NewSecurityStamp();
     }
 
     public bool IsLocked()
@@ -53,8 +53,7 @@ public class SupplierUser : BaseEntity
         MustChangePassword = false;
         FailedLoginAttempts = 0;
         LockedUntil = null;
-        RefreshToken = null;
-        RefreshTokenExpiresAt = null;
+        RevokeAllSessions();
         ClearPasswordResetToken();
     }
 
@@ -112,26 +111,9 @@ public class SupplierUser : BaseEntity
         }
     }
 
-    public void AssignRefreshToken(string refreshToken, DateTime expiresAt)
+    public void RevokeAllSessions()
     {
-        JotanunesException.When(string.IsNullOrWhiteSpace(refreshToken), "Refresh token não pode ser vazio.");
-
-        RefreshToken = refreshToken;
-        RefreshTokenExpiresAt = expiresAt;
-    }
-
-    public void RevokeRefreshToken()
-    {
-        RefreshToken = null;
-        RefreshTokenExpiresAt = null;
-    }
-
-    public bool IsRefreshTokenValid(string refreshToken)
-    {
-        return !string.IsNullOrWhiteSpace(RefreshToken)
-            && RefreshToken == refreshToken
-            && RefreshTokenExpiresAt.HasValue
-            && RefreshTokenExpiresAt.Value > DateTime.UtcNow;
+        SecurityStamp = NewSecurityStamp();
     }
 
     public void Activate()
@@ -142,8 +124,13 @@ public class SupplierUser : BaseEntity
     public void Deactivate()
     {
         Active = false;
-        RevokeRefreshToken();
+        RevokeAllSessions();
         ClearPasswordResetToken();
+    }
+
+    private static string NewSecurityStamp()
+    {
+        return Guid.NewGuid().ToString("N");
     }
 
     private static void Validate(string name, string email, string passwordHash)

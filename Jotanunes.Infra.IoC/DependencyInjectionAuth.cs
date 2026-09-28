@@ -1,5 +1,7 @@
 using System.Text;
+using Jotanunes.Infra.IoC.Authorization;
 using Jotanunes.Infra.Security.Settings;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,7 +42,20 @@ public static class DependencyInjectionAuth
                 };
             });
 
-        service.AddAuthorization();
+        service.AddAuthorization(options =>
+        {
+            options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+                .RequireAuthenticatedUser()
+                .AddRequirements(new PasswordChangedRequirement())
+                .Build();
+
+            options.AddPolicy(SupplierPolicies.AllowPendingPasswordChange, policy => policy
+                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+                .RequireAuthenticatedUser());
+        });
+
+        service.AddSingleton<IAuthorizationHandler, PasswordChangedRequirement>();
+        service.AddSingleton<IAuthorizationMiddlewareResultHandler, PasswordChangeResultHandler>();
 
         return service;
     }

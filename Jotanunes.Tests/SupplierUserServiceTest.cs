@@ -29,12 +29,12 @@ public class SupplierUserServiceTest
     [Fact]
     public async Task Should_Deactivate_User_And_Revoke_Session()
     {
-        _user.AssignRefreshToken("token-abc", DateTime.UtcNow.AddDays(1));
+        var stamp = _user.SecurityStamp;
 
         await _service.Deactivate(1, 10);
 
         Assert.False(_user.Active);
-        Assert.Null(_user.RefreshToken);
+        Assert.NotEqual(stamp, _user.SecurityStamp);
         _unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Once);
     }
 

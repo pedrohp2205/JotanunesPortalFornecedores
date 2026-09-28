@@ -29,13 +29,6 @@ public class SupplierUserRepository : GenericRepository<SupplierUser>, ISupplier
                                 .FirstOrDefaultAsync(u => u.Email == normalized);
     }
 
-    public async Task<SupplierUser?> GetByRefreshToken(string refreshToken)
-    {
-        return await _context.SupplierUsers
-                                .Include(u => u.Company)
-                                .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
-    }
-
     public async Task<List<SupplierUser>> GetByCompany(long companyId)
     {
         return await _context.SupplierUsers

@@ -41,8 +41,8 @@ public class DocumentComplianceServiceTest
         _companies.Setup(c => c.GetById(1)).ReturnsAsync(_company);
         _requests.Setup(r => r.GetById(1)).ReturnsAsync(() => Request(1));
         _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { _onboardingType, _recurringType });
-        _documents.Setup(d => d.GetAll(It.IsAny<DocumentFilter>())).ReturnsAsync(new List<Document>());
-        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document>());
+        _documents.Setup(d => d.GetOnboardingByCompanies(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document>());
+        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>())).ReturnsAsync(new List<Document>());
 
         _service = new DocumentComplianceService(_unitOfWork.Object);
     }
@@ -98,8 +98,8 @@ public class DocumentComplianceServiceTest
     {
         var request = Request(1);
         var period = CurrentPeriod();
-        _documents.Setup(d => d.GetAll(It.IsAny<DocumentFilter>())).ReturnsAsync(new List<Document> { ApprovedOnboarding() });
-        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>()))
+        _documents.Setup(d => d.GetOnboardingByCompanies(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { ApprovedOnboarding() });
+        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>()))
             .ReturnsAsync(new List<Document> { ApprovedRecurring(1, period.Start, period.End) });
 
         var result = await _service.GetPendingBatch(new[] { request });
@@ -112,8 +112,8 @@ public class DocumentComplianceServiceTest
     {
         var request = Request(1);
         var previousMonth = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(-2);
-        _documents.Setup(d => d.GetAll(It.IsAny<DocumentFilter>())).ReturnsAsync(new List<Document> { ApprovedOnboarding() });
-        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>()))
+        _documents.Setup(d => d.GetOnboardingByCompanies(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { ApprovedOnboarding() });
+        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>()))
             .ReturnsAsync(new List<Document> { ApprovedRecurring(1, previousMonth.AddDays(-5), previousMonth) });
 
         var result = await _service.GetPendingBatch(new[] { request });
@@ -129,8 +129,8 @@ public class DocumentComplianceServiceTest
         var request = Request(1);
         var period = CurrentPeriod();
         var awaitingReview = new Document(1, _recurringType.Id, 1, DocumentCategory.Recurring, DocumentSubject.Company, "k", "folha.pdf", "application/pdf", 1, null, null, period.Start, period.End) { Id = 300 };
-        _documents.Setup(d => d.GetAll(It.IsAny<DocumentFilter>())).ReturnsAsync(new List<Document> { ApprovedOnboarding() });
-        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { awaitingReview });
+        _documents.Setup(d => d.GetOnboardingByCompanies(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { ApprovedOnboarding() });
+        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>())).ReturnsAsync(new List<Document> { awaitingReview });
 
         var result = await _service.GetPendingBatch(new[] { request });
 
@@ -143,7 +143,7 @@ public class DocumentComplianceServiceTest
         var result = await _service.GetPendingBatch(new[] { Request(1, cancelled: true) });
 
         Assert.Empty(result);
-        _documents.Verify(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>()), Times.Never);
+        _documents.Verify(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>()), Times.Never);
     }
 
     [Fact]
@@ -154,9 +154,38 @@ public class DocumentComplianceServiceTest
         var result = await _service.GetPendingBatch(requests);
 
         Assert.Equal(3, result.Count);
-        _documents.Verify(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>()), Times.Once);
-        _documents.Verify(d => d.GetAll(It.IsAny<DocumentFilter>()), Times.Once);
+        _documents.Verify(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>()), Times.Once);
+        _documents.Verify(d => d.GetOnboardingByCompanies(It.IsAny<IReadOnlyCollection<long>>()), Times.Once);
         _types.Verify(t => t.GetApplicable(It.IsAny<SupplierType>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Should_Load_Onboarding_Of_All_Companies_In_A_Single_Query()
+    {
+        var otherCompany = new Company(
+            "11.444.777/0001-61",
+            "Outra Empresa LTDA",
+            "Outra",
+            "contato@outra.com.br",
+            "(79) 98888-7777",
+            "João Lima",
+            new Address("Rua B", "1", "Centro", "Aracaju", "SE", "49000-000"),
+            SupplierType.Material)
+        { Id = 2 };
+        var otherRequest = new SupplyRequest(otherCompany, 1, SupplierType.Material) { Id = 2 };
+        typeof(SupplyRequest).GetProperty(nameof(SupplyRequest.WorkSite))!.SetValue(otherRequest, _workSite);
+
+        await _service.GetPendingBatch(new[] { Request(1), otherRequest });
+
+        _documents.Verify(d => d.GetOnboardingByCompanies(It.Is<IReadOnlyCollection<long>>(ids => ids.OrderBy(id => id).SequenceEqual(new long[] { 1, 2 }))), Times.Once);
+    }
+
+    [Fact]
+    public async Task Should_Load_Only_Recurring_Documents_Reaching_The_Current_Period()
+    {
+        await _service.GetPendingBatch(new[] { Request(1) });
+
+        _documents.Verify(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), CurrentPeriod().Start), Times.Once);
     }
 
     private DocumentType WorkerType(long id, string code) =>
@@ -177,7 +206,7 @@ public class DocumentComplianceServiceTest
         var rejected = ApprovedRecurring(1, period.Start, period.End);
         typeof(Document).GetProperty(nameof(Document.Status))!.SetValue(rejected, DocumentStatus.Pending);
         rejected.Reject("Ilegível");
-        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { rejected });
+        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>())).ReturnsAsync(new List<Document> { rejected });
 
         var checklist = await _service.GetChecklist(1);
 
@@ -197,7 +226,7 @@ public class DocumentComplianceServiceTest
         var rejected = new Document(1, _recurringType.Id, 1, DocumentCategory.Recurring, DocumentSubject.Company, "k", "a.pdf", "application/pdf", 1, null, null, period.Start, period.End) { Id = 1, CreatedAt = DateTime.UtcNow.AddHours(-3) };
         rejected.Reject("Borrado");
         var resubmitted = new Document(1, _recurringType.Id, 1, DocumentCategory.Recurring, DocumentSubject.Company, "k", "b.pdf", "application/pdf", 1, null, null, period.Start, period.End) { Id = 2, CreatedAt = DateTime.UtcNow.AddHours(-2) };
-        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { rejected, resubmitted });
+        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>())).ReturnsAsync(new List<Document> { rejected, resubmitted });
 
         var whilePending = Assert.Single((await _service.GetChecklist(1)).RecurringCompanyItems);
         Assert.Equal(ChecklistItemStatus.Pending, whilePending.Status);
@@ -229,8 +258,8 @@ public class DocumentComplianceServiceTest
         var simples = new DocumentType("SIMPLES", "Comprovante do Simples", DocumentCategory.Onboarding, SupplierType.Material, DocumentSubject.Company, isConditional: true, conditionDescription: "Optante do Simples Nacional") { Id = 30 };
         _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { simples, _onboardingType, _recurringType });
         var period = CurrentPeriod();
-        _documents.Setup(d => d.GetAll(It.IsAny<DocumentFilter>())).ReturnsAsync(new List<Document> { ApprovedOnboarding() });
-        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { ApprovedRecurring(1, period.Start, period.End) });
+        _documents.Setup(d => d.GetOnboardingByCompanies(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { ApprovedOnboarding() });
+        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>())).ReturnsAsync(new List<Document> { ApprovedRecurring(1, period.Start, period.End) });
 
         var checklist = await _service.GetChecklist(1);
 
@@ -253,7 +282,7 @@ public class DocumentComplianceServiceTest
         var period = CurrentPeriod();
         var approved = Worker(timesheet, "52998224725", 1, period.Start, period.End, 1, d => d.Approve());
         var rejected = Worker(receipt, "52998224725", 1, period.Start, period.End, 2, d => d.Reject("CPF ilegível"));
-        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { approved, rejected });
+        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>())).ReturnsAsync(new List<Document> { approved, rejected });
 
         var checklist = await _service.GetChecklist(1);
 

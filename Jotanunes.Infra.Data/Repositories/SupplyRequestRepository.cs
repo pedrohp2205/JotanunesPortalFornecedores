@@ -2,6 +2,7 @@ using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
+using Jotanunes.Domain.Pagination;
 using Jotanunes.Infra.Data.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +17,59 @@ public class SupplyRequestRepository : GenericRepository<SupplyRequest>, ISupply
         _context = context;
     }
 
-    public async Task<List<SupplyRequest>> Get(SupplyRequestFilter filter)
+    public async Task<PageList<SupplyRequest>> Get(PageParams pageParams, SupplyRequestFilter filter)
+    {
+        var query = ApplyFilter(filter);
+
+        var totalCount = await query.CountAsync();
+
+        var items = await Order(query)
+                            .Skip((pageParams.PageNumber - 1) * pageParams.PageSize)
+                            .Take(pageParams.PageSize)
+                            .ToListAsync();
+
+        return new PageList<SupplyRequest>(items, totalCount, pageParams.PageNumber, pageParams.PageSize);
+    }
+
+    public async Task<List<SupplyRequest>> GetAll(SupplyRequestFilter filter, bool activeOnly = false)
+    {
+        var query = ApplyFilter(filter);
+
+        if (activeOnly)
+        {
+            query = query.Where(sr => sr.Status == SupplyRequestStatus.Open || sr.Status == SupplyRequestStatus.InProgress);
+        }
+
+        return await Order(query).ToListAsync();
+    }
+
+    public async Task<SupplyRequest?> GetById(long id)
+    {
+        return await _context.SupplyRequests
+                                .Include(sr => sr.Company)
+                                .Include(sr => sr.WorkSite)
+                                .FirstOrDefaultAsync(sr => sr.Id == id);
+    }
+
+    // Indica se há solicitação ativa da empresa em algum dos tipos informados (aceita flags).
+    public async Task<bool> HasActive(long companyId, SupplierType supplierTypes)
+    {
+        return await _context.SupplyRequests
+                                .AnyAsync(sr => sr.CompanyId == companyId
+                                             && (sr.SupplierType & supplierTypes) != 0
+                                             && (sr.Status == SupplyRequestStatus.Open || sr.Status == SupplyRequestStatus.InProgress));
+    }
+
+    public async Task<bool> ActiveExists(long companyId, long workSiteId, SupplierType supplierType)
+    {
+        return await _context.SupplyRequests
+                                .AnyAsync(sr => sr.CompanyId == companyId
+                                             && sr.WorkSiteId == workSiteId
+                                             && sr.SupplierType == supplierType
+                                             && (sr.Status == SupplyRequestStatus.Open || sr.Status == SupplyRequestStatus.InProgress));
+    }
+
+    private IQueryable<SupplyRequest> ApplyFilter(SupplyRequestFilter filter)
     {
         var query = _context.SupplyRequests
                                 .AsNoTracking()
@@ -44,36 +97,15 @@ public class SupplyRequestRepository : GenericRepository<SupplyRequest>, ISupply
             query = query.Where(sr => sr.Status == filter.Status.Value);
         }
 
-        return await query
-                        .OrderBy(sr => sr.WorkSite.Name)
-                        .ThenBy(sr => sr.Company.CorporateName)
-                        .ThenBy(sr => sr.SupplierType)
-                        .ToListAsync();
+        return query;
     }
 
-    public async Task<SupplyRequest?> GetById(long id)
+    private static IQueryable<SupplyRequest> Order(IQueryable<SupplyRequest> query)
     {
-        return await _context.SupplyRequests
-                                .Include(sr => sr.Company)
-                                .Include(sr => sr.WorkSite)
-                                .FirstOrDefaultAsync(sr => sr.Id == id);
-    }
-
-    // Indica se há solicitação ativa da empresa em algum dos tipos informados (aceita flags).
-    public async Task<bool> HasActive(long companyId, SupplierType supplierTypes)
-    {
-        return await _context.SupplyRequests
-                                .AnyAsync(sr => sr.CompanyId == companyId
-                                             && (sr.SupplierType & supplierTypes) != 0
-                                             && (sr.Status == SupplyRequestStatus.Open || sr.Status == SupplyRequestStatus.InProgress));
-    }
-
-    public async Task<bool> ActiveExists(long companyId, long workSiteId, SupplierType supplierType)
-    {
-        return await _context.SupplyRequests
-                                .AnyAsync(sr => sr.CompanyId == companyId
-                                             && sr.WorkSiteId == workSiteId
-                                             && sr.SupplierType == supplierType
-                                             && (sr.Status == SupplyRequestStatus.Open || sr.Status == SupplyRequestStatus.InProgress));
+        return query
+                .OrderBy(sr => sr.WorkSite.Name)
+                .ThenBy(sr => sr.Company.CorporateName)
+                .ThenBy(sr => sr.SupplierType)
+                .ThenBy(sr => sr.Id);
     }
 }

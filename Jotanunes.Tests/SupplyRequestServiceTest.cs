@@ -11,6 +11,7 @@ using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Exceptions;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
+using Jotanunes.Domain.Pagination;
 using Moq;
 
 namespace Jotanunes.Tests;
@@ -230,15 +231,17 @@ public class SupplyRequestServiceTest
     {
         var withPending = WithId(1);
         var upToDate = WithId(2);
-        _repository.Setup(r => r.Get(It.IsAny<SupplyRequestFilter>())).ReturnsAsync(new List<SupplyRequest> { withPending, upToDate });
+        _repository.Setup(r => r.Get(It.IsAny<PageParams>(), It.IsAny<SupplyRequestFilter>()))
+            .ReturnsAsync(new PageList<SupplyRequest>(new List<SupplyRequest> { withPending, upToDate }, 2, 1, 15));
         _compliance.Setup(c => c.GetPendingBatch(It.IsAny<IReadOnlyCollection<SupplyRequest>>()))
             .ReturnsAsync(new Dictionary<long, SupplyRequestPendingDto> { [1] = Pending(recurring: 2) });
 
-        var result = await _service.Get(new SupplyRequestFilter());
+        var result = await _service.Get(new PageParams(), new SupplyRequestFilter());
 
-        Assert.Equal(2, result.Count);
-        Assert.Equal(2, result.Single(r => r.Id == 1).Pending!.MissingRecurringCompanyCount);
-        Assert.Null(result.Single(r => r.Id == 2).Pending);
+        Assert.Equal(2, result.TotalCount);
+        Assert.Equal(2, result.Items.Single(r => r.Id == 1).Pending!.MissingRecurringCompanyCount);
+        Assert.Null(result.Items.Single(r => r.Id == 2).Pending);
+        _repository.Verify(r => r.GetAll(It.IsAny<SupplyRequestFilter>(), It.IsAny<bool>()), Times.Never);
     }
 
     [Theory]
@@ -246,14 +249,31 @@ public class SupplyRequestServiceTest
     [InlineData(false, new long[] { 2, 3 })]
     public async Task Should_Filter_List_By_Pending(bool hasPending, long[] expectedIds)
     {
-        _repository.Setup(r => r.Get(It.IsAny<SupplyRequestFilter>()))
+        _repository.Setup(r => r.GetAll(It.IsAny<SupplyRequestFilter>(), It.IsAny<bool>()))
             .ReturnsAsync(new List<SupplyRequest> { WithId(1), WithId(2), WithId(3, SupplyRequestStatus.Cancelled) });
         _compliance.Setup(c => c.GetPendingBatch(It.IsAny<IReadOnlyCollection<SupplyRequest>>()))
             .ReturnsAsync(new Dictionary<long, SupplyRequestPendingDto> { [1] = Pending(onboarding: 1) });
 
-        var result = await _service.Get(new SupplyRequestFilter { HasPending = hasPending });
+        var result = await _service.Get(new PageParams(), new SupplyRequestFilter { HasPending = hasPending });
 
-        Assert.Equal(expectedIds, result.Select(r => r.Id).OrderBy(id => id));
+        Assert.Equal(expectedIds, result.Items.Select(r => r.Id).OrderBy(id => id));
+        Assert.Equal(expectedIds.Length, result.TotalCount);
+        _repository.Verify(r => r.GetAll(It.IsAny<SupplyRequestFilter>(), hasPending), Times.Once);
+    }
+
+    [Fact]
+    public async Task Should_Paginate_After_Filtering_By_Pending()
+    {
+        _repository.Setup(r => r.GetAll(It.IsAny<SupplyRequestFilter>(), It.IsAny<bool>()))
+            .ReturnsAsync(new List<SupplyRequest> { WithId(1), WithId(2), WithId(3), WithId(4) });
+        _compliance.Setup(c => c.GetPendingBatch(It.IsAny<IReadOnlyCollection<SupplyRequest>>()))
+            .ReturnsAsync(new Dictionary<long, SupplyRequestPendingDto> { [1] = Pending(onboarding: 1), [3] = Pending(onboarding: 1), [4] = Pending(onboarding: 1) });
+
+        var result = await _service.Get(new PageParams { PageNumber = 2, PageSize = 2 }, new SupplyRequestFilter { HasPending = true });
+
+        Assert.Equal(new long[] { 4 }, result.Items.Select(r => r.Id));
+        Assert.Equal(3, result.TotalCount);
+        Assert.Equal(2, result.TotalPages);
     }
 
     [Fact]

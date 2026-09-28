@@ -30,8 +30,9 @@ public class SupplierUserConfiguration : IEntityTypeConfiguration<SupplierUser>
         builder.Property(u => u.MustChangePassword)
             .IsRequired();
 
-        builder.Property(u => u.RefreshToken)
-            .HasMaxLength(255);
+        builder.Property(u => u.SecurityStamp)
+            .HasMaxLength(32)
+            .IsRequired();
 
         builder.Property(u => u.PasswordResetTokenHash)
             .HasMaxLength(64);
@@ -42,7 +43,5 @@ public class SupplierUserConfiguration : IEntityTypeConfiguration<SupplierUser>
         builder.HasIndex(u => u.Email)
             .IsUnique()
             .HasFilter("[DeletedAt] IS NULL");
-
-        builder.HasIndex(u => u.RefreshToken);
     }
 }

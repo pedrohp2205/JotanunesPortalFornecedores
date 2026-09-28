@@ -1,6 +1,7 @@
 using Jotanunes.API.Shared.Extensions;
 using Jotanunes.Application.DTOs.Auth;
 using Jotanunes.Application.Interfaces;
+using Jotanunes.Infra.IoC.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -50,15 +51,15 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("logout")]
-    [Authorize]
+    [Authorize(Policy = SupplierPolicies.AllowPendingPasswordChange)]
     public async Task<ActionResult> Logout()
     {
-        await _authService.Logout(User.GetUserId());
+        await _authService.Logout(User.GetUserId(), User.GetSessionId());
         return NoContent();
     }
 
     [HttpGet("me")]
-    [Authorize]
+    [Authorize(Policy = SupplierPolicies.AllowPendingPasswordChange)]
     public async Task<ActionResult<AuthenticatedUserDto>> Me()
     {
         var user = await _authService.GetAuthenticatedUser(User.GetUserId());
@@ -66,10 +67,10 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("change-password")]
-    [Authorize]
-    public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
+    [Authorize(Policy = SupplierPolicies.AllowPendingPasswordChange)]
+    public async Task<ActionResult<TokenDto>> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
     {
-        await _authService.ChangePassword(User.GetUserId(), changePasswordDto);
-        return NoContent();
+        var token = await _authService.ChangePassword(User.GetUserId(), changePasswordDto);
+        return Ok(token);
     }
 }

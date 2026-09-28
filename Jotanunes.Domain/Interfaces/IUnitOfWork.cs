@@ -4,6 +4,7 @@ public interface IUnitOfWork
 {
     ICompanyRepository CompanyRepository { get; }
     ISupplierUserRepository SupplierUserRepository { get; }
+    ISupplierUserSessionRepository SupplierUserSessionRepository { get; }
     IWorkSiteRepository WorkSiteRepository { get; }
     ISupplyRequestRepository SupplyRequestRepository { get; }
     IDocumentTypeRepository DocumentTypeRepository { get; }
