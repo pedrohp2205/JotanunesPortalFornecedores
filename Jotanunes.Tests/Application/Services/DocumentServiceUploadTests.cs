@@ -14,6 +14,7 @@ public class DocumentServiceUploadTests
 {
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IDocumentRepository> _documents = new();
+    private readonly Mock<IDocumentAnalysisRepository> _analyses = new();
     private readonly Mock<IDocumentTypeRepository> _types = new();
     private readonly Mock<ICompanyRepository> _companies = new();
     private readonly Mock<IDocumentStorageService> _storage = new();
@@ -37,6 +38,7 @@ public class DocumentServiceUploadTests
         { Id = 1 };
 
         _unitOfWork.SetupGet(u => u.DocumentRepository).Returns(_documents.Object);
+        _unitOfWork.SetupGet(u => u.DocumentAnalysisRepository).Returns(_analyses.Object);
         _unitOfWork.SetupGet(u => u.DocumentTypeRepository).Returns(_types.Object);
         _unitOfWork.SetupGet(u => u.CompanyRepository).Returns(_companies.Object);
         _unitOfWork.SetupGet(u => u.WorkerRepository).Returns(_workers.Object);
@@ -72,6 +74,21 @@ public class DocumentServiceUploadTests
 
         Assert.Equal("application/pdf", added!.ContentType);
         _storage.Verify(s => s.UploadAsync(It.IsAny<string>(), It.IsAny<Stream>(), "application/pdf", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Should_Queue_Analysis_For_Uploaded_Document()
+    {
+        Document? added = null;
+        DocumentAnalysis? analysis = null;
+        _documents.Setup(d => d.Add(It.IsAny<Document>())).Callback<Document>(d => added = d);
+        _documents.Setup(d => d.GetById(It.IsAny<long>())).ReturnsAsync(() => added);
+        _analyses.Setup(a => a.Add(It.IsAny<DocumentAnalysis>())).Callback<DocumentAnalysis>(a => analysis = a);
+
+        await _service.Upload(1, 5, new DocumentUploadDto { DocumentTypeId = 10 }, Pdf(), "cartao.pdf");
+
+        Assert.Same(added, analysis!.Document);
+        Assert.Equal(DocumentAnalysisStatus.Pending, analysis.Status);
     }
 
     [Fact]

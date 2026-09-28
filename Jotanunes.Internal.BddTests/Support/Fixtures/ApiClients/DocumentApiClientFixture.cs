@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 
+using Jotanunes.Application.DTOs.Analysis;
 using Jotanunes.Application.DTOs.Compliance;
 using Jotanunes.Application.DTOs.Documents;
 using Jotanunes.Internal.BddTests.Support.Contexts;
@@ -56,5 +57,19 @@ internal class DocumentApiClientFixture(
         httpResponseCtx.Response = await apiClientFixture.Client
             .GetAsync($"{BASE_URL}/checklist/{supplyRequestId}");
         return await httpResponseCtx.TryReadFromJsonAsync<ComplianceChecklistDto>();
+    }
+
+    public async Task<DocumentAnalysisDto?> GetAnalysisAsync(long id)
+    {
+        httpResponseCtx.Response = await apiClientFixture.Client
+            .GetAsync($"{BASE_URL}/{id}/analysis");
+        return await httpResponseCtx.TryReadFromJsonAsync<DocumentAnalysisDto>();
+    }
+
+    public async Task<DocumentAnalysisDto?> ReanalyzeAsync(long id)
+    {
+        httpResponseCtx.Response = await apiClientFixture.Client
+            .PostAsync($"{BASE_URL}/{id}/analysis", null);
+        return await httpResponseCtx.TryReadFromJsonAsync<DocumentAnalysisDto>();
     }
 }

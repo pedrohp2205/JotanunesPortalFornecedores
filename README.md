@@ -30,6 +30,7 @@ JotanunesPortalFornecedores/
 ├── Jotanunes.Infra.Data       # DbContext, configurations, repositórios, migrations
 ├── Jotanunes.Infra.Security   # Hash de senha (BCrypt) e emissão de JWT
 ├── Jotanunes.Infra.Storage    # Armazenamento de documentos (S3)
+├── Jotanunes.Infra.DocumentAi # Leitura de documentos (PdfPig) e worker da análise automática
 ├── Jotanunes.Infra.IoC        # Injeção de dependências
 ├── Jotanunes.AppHost          # Orquestração local com .NET Aspire (SQL Server + APIs)
 ├── Jotanunes.Tests            # Testes unitários (xUnit)
@@ -149,6 +150,37 @@ No checklist, `workers` lista os **alocados**, com ou sem documento enviado. Cad
 
 O checklist também passa a trazer `allocatedWorkerCount`. Tipos de habilitação de trabalhador não entram na habilitação da empresa.
 
+### Análise automática de documentos
+
+Todo upload grava, na mesma transação, uma análise `Pending` em `document_analyses`. Um worker (`DocumentAnalysisWorker`) busca as pendentes no banco, lê o arquivo e produz um **parecer sugerido**: campos extraídos, achados e um veredito. **Não aprova nem recusa nada**: `approve`/`reject` continuam manuais, e o parecer serve de apoio ao analista.
+
+**Cadeia de fallback.** Cada tipo de documento tem um analisador (`IDocumentTypeAnalyzer`, escolhido pelo `code` do tipo) que declara os campos obrigatórios. A leitura tenta os extratores (`IDocumentTextExtractor`) do mais barato ao mais caro (`NativeText` → `Ocr` → `Vision`) e para no primeiro que lê todos os obrigatórios. CNPJ ou CPF com dígito verificador inválido conta como não lido, o que faz a leitura subir de nível. Se nenhum nível completa, a análise vai para `ManualReviewRequired` com a lista do que faltou. Por enquanto só existe o nível `NativeText` (camada de texto do PDF, via PdfPig); OCR e modelo de visão entram nas próximas etapas.
+
+| Status | Significado |
+|---|---|
+| `Pending` (1) | Na fila do worker |
+| `Completed` (2) | Lido; ver `verdict` e `findings` |
+| `ManualReviewRequired` (3) | Nenhum nível leu todos os campos obrigatórios; `failureReason` diz quais faltaram |
+| `Failed` (4) | Erro técnico (ex.: bucket indisponível) em `MaxAttempts` (3) tentativas seguidas |
+| `NotSupported` (5) | Ainda não há analisador para o código do tipo |
+
+Veredito: `Conforming` (1) sem achados relevantes, `NeedsAttention` (2) com algum `Warning` e `NonConforming` (3) com algum `Blocking`. Achados `Info` só informam (ex.: validade identificada na certidão).
+
+Analisadores disponíveis:
+
+| Código do tipo | Documento | Confere |
+|---|---|---|
+| `FGTS_CND` (id 4, "Certidão Negativa de FGTS") | Certificado de Regularidade do FGTS (CRF) | CNPJ igual ao da empresa; se está vencida, se ainda não vale ou se vence em até 7 dias; validade informada no envio × certidão; razão social |
+
+Endpoints (frente interna):
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/document/{id}/analysis` | Parecer do documento |
+| POST | `/api/document/{id}/analysis` | Recoloca a análise na fila (202). Também cria a análise de documentos enviados antes desta funcionalidade |
+
+Configuração (`DocumentAnalysis`): `WorkerEnabled` (ligado só na frente externa, porque o worker não trava as linhas e **deve rodar em um único processo**), `PollingIntervalSeconds` (10) e `BatchSize` (10).
+
 ---
 
 ## Pré-requisitos
@@ -242,6 +274,8 @@ Jotanunes.{External,Internal}.BddTests/
 - **Banco**: cada projeto usa a sua base (`jotanunes_portal_test_external` e `jotanunes_portal_test_internal`), criada e migrada automaticamente. São bases separadas porque o `dotnet test` roda os dois projetos em paralelo e, numa base só, os cenários de um disputariam os mesmos registros com os do outro. Cada cenário roda dentro de uma transação que é desfeita ao final, então os testes não deixam dados. Para apontar para outro servidor, defina `DataBase:ConnectionString` em user secrets (`dotnet user-secrets set "DataBase:ConnectionString" "..." --project Jotanunes.External.BddTests`, e o mesmo para o `Internal`) ou pela variável `DataBase__ConnectionString`. A variável `DATABASE` usada pelas APIs tem precedência sobre essa configuração, então não a deixe exportada no shell ao rodar os testes.
 - **Autenticação** (externa): os passos `Dado que eu estou autenticado ...` fazem login real em `/api/auth/login` e usam o JWT devolvido. A frente interna ainda não tem autenticação.
 - **Armazenamento**: `IDocumentStorageService` é substituído por um mock; e-mail usa o `LogEmailSender`.
+
+**Golden set da análise automática.** `GoldenSetTests` roda os analisadores contra documentos reais anotados em `Documentos Jotanunes/golden-set.json`. A pasta fica fora do git porque os arquivos têm dados pessoais; sem ela, o teste passa sem conferir nada. Cada caso informa o arquivo, o código do tipo, se a leitura deve ser completa (`expectComplete`) e os campos esperados (`expected`). Casos com `expectComplete: false` garantem que um documento errado (ex.: CNH enviada no lugar da CRF) não seja aceito como aquele tipo. Ao escrever um analisador novo, anote primeiro os arquivos reais dele aqui.
 
 ---
 

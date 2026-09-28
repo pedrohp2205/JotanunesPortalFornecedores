@@ -1,4 +1,5 @@
 using AutoMapper;
+using Jotanunes.Application.DTOs.Analysis;
 using Jotanunes.Application.DTOs.Auth;
 using Jotanunes.Application.DTOs.Companies;
 using Jotanunes.Application.DTOs.DocumentTypes;
@@ -70,5 +71,15 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.WorkerCpf, opt => opt.MapFrom(src => src.Worker.Cpf))
             .ForMember(dest => dest.WorkerFormattedCpf, opt => opt.MapFrom(src => Cpf.Format(src.Worker.Cpf)))
             .ForMember(dest => dest.WorkerActive, opt => opt.MapFrom(src => src.Worker.Active));
+
+        CreateMap<ExtractedField, ExtractedFieldDto>();
+
+        CreateMap<AnalysisFinding, AnalysisFindingDto>()
+            .ForMember(dest => dest.SeverityDescription, opt => opt.MapFrom(src => src.Severity.ToString()));
+
+        CreateMap<DocumentAnalysis, DocumentAnalysisDto>()
+            .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.VerdictDescription, opt => opt.MapFrom(src => src.Verdict != null ? src.Verdict.ToString() : null))
+            .ForMember(dest => dest.EngineDescription, opt => opt.MapFrom(src => src.Engine != null ? src.Engine.ToString() : null));
     }
 }

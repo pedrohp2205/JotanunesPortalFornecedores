@@ -1,3 +1,4 @@
+using Jotanunes.Application.DTOs.Analysis;
 using Jotanunes.Application.DTOs.Compliance;
 using Jotanunes.Application.DTOs.Documents;
 using Jotanunes.Application.Interfaces;
@@ -9,7 +10,10 @@ namespace Jotanunes.API.Internal.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class DocumentController(IDocumentService documentService, IDocumentComplianceService complianceService) : ControllerBase
+public class DocumentController(
+    IDocumentService documentService,
+    IDocumentComplianceService complianceService,
+    IDocumentAnalysisService analysisService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PageList<DocumentDto>>> Get([FromQuery] PageParams pageParams, [FromQuery] DocumentFilter filter)
@@ -44,6 +48,20 @@ public class DocumentController(IDocumentService documentService, IDocumentCompl
     {
         var document = await documentService.Reject(id, rejectDto.Reason);
         return Ok(document);
+    }
+
+    [HttpGet("{id:long}/analysis")]
+    public async Task<ActionResult<DocumentAnalysisDto>> GetAnalysis(long id)
+    {
+        var analysis = await analysisService.GetByDocument(id);
+        return Ok(analysis);
+    }
+
+    [HttpPost("{id:long}/analysis")]
+    public async Task<ActionResult<DocumentAnalysisDto>> Reanalyze(long id)
+    {
+        var analysis = await analysisService.Reanalyze(id);
+        return Accepted(analysis);
     }
 
     [HttpGet("checklist/{supplyRequestId:long}")]

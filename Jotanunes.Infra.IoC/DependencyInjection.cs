@@ -3,10 +3,13 @@ using Amazon.S3;
 using Jotanunes.Application.DTOs.Mapping;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Application.Services;
+using Jotanunes.Application.Services.Analyzers;
 using Jotanunes.Application.Settings;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Infra.Data.Context;
 using Jotanunes.Infra.Data.Repositories;
+using Jotanunes.Infra.DocumentAi.Services;
+using Jotanunes.Infra.DocumentAi.Settings;
 using Jotanunes.Infra.Email.Services;
 using Jotanunes.Infra.Email.Settings;
 using Jotanunes.Infra.Security.Services;
@@ -47,6 +50,29 @@ public static class DependencyInjection
 
         service.AddDocumentStorage(configuration);
         service.AddEmail(configuration);
+        service.AddDocumentAnalysis(configuration);
+
+        return service;
+    }
+
+    private static IServiceCollection AddDocumentAnalysis(this IServiceCollection service, IConfiguration configuration)
+    {
+        var section = configuration.GetSection(DocumentAnalysisSettings.SectionName);
+        var settings = section.Get<DocumentAnalysisSettings>() ?? new DocumentAnalysisSettings();
+
+        service.Configure<DocumentAnalysisSettings>(section);
+        service.AddSingleton(TimeProvider.System);
+
+        service.AddSingleton<IDocumentTextExtractor, PdfNativeTextExtractor>();
+
+        service.AddSingleton<IDocumentTypeAnalyzer, CrfAnalyzer>();
+
+        service.AddScoped<IDocumentAnalysisService, DocumentAnalysisService>();
+
+        if (settings.WorkerEnabled)
+        {
+            service.AddHostedService<DocumentAnalysisWorker>();
+        }
 
         return service;
     }

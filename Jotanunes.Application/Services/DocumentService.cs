@@ -132,6 +132,7 @@ public class DocumentService : IDocumentService
         await _storageService.UploadAsync(storageKey, fileContent, contentType);
 
         _unitOfWork.DocumentRepository.Add(document);
+        _unitOfWork.DocumentAnalysisRepository.Add(new DocumentAnalysis(document));
 
         try
         {
