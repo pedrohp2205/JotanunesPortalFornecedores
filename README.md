@@ -31,7 +31,10 @@ JotanunesPortalFornecedores/
 ├── Jotanunes.Infra.Security   # Hash de senha (BCrypt) e emissão de JWT
 ├── Jotanunes.Infra.Storage    # Armazenamento de documentos (S3)
 ├── Jotanunes.Infra.IoC        # Injeção de dependências
-├── Jotanunes.Tests            # Testes unitários de domínio (xUnit)
+├── Jotanunes.AppHost          # Orquestração local com .NET Aspire (SQL Server + APIs)
+├── Jotanunes.Tests            # Testes unitários (xUnit)
+├── Jotanunes.External.BddTests # Testes de integração/BDD da API externa (Reqnroll)
+├── Jotanunes.Internal.BddTests # Testes de integração/BDD da API interna (Reqnroll)
 ├── Dockerfile.external
 ├── Dockerfile.internal
 └── docker-compose.yml
@@ -138,6 +141,20 @@ Swagger:
 
 ---
 
+## Executando com Aspire
+
+O `Jotanunes.AppHost` (.NET Aspire 13, exige o SDK do .NET 10) sobe o SQL Server em container, cria as bases `jotanunes_portal` (dev) e `jotanunes_portal_test` (usada pelos `*.BddTests`), aplica as migrations do EF Core e inicia as duas APIs já apontando para a base de dev. O dashboard mostra logs, traces e health de tudo.
+
+```bash
+dotnet run --project Jotanunes.AppHost    # ou: aspire run
+```
+
+- **SQL Server**: porta fixa `1433`, senha `SenhaForte123!` (parâmetro `sql-password` em `Jotanunes.AppHost/appsettings.json`; sobrescreva em user secrets se quiser). O container é persistente e os dados ficam em volume, então sobrevivem ao encerramento do AppHost. Pare o `sqlserver` do Docker Compose antes, porque os dois usam a porta 1433.
+- **Migrations**: aplicadas automaticamente quando o banco fica pronto. O comando **Apply EF Migrations**, no menu de cada base no dashboard, reaplica sob demanda.
+- **Docker ou Podman**: o Aspire funciona com os dois. Por padrão ele detecta o runtime instalado. Para forçar o Podman quando os dois estiverem instalados, exporte `ASPIRE_CONTAINER_RUNTIME=podman` antes de rodar.
+
+---
+
 ## Executando localmente
 
 ```bash
@@ -160,9 +177,38 @@ dotnet ef database update --project Jotanunes.Infra.Data --startup-project Jotan
 
 ## Testes
 
+São três projetos:
+
+| Projeto | Tipo | Depende de banco |
+| --- | --- | --- |
+| `Jotanunes.Tests` | Unitários (xUnit + Moq), organizados em pastas que espelham as camadas: `Domain/`, `Application/`, `Infra/` | Não |
+| `Jotanunes.External.BddTests` | Integração/BDD (Reqnroll + xUnit v3) da API externa, via `WebApplicationFactory` | Sim (SQL Server) |
+| `Jotanunes.Internal.BddTests` | Integração/BDD (Reqnroll + xUnit v3) da API interna, via `WebApplicationFactory` | Sim (SQL Server) |
+
 ```bash
+docker compose up -d sqlserver   # necessário só para os projetos *.BddTests
 dotnet test
 ```
+
+### Projetos BDD
+
+Cada frente tem seu próprio projeto, autocontido (sem biblioteca compartilhada entre eles). Os cenários ficam em `Features/` (Gherkin em pt-BR), com `Api/` para os endpoints e `TestingEnvironmentSetup/` para validar o próprio ambiente de teste. A organização:
+
+```
+Jotanunes.{External,Internal}.BddTests/
+├── Features/            # .feature (Funcionalidade / Cenário / Esquema do Cenário)
+├── StepDefinitions/     # Bindings, espelhando Features/; passos reutilizáveis em Shared/
+├── Drivers/             # Construção de entidades e DTOs válidos para os cenários
+└── Support/
+    ├── Contexts/        # Estado compartilhado entre passos de um cenário (Given/HttpResponse)
+    ├── Fixtures/        # Configuração, banco e WebApplicationFactory da API
+    │   └── ApiClients/  # Um cliente HTTP por controller
+    └── Models/          # Modelos de resposta usados só nos testes
+```
+
+- **Banco**: os dois projetos usam a base `jotanunes_portal_test`, criada e migrada automaticamente. Cada cenário roda dentro de uma transação que é desfeita ao final, então os testes não deixam dados. Para apontar para outro servidor, defina `DataBase:ConnectionString` em user secrets (`dotnet user-secrets set "DataBase:ConnectionString" "..." --project Jotanunes.External.BddTests`, e o mesmo para o `Internal`) ou pela variável `DataBase__ConnectionString`. A variável `DATABASE` usada pelas APIs tem precedência sobre essa configuração, então não a deixe exportada no shell ao rodar os testes.
+- **Autenticação** (externa): os passos `Dado que eu estou autenticado ...` fazem login real em `/api/auth/login` e usam o JWT devolvido. A frente interna ainda não tem autenticação.
+- **Armazenamento**: `IDocumentStorageService` é substituído por um mock; e-mail usa o `LogEmailSender`.
 
 ---
 
