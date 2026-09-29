@@ -143,7 +143,7 @@ Swagger:
 
 ## Executando com Aspire
 
-O `Jotanunes.AppHost` (.NET Aspire 13, exige o SDK do .NET 10) sobe o SQL Server em container, cria as bases `jotanunes_portal` (dev) e `jotanunes_portal_test` (usada pelos `*.BddTests`), aplica as migrations do EF Core e inicia as duas APIs já apontando para a base de dev. O dashboard mostra logs, traces e health de tudo.
+O `Jotanunes.AppHost` (.NET Aspire 13, exige o SDK do .NET 10) sobe o SQL Server em container, cria as bases `jotanunes_portal` (dev), `jotanunes_portal_test_external` e `jotanunes_portal_test_internal` (uma para cada projeto `*.BddTests`), aplica as migrations do EF Core e inicia as duas APIs já apontando para a base de dev. O dashboard mostra o status, os logs e o health de cada recurso.
 
 ```bash
 dotnet run --project Jotanunes.AppHost    # ou: aspire run
@@ -206,7 +206,7 @@ Jotanunes.{External,Internal}.BddTests/
     └── Models/          # Modelos de resposta usados só nos testes
 ```
 
-- **Banco**: os dois projetos usam a base `jotanunes_portal_test`, criada e migrada automaticamente. Cada cenário roda dentro de uma transação que é desfeita ao final, então os testes não deixam dados. Para apontar para outro servidor, defina `DataBase:ConnectionString` em user secrets (`dotnet user-secrets set "DataBase:ConnectionString" "..." --project Jotanunes.External.BddTests`, e o mesmo para o `Internal`) ou pela variável `DataBase__ConnectionString`. A variável `DATABASE` usada pelas APIs tem precedência sobre essa configuração, então não a deixe exportada no shell ao rodar os testes.
+- **Banco**: cada projeto usa a sua base (`jotanunes_portal_test_external` e `jotanunes_portal_test_internal`), criada e migrada automaticamente. São bases separadas porque o `dotnet test` roda os dois projetos em paralelo e, numa base só, os cenários de um disputariam os mesmos registros com os do outro. Cada cenário roda dentro de uma transação que é desfeita ao final, então os testes não deixam dados. Para apontar para outro servidor, defina `DataBase:ConnectionString` em user secrets (`dotnet user-secrets set "DataBase:ConnectionString" "..." --project Jotanunes.External.BddTests`, e o mesmo para o `Internal`) ou pela variável `DataBase__ConnectionString`. A variável `DATABASE` usada pelas APIs tem precedência sobre essa configuração, então não a deixe exportada no shell ao rodar os testes.
 - **Autenticação** (externa): os passos `Dado que eu estou autenticado ...` fazem login real em `/api/auth/login` e usam o JWT devolvido. A frente interna ainda não tem autenticação.
 - **Armazenamento**: `IDocumentStorageService` é substituído por um mock; e-mail usa o `LogEmailSender`.
 

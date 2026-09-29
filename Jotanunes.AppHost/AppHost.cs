@@ -26,7 +26,11 @@ var jotanunesDb = sql.AddDatabase("jotanunes-dev-db", "jotanunes_portal")
     .WithAutoApplyEfMigrations()
     .WithCommandApplyEfMigrations();
 
-sql.AddDatabase("jotanunes-test-db", "jotanunes_portal_test")
+sql.AddDatabase("jotanunes-test-external-db", "jotanunes_portal_test_external")
+    .WithAutoApplyEfMigrations()
+    .WithCommandApplyEfMigrations();
+
+sql.AddDatabase("jotanunes-test-internal-db", "jotanunes_portal_test_internal")
     .WithAutoApplyEfMigrations()
     .WithCommandApplyEfMigrations();
 

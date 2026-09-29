@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using AwesomeAssertions.Execution;
 
 using Jotanunes.External.BddTests.Support.Contexts;
+using Jotanunes.Infra.IoC.Authorization;
 
 using Microsoft.AspNetCore.Http;
 
@@ -85,5 +86,22 @@ internal class ApiStepDefinitions(HttpResponseContext httpResponseCtx)
         var error = await httpResponseCtx.TryReadErrorAsync();
         error.Should().NotBeNull();
         error!.Message.Should().Be(expectedErrorMessage);
+    }
+
+    [Then(@"eu recebo uma resposta de erro contendo a mensagem ""(.*)""")]
+    public async Task EntaoDeveSerApresentadaUmaMensagemDeErroContendo(string expectedErrorMessage)
+    {
+        var error = await httpResponseCtx.TryReadErrorAsync();
+        error.Should().NotBeNull();
+        error!.Message.Should().Contain(expectedErrorMessage);
+    }
+
+    [Then(@"a resposta indica que é preciso trocar a senha provisória")]
+    public async Task EntaoARespostaIndicaQueEPrecisoTrocarASenhaProvisoria()
+    {
+        var error = await httpResponseCtx.TryReadErrorAsync();
+        error.Should().NotBeNull();
+        error!.MustChangePassword.Should().BeTrue();
+        error.Message.Should().Be(PasswordChangedRequirement.Message);
     }
 }

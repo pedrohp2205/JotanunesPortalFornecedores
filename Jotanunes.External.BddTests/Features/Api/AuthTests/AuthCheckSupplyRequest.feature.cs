@@ -28,7 +28,8 @@ namespace Jotanunes.External.BddTests.Features.Api.AuthTests
         
         private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/AuthTests", "Auth Check - SupplyRequest", "Como um usuário do sistema\nQuero ter a segurança de que o acesso às solicitações " +
                 "de fornecimento está sendo corretamente verificado\nPara garantir que apenas forn" +
-                "ecedores autenticados e com senha definitiva possam consultá-las", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+                "ecedores autenticados, com senha definitiva e da própria empresa possam consultá" +
+                "-las", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "AuthCheckSupplyRequest.feature"
 #line hidden
@@ -112,11 +113,18 @@ namespace Jotanunes.External.BddTests.Features.Api.AuthTests
 #line 9
     await testRunner.GivenAsync("que existe uma empresa cadastrada com CNPJ \"11.222.333/0001-81\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
 #line hidden
+#line 10
+    await testRunner.AndAsync("que existe uma obra cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
+#line 11
+    await testRunner.AndAsync("que existe uma solicitação de material aberta para a empresa e a obra cadastradas" +
+                    "", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
         }
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/AuthTests/AuthCheckSupplyRequest.feature.ndjson", 9);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/AuthTests/AuthCheckSupplyRequest.feature.ndjson", 8);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -149,10 +157,9 @@ namespace Jotanunes.External.BddTests.Features.Api.AuthTests
         [global::Xunit.TraitAttribute("Description", "Verificar acesso aos endpoints de solicitação de fornecimento")]
         [global::Xunit.InlineDataAttribute("eu listar as solicitações da minha empresa", "não estou autenticado", "401 Unauthorized", "0", new string[0])]
         [global::Xunit.InlineDataAttribute("eu listar as solicitações da minha empresa", "estou autenticado com senha provisória", "403 Forbidden", "1", new string[0])]
-        [global::Xunit.InlineDataAttribute("eu listar as solicitações da minha empresa", "estou autenticado com senha definitiva", "200 OK", "2", new string[0])]
-        [global::Xunit.InlineDataAttribute("eu consultar uma solicitação inexistente", "não estou autenticado", "401 Unauthorized", "3", new string[0])]
-        [global::Xunit.InlineDataAttribute("eu consultar uma solicitação inexistente", "estou autenticado com senha provisória", "403 Forbidden", "4", new string[0])]
-        [global::Xunit.InlineDataAttribute("eu consultar uma solicitação inexistente", "estou autenticado com senha definitiva", "404 Not Found", "5", new string[0])]
+        [global::Xunit.InlineDataAttribute("eu consultar a solicitação cadastrada", "não estou autenticado", "401 Unauthorized", "2", new string[0])]
+        [global::Xunit.InlineDataAttribute("eu consultar a solicitação cadastrada", "estou autenticado com senha provisória", "403 Forbidden", "3", new string[0])]
+        [global::Xunit.InlineDataAttribute("eu consultar a solicitação cadastrada", "estou autenticado como fornecedor de outra empresa", "404 Not Found", "4", new string[0])]
         public async global::System.Threading.Tasks.Task VerificarAcessoAosEndpointsDeSolicitacaoDeFornecimento(string executarAcao, string descricaoAutenticacao, string respostaEsperada, string @__pickleIndex, string[] exampleTags)
         {
             string[] tagsOfScenario = exampleTags;
@@ -164,7 +171,7 @@ namespace Jotanunes.External.BddTests.Features.Api.AuthTests
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Verificar acesso aos endpoints de solicitação de fornecimento", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 11
+#line 13
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -177,13 +184,13 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-#line 12
+#line 14
     await testRunner.GivenAsync(string.Format("que eu {0}", descricaoAutenticacao), ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
 #line hidden
-#line 13
+#line 15
     await testRunner.WhenAsync(string.Format("{0}", executarAcao), ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
-#line 14
+#line 16
     await testRunner.ThenAsync(string.Format("eu recebo uma resposta {0}", respostaEsperada), ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
             }
@@ -197,11 +204,11 @@ await this.FeatureBackgroundAsync();
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "6";
+            string pickleIndex = "5";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Fornecedor com senha provisória é orientado a trocar a senha", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 25
+#line 26
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -214,16 +221,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-#line 26
+#line 27
     await testRunner.GivenAsync("que eu estou autenticado com senha provisória", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
 #line hidden
-#line 27
+#line 28
     await testRunner.WhenAsync("eu listar as solicitações da minha empresa", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
-#line 28
+#line 29
     await testRunner.ThenAsync("eu recebo uma resposta 403 Forbidden", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
-#line 29
+#line 30
     await testRunner.AndAsync("a resposta indica que é preciso trocar a senha provisória", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }

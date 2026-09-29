@@ -29,8 +29,13 @@ internal class ApiClientFixture(ApiWebAppFactoryFixture apiWebAppFactory)
         var token = await response.Content.ReadFromJsonAsync<TokenDto>()
             ?? throw new InvalidOperationException("Login não retornou token.");
 
-        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+        UseAccessToken(token.AccessToken);
         return token;
+    }
+
+    public void UseAccessToken(string accessToken)
+    {
+        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
     }
 
     public void ResetAuthorization()

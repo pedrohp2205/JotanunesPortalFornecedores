@@ -86,4 +86,12 @@ internal class ApiStepDefinitions(HttpResponseContext httpResponseCtx)
         error.Should().NotBeNull();
         error!.Message.Should().Be(expectedErrorMessage);
     }
+
+    [Then(@"eu recebo uma resposta de erro contendo a mensagem ""(.*)""")]
+    public async Task EntaoDeveSerApresentadaUmaMensagemDeErroContendo(string expectedErrorMessage)
+    {
+        var error = await httpResponseCtx.TryReadErrorAsync();
+        error.Should().NotBeNull();
+        error!.Message.Should().Contain(expectedErrorMessage);
+    }
 }
