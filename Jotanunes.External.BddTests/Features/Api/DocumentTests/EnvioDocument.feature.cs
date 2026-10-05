@@ -125,7 +125,7 @@ namespace Jotanunes.External.BddTests.Features.Api.DocumentTests
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/DocumentTests/EnvioDocument.feature.ndjson", 12);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/DocumentTests/EnvioDocument.feature.ndjson", 13);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -235,15 +235,15 @@ await this.FeatureBackgroundAsync();
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Enviar um documento de trabalhador")]
+        [global::Xunit.FactAttribute(DisplayName="Enviar um documento de trabalhador alocado")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Document - Envio")]
-        [global::Xunit.TraitAttribute("Description", "Enviar um documento de trabalhador")]
-        public async global::System.Threading.Tasks.Task EnviarUmDocumentoDeTrabalhador()
+        [global::Xunit.TraitAttribute("Description", "Enviar um documento de trabalhador alocado")]
+        public async global::System.Threading.Tasks.Task EnviarUmDocumentoDeTrabalhadorAlocado()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "2";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Enviar um documento de trabalhador", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Enviar um documento de trabalhador alocado", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 26
@@ -264,14 +264,70 @@ await this.FeatureBackgroundAsync();
                         "das", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
 #line hidden
 #line 28
-    await testRunner.WhenAsync("eu enviar a Folha de Ponto do trabalhador \"José da Silva\" com CPF \"529.982.247-25" +
-                        "\" para a solicitação cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+    await testRunner.AndAsync("que existe um trabalhador \"José da Silva\" com CPF \"529.982.247-25\" cadastrado par" +
+                        "a a empresa", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
 #line 29
-    await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+    await testRunner.AndAsync("que o trabalhador cadastrado está alocado na solicitação cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
 #line 30
-    await testRunner.AndAsync("o documento enviado deve ser do trabalhador com CPF \"52998224725\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+    await testRunner.WhenAsync("eu enviar a Folha de Ponto do trabalhador cadastrado para a solicitação cadastrad" +
+                        "a", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+#line hidden
+#line 31
+    await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+#line hidden
+#line 32
+    await testRunner.AndAsync("o documento enviado deve ser do trabalhador cadastrado com CPF \"52998224725\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Não permitir enviar documento recorrente de trabalhador que não está alocado na s" +
+            "olicitação")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Document - Envio")]
+        [global::Xunit.TraitAttribute("Description", "Não permitir enviar documento recorrente de trabalhador que não está alocado na s" +
+            "olicitação")]
+        public async global::System.Threading.Tasks.Task NaoPermitirEnviarDocumentoRecorrenteDeTrabalhadorQueNaoEstaAlocadoNaSolicitacao()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "3";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Não permitir enviar documento recorrente de trabalhador que não está alocado na s" +
+                    "olicitação", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 34
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 8
+await this.FeatureBackgroundAsync();
+#line hidden
+#line 35
+    await testRunner.GivenAsync("que existe uma solicitação de mão de obra aberta para a empresa e a obra cadastra" +
+                        "das", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
+#line hidden
+#line 36
+    await testRunner.AndAsync("que existe um trabalhador cadastrado para a empresa", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
+#line 37
+    await testRunner.WhenAsync("eu enviar a Folha de Ponto do trabalhador cadastrado para a solicitação cadastrad" +
+                        "a", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+#line hidden
+#line 38
+    await testRunner.ThenAsync("eu recebo uma resposta 400 Bad Request", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+#line hidden
+#line 39
+    await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Trabalhador não está alocado nesta" +
+                        " solicitação.\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -284,11 +340,11 @@ await this.FeatureBackgroundAsync();
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "3";
+            string pickleIndex = "4";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Não permitir enviar documento de trabalhador sem informar o trabalhador", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 32
+#line 41
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -301,20 +357,20 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-#line 33
+#line 42
     await testRunner.GivenAsync("que existe uma solicitação de mão de obra aberta para a empresa e a obra cadastra" +
                         "das", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
 #line hidden
-#line 34
+#line 43
     await testRunner.WhenAsync("eu enviar a Folha de Ponto sem informar o trabalhador para a solicitação cadastra" +
                         "da", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
-#line 35
+#line 44
     await testRunner.ThenAsync("eu recebo uma resposta 400 Bad Request", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
-#line 36
-    await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Nome do trabalhador é obrigatório " +
-                        "para este tipo de documento.\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line 45
+    await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Trabalhador é obrigatório para est" +
+                        "e tipo de documento.\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -327,11 +383,11 @@ await this.FeatureBackgroundAsync();
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "4";
+            string pickleIndex = "5";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Não permitir enviar documento que não se aplica ao fornecimento da solicitação", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 38
+#line 47
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -344,17 +400,17 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-#line 39
+#line 48
     await testRunner.GivenAsync("que existe uma solicitação de material aberta para a empresa e a obra cadastradas" +
                         "", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
 #line hidden
-#line 40
+#line 49
     await testRunner.WhenAsync("eu enviar a Folha de Pagamento para a solicitação cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
-#line 41
+#line 50
     await testRunner.ThenAsync("eu recebo uma resposta 400 Bad Request", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
-#line 42
+#line 51
     await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Este tipo de documento não se apli" +
                         "ca ao tipo de fornecimento da solicitação.\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
@@ -369,11 +425,11 @@ await this.FeatureBackgroundAsync();
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "5";
+            string pickleIndex = "6";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Não permitir enviar documento para uma solicitação encerrada", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 44
+#line 53
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -386,17 +442,17 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-#line 45
+#line 54
     await testRunner.GivenAsync("que existe uma solicitação de mão de obra cancelada para a empresa e a obra cadas" +
                         "tradas", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
 #line hidden
-#line 46
+#line 55
     await testRunner.WhenAsync("eu enviar a Folha de Pagamento para a solicitação cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
-#line 47
+#line 56
     await testRunner.ThenAsync("eu recebo uma resposta 400 Bad Request", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
-#line 48
+#line 57
     await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Solicitação encerrada não aceita a" +
                         "lterações nem novos documentos.\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
@@ -411,11 +467,11 @@ await this.FeatureBackgroundAsync();
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "6";
+            string pickleIndex = "7";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Não permitir enviar documento para a solicitação de outra empresa", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 50
+#line 59
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -428,17 +484,17 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-#line 51
+#line 60
     await testRunner.GivenAsync("que existe uma solicitação de material aberta para a outra empresa na obra cadast" +
                         "rada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
 #line hidden
-#line 52
+#line 61
     await testRunner.WhenAsync("eu enviar a Folha de Pagamento para a solicitação da outra empresa", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
-#line 53
+#line 62
     await testRunner.ThenAsync("eu recebo uma resposta 404 Not Found", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
-#line 54
+#line 63
     await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Solicitação não encontrada\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }
@@ -452,11 +508,11 @@ await this.FeatureBackgroundAsync();
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "7";
+            string pickleIndex = "8";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Não permitir enviar documento de um tipo inexistente", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 56
+#line 65
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -469,13 +525,13 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-#line 57
+#line 66
     await testRunner.WhenAsync("eu enviar um documento de um tipo inexistente", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
-#line 58
+#line 67
     await testRunner.ThenAsync("eu recebo uma resposta 404 Not Found", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
-#line 59
+#line 68
     await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Tipo de documento não encontrado\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }
@@ -485,8 +541,8 @@ await this.FeatureBackgroundAsync();
         [global::Xunit.TheoryAttribute(DisplayName="Não permitir enviar arquivo inválido")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Document - Envio")]
         [global::Xunit.TraitAttribute("Description", "Não permitir enviar arquivo inválido")]
-        [global::Xunit.InlineDataAttribute("um arquivo de texto", "Formato de arquivo não aceito. Envie PDF, PNG ou JPEG.", "8", new string[0])]
-        [global::Xunit.InlineDataAttribute("um arquivo vazio", "O arquivo enviado está vazio.", "9", new string[0])]
+        [global::Xunit.InlineDataAttribute("um arquivo de texto", "Formato de arquivo não aceito. Envie PDF, PNG ou JPEG.", "9", new string[0])]
+        [global::Xunit.InlineDataAttribute("um arquivo vazio", "O arquivo enviado está vazio.", "10", new string[0])]
         public async global::System.Threading.Tasks.Task NaoPermitirEnviarArquivoInvalido(string arquivo, string mensagem, string @__pickleIndex, string[] exampleTags)
         {
             string[] tagsOfScenario = exampleTags;
@@ -497,7 +553,7 @@ await this.FeatureBackgroundAsync();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Não permitir enviar arquivo inválido", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 61
+#line 70
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -510,13 +566,13 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-#line 62
+#line 71
     await testRunner.WhenAsync(string.Format("eu enviar o Cartão de CNPJ com {0}", arquivo), ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
-#line 63
+#line 72
     await testRunner.ThenAsync("eu recebo uma resposta 400 Bad Request", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
-#line 64
+#line 73
     await testRunner.AndAsync(string.Format("eu recebo uma resposta de erro com a mensagem \"{0}\"", mensagem), ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }

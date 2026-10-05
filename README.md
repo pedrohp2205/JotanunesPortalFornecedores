@@ -114,7 +114,40 @@ O upload de documento (`POST /api/document`) recebe `supplyRequestId` nos docume
 
 Regras do arquivo no upload: até 20 MB, não vazio, e só PDF, PNG ou JPEG. O formato é conferido pela assinatura dos primeiros bytes, não pela extensão nem pelo `Content-Type` enviado; o tipo gravado (e devolvido no download) é o detectado. Se o registro não puder ser salvo no banco depois do envio ao bucket, o arquivo é removido do bucket.
 
-Regras de conferência no envio: o tipo de documento precisa se aplicar ao tipo de fornecimento da solicitação (ou aos tipos da empresa, na habilitação). Documentos condicionais não entram na conta da habilitação e a data de validade é apenas armazenada, não avaliada.
+Regras de conferência no envio: o tipo de documento precisa se aplicar ao tipo de fornecimento da solicitação (ou aos tipos da empresa, na habilitação). Documentos condicionais não entram na conta da habilitação. Quando o tipo tem `requiresExpirationDate`, a data de validade é obrigatória, e um documento já vencido é recusado no envio.
+
+### Trabalhadores e alocação
+
+O fornecedor mantém o cadastro dos próprios trabalhadores (`Worker`: nome, CPF e ativo). O CPF é único por empresa e não muda depois do cadastro. A presença numa obra é registrada pela **alocação** (`WorkerAllocation`) do trabalhador numa solicitação de mão de obra. Ao desalocar, o registro é mantido com `releasedAt`, como histórico.
+
+| Frente | Método | Rota | Descrição |
+| --- | --- | --- | --- |
+| Externa | GET | `/api/worker` | Lista paginada dos trabalhadores da empresa (filtros `name`, `cpf`, `active`, `supplyRequestId`) |
+| Externa | GET | `/api/worker/{id}` | Consulta um trabalhador |
+| Externa | POST | `/api/worker` | Cadastra (`name`, `cpf`) |
+| Externa | PUT | `/api/worker/{id}` | Altera o nome |
+| Externa | POST | `/api/worker/{id}/deactivate` | Desativa e desaloca o trabalhador das solicitações ativas |
+| Externa | POST | `/api/worker/{id}/activate` | Reativa |
+| Externa | GET | `/api/supplyrequest/{id}/workers` | Trabalhadores alocados (`includeReleased=true` inclui o histórico) |
+| Externa | POST | `/api/supplyrequest/{id}/workers` | Aloca (`workerId`) |
+| Externa | DELETE | `/api/supplyrequest/{id}/workers/{workerId}` | Desaloca |
+| Interna | GET | `/api/worker`, `/api/worker/{id}` | Consulta trabalhadores (filtro `companyId`) |
+| Interna | GET | `/api/supplyrequest/{id}/workers` | Trabalhadores alocados |
+| Interna | DELETE | `/api/supplyrequest/{id}/workers/{workerId}` | Desaloca |
+
+Regras de alocação:
+- Só vale para solicitações de mão de obra abertas, com trabalhador ativo da mesma empresa.
+- O `requiredWorkerCount` limita quantos podem estar alocados ao mesmo tempo. Para trocar alguém, desaloca-se antes.
+
+Documentos de trabalhador recebem `workerId` (não mais nome e CPF livres):
+- **Recorrentes** (`category = Recurring`, `subject = Worker`) exigem que o trabalhador esteja alocado na solicitação.
+- **Habilitação do trabalhador** (`category = Onboarding`, `subject = Worker`, ex.: ASO, NR-35) é enviada sem `supplyRequestId`. Fica ligada ao trabalhador e vale em qualquer obra em que ele for alocado, até a data de validade. Não precisa ser reenviada ao trocar de obra.
+
+No checklist, `workers` lista os **alocados**, com ou sem documento enviado. Cada um traz:
+- `onboardingItems`: a habilitação do trabalhador. Um aprovado vencido aparece como `Expired` (4) e não satisfaz o item.
+- `items`: os recorrentes do período.
+
+O checklist também passa a trazer `allocatedWorkerCount`. Tipos de habilitação de trabalhador não entram na habilitação da empresa.
 
 ---
 

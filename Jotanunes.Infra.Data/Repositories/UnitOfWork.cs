@@ -15,7 +15,9 @@ public class UnitOfWork : IUnitOfWork
         ["IX_supply_requests_CompanyId_WorkSiteId_SupplierType"] = "Já existe uma solicitação ativa desta empresa para esta obra e este tipo de fornecimento.",
         ["IX_companies_Cnpj"] = "Já existe uma empresa cadastrada com este CNPJ.",
         ["IX_supplier_users_Email"] = "Já existe um usuário cadastrado com este e-mail.",
-        ["IX_document_types_Code"] = "Já existe um tipo de documento com este código."
+        ["IX_document_types_Code"] = "Já existe um tipo de documento com este código.",
+        ["IX_workers_CompanyId_Cpf"] = "Já existe um trabalhador cadastrado com este CPF.",
+        ["IX_worker_allocations_SupplyRequestId_WorkerId"] = "Trabalhador já está alocado nesta solicitação."
     };
 
     private readonly ApplicationDbContext _context;
@@ -26,6 +28,8 @@ public class UnitOfWork : IUnitOfWork
     private ISupplyRequestRepository? _supplyRequestRepository;
     private IDocumentTypeRepository? _documentTypeRepository;
     private IDocumentRepository? _documentRepository;
+    private IWorkerRepository? _workerRepository;
+    private IWorkerAllocationRepository? _workerAllocationRepository;
 
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -85,6 +89,22 @@ public class UnitOfWork : IUnitOfWork
         get
         {
             return _documentRepository ??= new DocumentRepository(_context);
+        }
+    }
+
+    public IWorkerRepository WorkerRepository
+    {
+        get
+        {
+            return _workerRepository ??= new WorkerRepository(_context);
+        }
+    }
+
+    public IWorkerAllocationRepository WorkerAllocationRepository
+    {
+        get
+        {
+            return _workerAllocationRepository ??= new WorkerAllocationRepository(_context);
         }
     }
 

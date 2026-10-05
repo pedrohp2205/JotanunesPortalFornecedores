@@ -9,5 +9,7 @@ public interface IUnitOfWork
     ISupplyRequestRepository SupplyRequestRepository { get; }
     IDocumentTypeRepository DocumentTypeRepository { get; }
     IDocumentRepository DocumentRepository { get; }
+    IWorkerRepository WorkerRepository { get; }
+    IWorkerAllocationRepository WorkerAllocationRepository { get; }
     Task<bool> SaveChangesAsync();
 }

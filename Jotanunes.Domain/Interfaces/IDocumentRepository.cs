@@ -10,5 +10,6 @@ public interface IDocumentRepository : IGenericRepository<Document>
     Task<List<Document>> GetAll(DocumentFilter filter);
     Task<List<Document>> GetBySupplyRequests(IReadOnlyCollection<long> supplyRequestIds, DateOnly? referencePeriodFrom = null);
     Task<List<Document>> GetOnboardingByCompanies(IReadOnlyCollection<long> companyIds);
+    Task<List<Document>> GetOnboardingByWorkers(IReadOnlyCollection<long> workerIds);
     Task<Document?> GetById(long id);
 }

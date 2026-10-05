@@ -16,6 +16,7 @@ public class DocumentDto
     public long UploadedBySupplierUserId { get; set; }
     public string UploadedByName { get; set; } = string.Empty;
 
+    public long? WorkerId { get; set; }
     public string? WorkerName { get; set; }
     public string? WorkerCpf { get; set; }
 

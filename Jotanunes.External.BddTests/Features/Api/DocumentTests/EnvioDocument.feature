@@ -23,17 +23,26 @@ Cenário: Enviar um documento recorrente para uma solicitação aberta
     E o documento enviado deve estar vinculado à solicitação cadastrada no período de referência atual
     E a solicitação cadastrada deve estar em andamento
 
-Cenário: Enviar um documento de trabalhador
+Cenário: Enviar um documento de trabalhador alocado
     Dado que existe uma solicitação de mão de obra aberta para a empresa e a obra cadastradas
-    Quando eu enviar a Folha de Ponto do trabalhador "José da Silva" com CPF "529.982.247-25" para a solicitação cadastrada
+    E que existe um trabalhador "José da Silva" com CPF "529.982.247-25" cadastrado para a empresa
+    E que o trabalhador cadastrado está alocado na solicitação cadastrada
+    Quando eu enviar a Folha de Ponto do trabalhador cadastrado para a solicitação cadastrada
     Então eu recebo uma resposta 200 OK
-    E o documento enviado deve ser do trabalhador com CPF "52998224725"
+    E o documento enviado deve ser do trabalhador cadastrado com CPF "52998224725"
+
+Cenário: Não permitir enviar documento recorrente de trabalhador que não está alocado na solicitação
+    Dado que existe uma solicitação de mão de obra aberta para a empresa e a obra cadastradas
+    E que existe um trabalhador cadastrado para a empresa
+    Quando eu enviar a Folha de Ponto do trabalhador cadastrado para a solicitação cadastrada
+    Então eu recebo uma resposta 400 Bad Request
+    E eu recebo uma resposta de erro com a mensagem "Trabalhador não está alocado nesta solicitação."
 
 Cenário: Não permitir enviar documento de trabalhador sem informar o trabalhador
     Dado que existe uma solicitação de mão de obra aberta para a empresa e a obra cadastradas
     Quando eu enviar a Folha de Ponto sem informar o trabalhador para a solicitação cadastrada
     Então eu recebo uma resposta 400 Bad Request
-    E eu recebo uma resposta de erro com a mensagem "Nome do trabalhador é obrigatório para este tipo de documento."
+    E eu recebo uma resposta de erro com a mensagem "Trabalhador é obrigatório para este tipo de documento."
 
 Cenário: Não permitir enviar documento que não se aplica ao fornecimento da solicitação
     Dado que existe uma solicitação de material aberta para a empresa e a obra cadastradas

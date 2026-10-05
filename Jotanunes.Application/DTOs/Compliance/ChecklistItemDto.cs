@@ -14,5 +14,6 @@ public class ChecklistItemDto
     public string StatusDescription { get; set; } = string.Empty;
 
     public long? DocumentId { get; set; }
+    public DateOnly? ExpirationDate { get; set; }
     public string? RejectionReason { get; set; }
 }

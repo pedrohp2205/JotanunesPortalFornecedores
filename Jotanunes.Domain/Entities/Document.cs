@@ -1,6 +1,5 @@
 using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Exceptions;
-using Jotanunes.Domain.Validation;
 
 namespace Jotanunes.Domain.Entities;
 
@@ -18,8 +17,8 @@ public class Document : BaseEntity
     public long UploadedBySupplierUserId { get; private set; }
     public SupplierUser UploadedBySupplierUser { get; private set; } = null!;
 
-    public string? WorkerName { get; private set; }
-    public string? WorkerCpf { get; private set; }
+    public long? WorkerId { get; private set; }
+    public Worker? Worker { get; private set; }
 
     public string StorageKey { get; private set; } = string.Empty;
     public string OriginalFileName { get; private set; } = string.Empty;
@@ -45,21 +44,18 @@ public class Document : BaseEntity
         string originalFileName,
         string contentType,
         long? supplyRequestId = null,
-        string? workerName = null,
-        string? workerCpf = null,
+        long? workerId = null,
         DateOnly? referencePeriodStart = null,
         DateOnly? referencePeriodEnd = null,
         DateOnly? expirationDate = null)
     {
-        workerCpf = string.IsNullOrWhiteSpace(workerCpf) ? null : Cpf.Normalize(workerCpf);
-        Validate(category, subject, storageKey, originalFileName, contentType, supplyRequestId, workerName, workerCpf, referencePeriodStart, referencePeriodEnd);
+        Validate(category, subject, storageKey, originalFileName, contentType, supplyRequestId, workerId, referencePeriodStart, referencePeriodEnd);
 
         CompanyId = companyId;
         DocumentTypeId = documentTypeId;
         UploadedBySupplierUserId = uploadedBySupplierUserId;
         SupplyRequestId = supplyRequestId;
-        WorkerName = string.IsNullOrWhiteSpace(workerName) ? null : workerName.Trim();
-        WorkerCpf = workerCpf;
+        WorkerId = workerId;
         StorageKey = storageKey;
         OriginalFileName = originalFileName.Trim();
         ContentType = contentType.Trim();
@@ -100,8 +96,7 @@ public class Document : BaseEntity
         string originalFileName,
         string contentType,
         long? supplyRequestId,
-        string? workerName,
-        string? workerCpf,
+        long? workerId,
         DateOnly? referencePeriodStart,
         DateOnly? referencePeriodEnd)
     {
@@ -129,15 +124,11 @@ public class Document : BaseEntity
 
         if (subject == DocumentSubject.Worker)
         {
-            JotanunesException.When(string.IsNullOrWhiteSpace(workerName), "Nome do trabalhador é obrigatório para este tipo de documento.");
-            JotanunesException.When(string.IsNullOrWhiteSpace(workerCpf), "CPF do trabalhador é obrigatório para este tipo de documento.");
-            JotanunesException.When(!Cpf.IsValid(workerCpf), "CPF do trabalhador inválido.");
+            JotanunesException.When(workerId is null, "Trabalhador é obrigatório para este tipo de documento.");
         }
         else
         {
-            JotanunesException.When(
-                !string.IsNullOrWhiteSpace(workerName) || !string.IsNullOrWhiteSpace(workerCpf),
-                "Documento de empresa não deve ter trabalhador vinculado.");
+            JotanunesException.When(workerId is not null, "Documento de empresa não deve ter trabalhador vinculado.");
         }
     }
 }

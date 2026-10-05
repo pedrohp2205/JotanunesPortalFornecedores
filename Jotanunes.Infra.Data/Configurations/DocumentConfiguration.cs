@@ -12,12 +12,6 @@ public class DocumentConfiguration : IEntityTypeConfiguration<Document>
 
         builder.HasKey(d => d.Id);
 
-        builder.Property(d => d.WorkerName)
-            .HasMaxLength(150);
-
-        builder.Property(d => d.WorkerCpf)
-            .HasMaxLength(11);
-
         builder.Property(d => d.StorageKey)
             .HasMaxLength(500)
             .IsRequired();
@@ -37,7 +31,9 @@ public class DocumentConfiguration : IEntityTypeConfiguration<Document>
         builder.Property(d => d.RejectionReason)
             .HasMaxLength(500);
 
-        builder.HasIndex(d => new { d.CompanyId, d.DocumentTypeId, d.WorkerCpf, d.ReferencePeriodStart });
+        builder.HasIndex(d => new { d.CompanyId, d.DocumentTypeId, d.WorkerId, d.ReferencePeriodStart });
+
+        builder.HasIndex(d => d.WorkerId);
 
         builder.HasOne(d => d.Company)
             .WithMany()
@@ -57,6 +53,11 @@ public class DocumentConfiguration : IEntityTypeConfiguration<Document>
         builder.HasOne(d => d.SupplyRequest)
             .WithMany()
             .HasForeignKey(d => d.SupplyRequestId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(d => d.Worker)
+            .WithMany()
+            .HasForeignKey(d => d.WorkerId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -98,6 +98,18 @@ public class DocumentService : IDocumentService
                 ? "Este tipo de documento não se aplica ao tipo de fornecedor da empresa."
                 : "Este tipo de documento não se aplica ao tipo de fornecimento da solicitação.");
 
+        if (documentType.Subject == DocumentSubject.Worker && model.WorkerId.HasValue)
+        {
+            await EnsureWorkerCanReceive(model.WorkerId.Value, companyId, supplyRequest);
+        }
+
+        JotanunesException.When(
+            documentType.RequiresExpirationDate && model.ExpirationDate is null,
+            "Data de validade é obrigatória para este tipo de documento.");
+        JotanunesException.When(
+            model.ExpirationDate.HasValue && model.ExpirationDate.Value < DateOnly.FromDateTime(DateTime.UtcNow),
+            "Documento já está vencido.");
+
         var storageKey = $"companies/{companyId}/documents/{Guid.NewGuid()}-{SanitizeFileName(originalFileName)}";
 
         var document = new Document(
@@ -110,8 +122,7 @@ public class DocumentService : IDocumentService
             originalFileName,
             contentType,
             model.SupplyRequestId,
-            model.WorkerName,
-            model.WorkerCpf,
+            model.WorkerId,
             referencePeriodStart,
             referencePeriodEnd,
             model.ExpirationDate);
@@ -205,6 +216,24 @@ public class DocumentService : IDocumentService
         if (!wasEligible && company.Status == CompanyStatus.Eligible)
         {
             await _notificationService.CompanyEligible(company);
+        }
+    }
+
+    private async Task EnsureWorkerCanReceive(long workerId, long companyId, SupplyRequest? supplyRequest)
+    {
+        var worker = await _unitOfWork.WorkerRepository.GetById(workerId);
+        if (worker is null || worker.CompanyId != companyId)
+        {
+            throw new KeyNotFoundException("Trabalhador não encontrado");
+        }
+
+        JotanunesException.When(!worker.Active, "Trabalhador inativo não pode receber documentos.");
+
+        if (supplyRequest is not null)
+        {
+            JotanunesException.When(
+                await _unitOfWork.WorkerAllocationRepository.GetActive(supplyRequest.Id, workerId) is null,
+                "Trabalhador não está alocado nesta solicitação.");
         }
     }
 

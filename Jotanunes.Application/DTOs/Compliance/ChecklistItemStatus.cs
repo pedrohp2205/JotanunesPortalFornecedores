@@ -5,5 +5,6 @@ public enum ChecklistItemStatus
     NotSent = 0,
     Pending = 1,
     Rejected = 2,
-    Approved = 3
+    Approved = 3,
+    Expired = 4
 }

@@ -79,6 +79,19 @@ public class SupplyRequest : BaseEntity
         JotanunesException.When(IsClosed, "Solicitação encerrada não aceita alterações nem novos documentos.");
     }
 
+    public void EnsureCanAllocateWorker(int activeAllocationCount)
+    {
+        EnsureNotClosed();
+
+        JotanunesException.When(
+            SupplierType != SupplierType.ManpowerLabor,
+            "Só é possível alocar trabalhadores em solicitações de mão de obra.");
+
+        JotanunesException.When(
+            RequiredWorkerCount.HasValue && activeAllocationCount >= RequiredWorkerCount.Value,
+            $"A solicitação já tem os {RequiredWorkerCount} trabalhadores necessários alocados. Desaloque um antes de alocar outro.");
+    }
+
     private static void Validate(SupplierType supplierType, int? requiredWorkerCount)
     {
         JotanunesException.When(

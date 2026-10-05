@@ -5,6 +5,7 @@ using Jotanunes.Application.DTOs.DocumentTypes;
 using Jotanunes.Application.DTOs.Documents;
 using Jotanunes.Application.DTOs.SupplyRequests;
 using Jotanunes.Application.DTOs.Users;
+using Jotanunes.Application.DTOs.Workers;
 using Jotanunes.Application.DTOs.WorkSites;
 using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Validation;
@@ -56,6 +57,18 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.DocumentTypeCode, opt => opt.MapFrom(src => src.DocumentType.Code))
             .ForMember(dest => dest.DocumentTypeName, opt => opt.MapFrom(src => src.DocumentType.Name))
             .ForMember(dest => dest.UploadedByName, opt => opt.MapFrom(src => src.UploadedBySupplierUser.Name))
+            .ForMember(dest => dest.WorkerName, opt => opt.MapFrom(src => src.Worker != null ? src.Worker.Name : null))
+            .ForMember(dest => dest.WorkerCpf, opt => opt.MapFrom(src => src.Worker != null ? src.Worker.Cpf : null))
             .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()));
+
+        CreateMap<Worker, WorkerDto>()
+            .ForMember(dest => dest.CompanyCorporateName, opt => opt.MapFrom(src => src.Company.CorporateName))
+            .ForMember(dest => dest.FormattedCpf, opt => opt.MapFrom(src => Cpf.Format(src.Cpf)));
+
+        CreateMap<WorkerAllocation, WorkerAllocationDto>()
+            .ForMember(dest => dest.WorkerName, opt => opt.MapFrom(src => src.Worker.Name))
+            .ForMember(dest => dest.WorkerCpf, opt => opt.MapFrom(src => src.Worker.Cpf))
+            .ForMember(dest => dest.WorkerFormattedCpf, opt => opt.MapFrom(src => Cpf.Format(src.Worker.Cpf)))
+            .ForMember(dest => dest.WorkerActive, opt => opt.MapFrom(src => src.Worker.Active));
     }
 }

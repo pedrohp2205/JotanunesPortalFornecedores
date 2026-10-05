@@ -14,6 +14,7 @@ public class ComplianceChecklistDto
     public DateOnly PeriodStart { get; set; }
     public DateOnly PeriodEnd { get; set; }
     public int? RequiredWorkerCount { get; set; }
+    public int AllocatedWorkerCount { get; set; }
     public int WorkersUpToDate { get; set; }
     public List<ChecklistItemDto> OnboardingItems { get; set; } = [];
     public List<ChecklistItemDto> RecurringCompanyItems { get; set; } = [];

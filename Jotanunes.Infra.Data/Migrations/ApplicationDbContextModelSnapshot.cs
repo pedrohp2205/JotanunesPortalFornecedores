@@ -151,13 +151,8 @@ namespace Jotanunes.Infra.Data.Migrations
                     b.Property<long>("UploadedBySupplierUserId")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("WorkerCpf")
-                        .HasMaxLength(11)
-                        .HasColumnType("nvarchar(11)");
-
-                    b.Property<string>("WorkerName")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                    b.Property<long?>("WorkerId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -167,7 +162,9 @@ namespace Jotanunes.Infra.Data.Migrations
 
                     b.HasIndex("UploadedBySupplierUserId");
 
-                    b.HasIndex("CompanyId", "DocumentTypeId", "WorkerCpf", "ReferencePeriodStart");
+                    b.HasIndex("WorkerId");
+
+                    b.HasIndex("CompanyId", "DocumentTypeId", "WorkerId", "ReferencePeriodStart");
 
                     b.ToTable("documents", (string)null);
                 });
@@ -436,6 +433,88 @@ namespace Jotanunes.Infra.Data.Migrations
                     b.ToTable("work_sites", (string)null);
                 });
 
+            modelBuilder.Entity("Jotanunes.Domain.Entities.Worker", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("bit");
+
+                    b.Property<long>("CompanyId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Cpf")
+                        .IsRequired()
+                        .HasMaxLength(11)
+                        .HasColumnType("nvarchar(11)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "Cpf")
+                        .IsUnique()
+                        .HasFilter("[DeletedAt] IS NULL");
+
+                    b.ToTable("workers", (string)null);
+                });
+
+            modelBuilder.Entity("Jotanunes.Domain.Entities.WorkerAllocation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("AllocatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ReleasedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("SupplyRequestId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("WorkerId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkerId");
+
+                    b.HasIndex("SupplyRequestId", "WorkerId")
+                        .IsUnique()
+                        .HasFilter("[DeletedAt] IS NULL AND [ReleasedAt] IS NULL");
+
+                    b.ToTable("worker_allocations", (string)null);
+                });
+
             modelBuilder.Entity("Jotanunes.Domain.Entities.Company", b =>
                 {
                     b.OwnsOne("Jotanunes.Domain.Entities.Address", "Address", b1 =>
@@ -521,6 +600,11 @@ namespace Jotanunes.Infra.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Jotanunes.Domain.Entities.Worker", "Worker")
+                        .WithMany()
+                        .HasForeignKey("WorkerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Company");
 
                     b.Navigation("DocumentType");
@@ -528,6 +612,8 @@ namespace Jotanunes.Infra.Data.Migrations
                     b.Navigation("SupplyRequest");
 
                     b.Navigation("UploadedBySupplierUser");
+
+                    b.Navigation("Worker");
                 });
 
             modelBuilder.Entity("Jotanunes.Domain.Entities.SupplierUser", b =>
@@ -569,6 +655,36 @@ namespace Jotanunes.Infra.Data.Migrations
                     b.Navigation("Company");
 
                     b.Navigation("WorkSite");
+                });
+
+            modelBuilder.Entity("Jotanunes.Domain.Entities.Worker", b =>
+                {
+                    b.HasOne("Jotanunes.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+                });
+
+            modelBuilder.Entity("Jotanunes.Domain.Entities.WorkerAllocation", b =>
+                {
+                    b.HasOne("Jotanunes.Domain.Entities.SupplyRequest", "SupplyRequest")
+                        .WithMany()
+                        .HasForeignKey("SupplyRequestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Jotanunes.Domain.Entities.Worker", "Worker")
+                        .WithMany()
+                        .HasForeignKey("WorkerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("SupplyRequest");
+
+                    b.Navigation("Worker");
                 });
 
             modelBuilder.Entity("Jotanunes.Domain.Entities.Company", b =>

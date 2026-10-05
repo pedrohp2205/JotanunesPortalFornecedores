@@ -54,8 +54,7 @@ public class DocumentController(IDocumentService documentService, IDocumentCompl
             {
                 DocumentTypeId = form.DocumentTypeId,
                 SupplyRequestId = form.SupplyRequestId,
-                WorkerName = form.WorkerName,
-                WorkerCpf = form.WorkerCpf,
+                WorkerId = form.WorkerId,
                 ReferencePeriodStart = form.ReferencePeriodStart,
                 ReferencePeriodEnd = form.ReferencePeriodEnd,
                 ExpirationDate = form.ExpirationDate

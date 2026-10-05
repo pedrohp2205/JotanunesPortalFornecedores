@@ -1,4 +1,5 @@
 using Jotanunes.Application.DTOs.SupplyRequests;
+using Jotanunes.Application.DTOs.Workers;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Pagination;
@@ -8,7 +9,7 @@ namespace Jotanunes.API.Internal.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SupplyRequestController(ISupplyRequestService supplyRequestService) : ControllerBase
+public class SupplyRequestController(ISupplyRequestService supplyRequestService, IWorkerService workerService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PageList<SupplyRequestDto>>> Get([FromQuery] PageParams pageParams, [FromQuery] SupplyRequestFilter filter)
@@ -22,6 +23,20 @@ public class SupplyRequestController(ISupplyRequestService supplyRequestService)
     {
         var supplyRequest = await supplyRequestService.GetById(id);
         return Ok(supplyRequest);
+    }
+
+    [HttpGet("{id:long}/workers")]
+    public async Task<ActionResult<List<WorkerAllocationDto>>> GetWorkers(long id, [FromQuery] bool includeReleased = false)
+    {
+        var allocations = await workerService.GetAllocations(id, includeReleased: includeReleased);
+        return Ok(allocations);
+    }
+
+    [HttpDelete("{id:long}/workers/{workerId:long}")]
+    public async Task<ActionResult<WorkerAllocationDto>> ReleaseWorker(long id, long workerId)
+    {
+        var allocation = await workerService.Release(id, workerId);
+        return Ok(allocation);
     }
 
     [HttpPost]

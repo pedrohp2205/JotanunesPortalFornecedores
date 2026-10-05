@@ -128,6 +128,23 @@ public class DocumentComplianceService : IDocumentComplianceService
             await GetApplicableTypes(supplierType, data);
         }
 
+        var allocations = await _unitOfWork.WorkerAllocationRepository.GetActiveBySupplyRequests(
+            supplyRequests.Select(sr => sr.Id).ToList());
+        foreach (var group in allocations.GroupBy(a => a.SupplyRequestId))
+        {
+            data.AllocationsBySupplyRequest[group.Key] = group.ToList();
+        }
+
+        var workerIds = allocations.Select(a => a.WorkerId).Distinct().ToList();
+        if (workerIds.Count > 0)
+        {
+            var workerOnboardingDocs = await _unitOfWork.DocumentRepository.GetOnboardingByWorkers(workerIds);
+            foreach (var group in workerOnboardingDocs.GroupBy(d => d.WorkerId!.Value))
+            {
+                data.OnboardingByWorker[group.Key] = group.ToList();
+            }
+        }
+
         return data;
     }
 
@@ -146,29 +163,33 @@ public class DocumentComplianceService : IDocumentComplianceService
     {
         var applicableTypes = await GetApplicableTypes(company.SupplierType, data);
 
-        var onboardingTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Onboarding).ToList();
+        var onboardingTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Onboarding && t.Subject == DocumentSubject.Company).ToList();
 
         return BuildItems(onboardingTypes, onboardingDocs);
     }
 
-    private static List<ChecklistItemDto> BuildItems(IEnumerable<DocumentType> types, IReadOnlyCollection<Document> documents)
+    private static List<ChecklistItemDto> BuildItems(IEnumerable<DocumentType> types, IReadOnlyCollection<Document> documents, DateOnly? expirationReference = null)
     {
         return types
-            .Select(t => ToItem(t, documents.Where(d => d.DocumentTypeId == t.Id)))
+            .Select(t => ToItem(t, documents.Where(d => d.DocumentTypeId == t.Id), expirationReference))
             .OrderBy(i => !i.IsRequired)
             .ToList();
     }
 
-    private static ChecklistItemDto ToItem(DocumentType type, IEnumerable<Document> documents)
+    private static ChecklistItemDto ToItem(DocumentType type, IEnumerable<Document> documents, DateOnly? expirationReference)
     {
         var ordered = documents.OrderByDescending(d => d.CreatedAt).ToList();
 
-        var approved = ordered.FirstOrDefault(d => d.Status == DocumentStatus.Approved);
+        bool IsExpired(Document d) => expirationReference.HasValue && d.IsExpired(expirationReference.Value);
+
+        var approved = ordered.FirstOrDefault(d => d.Status == DocumentStatus.Approved && !IsExpired(d));
         var pending = ordered.FirstOrDefault(d => d.Status == DocumentStatus.Pending);
+        var expired = ordered.FirstOrDefault(d => d.Status == DocumentStatus.Approved && IsExpired(d));
         var rejected = ordered.FirstOrDefault(d => d.Status == DocumentStatus.Rejected);
 
         var (status, current) = approved is not null ? (ChecklistItemStatus.Approved, approved)
             : pending is not null ? (ChecklistItemStatus.Pending, pending)
+            : expired is not null ? (ChecklistItemStatus.Expired, expired)
             : rejected is not null ? (ChecklistItemStatus.Rejected, rejected)
             : (ChecklistItemStatus.NotSent, null);
 
@@ -183,6 +204,7 @@ public class DocumentComplianceService : IDocumentComplianceService
             Status = status,
             StatusDescription = status.ToString(),
             DocumentId = current?.Id,
+            ExpirationDate = current?.ExpirationDate,
             RejectionReason = status == ChecklistItemStatus.Rejected ? current!.RejectionReason : null
         };
     }
@@ -190,13 +212,15 @@ public class DocumentComplianceService : IDocumentComplianceService
     private static ComplianceChecklistDto BuildChecklist(SupplyRequest supplyRequest, ChecklistData data)
     {
         var company = supplyRequest.Company;
-        var (periodStart, periodEnd) = supplyRequest.WorkSite.GetCurrentPeriod(DateOnly.FromDateTime(DateTime.UtcNow));
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var (periodStart, periodEnd) = supplyRequest.WorkSite.GetCurrentPeriod(today);
 
         // Os recorrentes seguem o tipo de fornecimento da solicitação; a habilitação, os tipos da empresa.
         var applicableTypes = data.TypesBySupplierType[supplyRequest.SupplierType];
 
         var recurringCompanyTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Recurring && t.Subject == DocumentSubject.Company).ToList();
         var recurringWorkerTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Recurring && t.Subject == DocumentSubject.Worker).ToList();
+        var onboardingWorkerTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Onboarding && t.Subject == DocumentSubject.Worker).ToList();
 
         var onboardingItems = data.OnboardingByCompany[company.Id];
 
@@ -208,19 +232,26 @@ public class DocumentComplianceService : IDocumentComplianceService
 
         var recurringCompanyItems = BuildItems(recurringCompanyTypes, recurringDocs);
 
-        var workers = recurringDocs
-            .Where(d => d.WorkerCpf is not null)
-            .GroupBy(d => d.WorkerCpf!)
-            .Select(group =>
+        var workers = data.AllocationsBySupplyRequest
+            .GetValueOrDefault(supplyRequest.Id, [])
+            .Select(allocation =>
             {
-                var items = BuildItems(recurringWorkerTypes, group.ToList());
-                var required = items.Where(i => i.IsRequired).ToList();
+                var worker = allocation.Worker;
+                var onboardingItems = BuildItems(
+                    onboardingWorkerTypes,
+                    data.OnboardingByWorker.GetValueOrDefault(worker.Id, []),
+                    today);
+                var items = BuildItems(recurringWorkerTypes, recurringDocs.Where(d => d.WorkerId == worker.Id).ToList());
+                var required = onboardingItems.Concat(items).Where(i => i.IsRequired).ToList();
 
                 return new WorkerComplianceDto
                 {
-                    WorkerCpf = group.Key,
-                    WorkerName = group.OrderByDescending(d => d.CreatedAt).First().WorkerName ?? string.Empty,
+                    WorkerId = worker.Id,
+                    WorkerCpf = worker.Cpf,
+                    WorkerName = worker.Name,
+                    AllocatedAt = allocation.AllocatedAt,
                     IsUpToDate = required.Count > 0 && required.All(i => i.IsSatisfied),
+                    OnboardingItems = onboardingItems,
                     Items = items
                 };
             })
@@ -239,6 +270,7 @@ public class DocumentComplianceService : IDocumentComplianceService
             PeriodStart = periodStart,
             PeriodEnd = periodEnd,
             RequiredWorkerCount = supplyRequest.RequiredWorkerCount,
+            AllocatedWorkerCount = workers.Count,
             WorkersUpToDate = workers.Count(w => w.IsUpToDate),
             OnboardingItems = onboardingItems,
             RecurringCompanyItems = recurringCompanyItems,
@@ -251,5 +283,7 @@ public class DocumentComplianceService : IDocumentComplianceService
         public Dictionary<SupplierType, List<DocumentType>> TypesBySupplierType { get; } = new();
         public Dictionary<long, List<ChecklistItemDto>> OnboardingByCompany { get; } = new();
         public Dictionary<long, List<Document>> DocumentsBySupplyRequest { get; } = new();
+        public Dictionary<long, List<WorkerAllocation>> AllocationsBySupplyRequest { get; } = new();
+        public Dictionary<long, List<Document>> OnboardingByWorker { get; } = new();
     }
 }

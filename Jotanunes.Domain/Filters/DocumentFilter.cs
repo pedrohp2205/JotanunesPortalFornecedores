@@ -8,6 +8,7 @@ public class DocumentFilter
     public long? WorkSiteId { get; set; }
     public long? SupplyRequestId { get; set; }
     public long? DocumentTypeId { get; set; }
+    public long? WorkerId { get; set; }
     public bool? WithoutSupplyRequest { get; set; }
     public DocumentStatus? Status { get; set; }
     public DateOnly? PeriodStart { get; set; }

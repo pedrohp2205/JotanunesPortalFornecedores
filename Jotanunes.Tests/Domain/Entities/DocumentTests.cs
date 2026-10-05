@@ -31,8 +31,7 @@ public class DocumentTests
             originalFileName: "ponto.pdf",
             contentType: "application/pdf",
             supplyRequestId: 10,
-            workerName: "Cicero Fernandes da Silva",
-            workerCpf: "529.982.247-25",
+            workerId: 7,
             referencePeriodStart: new DateOnly(2026, 7, 1),
             referencePeriodEnd: new DateOnly(2026, 7, 31));
     }
@@ -43,18 +42,16 @@ public class DocumentTests
         var document = CompanyDocument();
 
         Assert.Equal(DocumentStatus.Pending, document.Status);
-        Assert.Null(document.WorkerName);
-        Assert.Null(document.WorkerCpf);
+        Assert.Null(document.WorkerId);
         Assert.Null(document.SupplyRequestId);
     }
 
     [Fact]
-    public void Should_Create_Worker_Document_Normalizing_Cpf()
+    public void Should_Create_Worker_Document_Linked_To_Worker()
     {
         var document = WorkerDocument();
 
-        Assert.Equal("Cicero Fernandes da Silva", document.WorkerName);
-        Assert.Equal("52998224725", document.WorkerCpf);
+        Assert.Equal(7, document.WorkerId);
         Assert.Equal(10, document.SupplyRequestId);
     }
 
@@ -68,20 +65,20 @@ public class DocumentTests
             referencePeriodStart: new DateOnly(2026, 7, 1),
             referencePeriodEnd: new DateOnly(2026, 7, 31)));
 
-        Assert.Equal("Nome do trabalhador é obrigatório para este tipo de documento.", ex.Message);
+        Assert.Equal("Trabalhador é obrigatório para este tipo de documento.", ex.Message);
     }
 
     [Fact]
-    public void Should_Throw_Exception_When_Worker_Document_Has_Invalid_Cpf()
+    public void Should_Create_Worker_Onboarding_Document_Without_SupplyRequest()
     {
-        var ex = Assert.Throws<JotanunesException>(() => new Document(
-            1, 18, 1, DocumentCategory.Recurring, DocumentSubject.Worker,
-            "companies/1/documents/abc.pdf", "ponto.pdf", "application/pdf",
-            supplyRequestId: 10, workerName: "Cicero Fernandes da Silva", workerCpf: "111.111.111-11",
-            referencePeriodStart: new DateOnly(2026, 7, 1),
-            referencePeriodEnd: new DateOnly(2026, 7, 31)));
+        var document = new Document(
+            1, 19, 1, DocumentCategory.Onboarding, DocumentSubject.Worker,
+            "companies/1/documents/abc-aso.pdf", "aso.pdf", "application/pdf",
+            workerId: 7,
+            expirationDate: new DateOnly(2027, 1, 31));
 
-        Assert.Equal("CPF do trabalhador inválido.", ex.Message);
+        Assert.Equal(7, document.WorkerId);
+        Assert.Null(document.SupplyRequestId);
     }
 
     [Fact]
@@ -90,7 +87,7 @@ public class DocumentTests
         var ex = Assert.Throws<JotanunesException>(() => new Document(
             1, 1, 1, DocumentCategory.Onboarding, DocumentSubject.Company,
             "companies/1/documents/abc.pdf", "cnpj.pdf", "application/pdf",
-            workerName: "Cicero Fernandes da Silva"));
+            workerId: 7));
 
         Assert.Equal("Documento de empresa não deve ter trabalhador vinculado.", ex.Message);
     }

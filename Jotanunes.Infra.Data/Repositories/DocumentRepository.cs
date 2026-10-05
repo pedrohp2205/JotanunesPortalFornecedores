@@ -24,6 +24,7 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
                 .Include(d => d.Company)
                 .Include(d => d.DocumentType)
                 .Include(d => d.SupplyRequest!).ThenInclude(sr => sr.WorkSite)
+                .Include(d => d.Worker)
                 .Include(d => d.UploadedBySupplierUser),
             filter);
 
@@ -62,7 +63,16 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
     {
         return await _context.Documents
                                 .AsNoTracking()
-                                .Where(d => d.SupplyRequestId == null && companyIds.Contains(d.CompanyId))
+                                .Where(d => d.SupplyRequestId == null && d.WorkerId == null && companyIds.Contains(d.CompanyId))
+                                .OrderByDescending(d => d.CreatedAt)
+                                .ToListAsync();
+    }
+
+    public async Task<List<Document>> GetOnboardingByWorkers(IReadOnlyCollection<long> workerIds)
+    {
+        return await _context.Documents
+                                .AsNoTracking()
+                                .Where(d => d.SupplyRequestId == null && d.WorkerId != null && workerIds.Contains(d.WorkerId.Value))
                                 .OrderByDescending(d => d.CreatedAt)
                                 .ToListAsync();
     }
@@ -73,6 +83,7 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
                                 .Include(d => d.Company)
                                 .Include(d => d.DocumentType)
                                 .Include(d => d.SupplyRequest!).ThenInclude(sr => sr.WorkSite)
+                                .Include(d => d.Worker)
                                 .Include(d => d.UploadedBySupplierUser)
                                 .FirstOrDefaultAsync(d => d.Id == id);
     }
@@ -102,6 +113,11 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
         if (filter.DocumentTypeId.HasValue)
         {
             query = query.Where(d => d.DocumentTypeId == filter.DocumentTypeId.Value);
+        }
+
+        if (filter.WorkerId.HasValue)
+        {
+            query = query.Where(d => d.WorkerId == filter.WorkerId.Value);
         }
 
         if (filter.Status.HasValue)

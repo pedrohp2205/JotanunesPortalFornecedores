@@ -15,6 +15,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<SupplyRequest> SupplyRequests { get; set; }
     public DbSet<DocumentType> DocumentTypes { get; set; }
     public DbSet<Document> Documents { get; set; }
+    public DbSet<Worker> Workers { get; set; }
+    public DbSet<WorkerAllocation> WorkerAllocations { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

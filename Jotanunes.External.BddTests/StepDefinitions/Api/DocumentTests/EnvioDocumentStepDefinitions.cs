@@ -17,6 +17,7 @@ internal class EnvioDocumentStepDefinitions(
     DatabaseFixture databaseFixture,
     CompanyGivenContext companyCtx,
     SupplyRequestGivenContext supplyRequestCtx,
+    WorkerGivenContext workerCtx,
     DocumentResultContext documentResultCtx)
 {
     [When(@"eu enviar o Cartão de CNPJ em PDF")]
@@ -53,15 +54,14 @@ internal class EnvioDocumentStepDefinitions(
             supplyRequestId: supplyRequestCtx.IdSolicitacaoOutraEmpresa!.Value));
     }
 
-    [When(@"eu enviar a Folha de Ponto do trabalhador ""(.*)"" com CPF ""(.*)"" para a solicitação cadastrada")]
-    public async Task QuandoEuEnviarAFolhaDePontoDoTrabalhador(string nome, string cpf)
+    [When(@"eu enviar a Folha de Ponto do trabalhador cadastrado para a solicitação cadastrada")]
+    public async Task QuandoEuEnviarAFolhaDePontoDoTrabalhadorCadastrado()
     {
         await EnviarAsync(DocumentUploadDriver.CriarFormulario(
             TestConstants.TIPO_DOCUMENTO_FOLHA_PONTO,
             DocumentUploadDriver.ArquivoPdf,
             supplyRequestId: supplyRequestCtx.IdSolicitacaoCadastrada!.Value,
-            workerName: nome,
-            workerCpf: cpf));
+            workerId: workerCtx.IdTrabalhadorCadastrado!.Value));
     }
 
     [When(@"eu enviar a Folha de Ponto sem informar o trabalhador para a solicitação cadastrada")]
@@ -101,11 +101,12 @@ internal class EnvioDocumentStepDefinitions(
         documentResultCtx.Documento.ReferencePeriodEnd.Should().Be(new DateOnly(hoje.Year, hoje.Month, DateTime.DaysInMonth(hoje.Year, hoje.Month)));
     }
 
-    [Then(@"o documento enviado deve ser do trabalhador com CPF ""(.*)""")]
-    public void EntaoODocumentoEnviadoDeveSerDoTrabalhadorComCpf(string cpf)
+    [Then(@"o documento enviado deve ser do trabalhador cadastrado com CPF ""(.*)""")]
+    public void EntaoODocumentoEnviadoDeveSerDoTrabalhadorCadastradoComCpf(string cpf)
     {
         documentResultCtx.Documento.Should().NotBeNull();
-        documentResultCtx.Documento!.WorkerCpf.Should().Be(cpf);
+        documentResultCtx.Documento!.WorkerId.Should().Be(workerCtx.IdTrabalhadorCadastrado);
+        documentResultCtx.Documento.WorkerCpf.Should().Be(cpf);
     }
 
     [Then(@"a solicitação cadastrada deve estar em andamento")]

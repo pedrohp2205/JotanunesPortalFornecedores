@@ -10,8 +10,7 @@ public class DocumentUploadDriver
         byte[] arquivo,
         string nomeArquivo = "documento.pdf",
         long? supplyRequestId = null,
-        string? workerName = null,
-        string? workerCpf = null)
+        long? workerId = null)
     {
         var form = new MultipartFormDataContent
         {
@@ -24,14 +23,9 @@ public class DocumentUploadDriver
             form.Add(new StringContent(supplyRequestId.Value.ToString()), "SupplyRequestId");
         }
 
-        if (workerName is not null)
+        if (workerId.HasValue)
         {
-            form.Add(new StringContent(workerName), "WorkerName");
-        }
-
-        if (workerCpf is not null)
-        {
-            form.Add(new StringContent(workerCpf), "WorkerCpf");
+            form.Add(new StringContent(workerId.Value.ToString()), "WorkerId");
         }
 
         return form;

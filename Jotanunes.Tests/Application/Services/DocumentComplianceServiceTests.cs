@@ -15,6 +15,7 @@ public class DocumentComplianceServiceTests
     private readonly Mock<IDocumentTypeRepository> _types = new();
     private readonly Mock<ICompanyRepository> _companies = new();
     private readonly Mock<ISupplyRequestRepository> _requests = new();
+    private readonly Mock<IWorkerAllocationRepository> _allocations = new();
     private readonly Company _company;
     private readonly WorkSite _workSite = new("Obra Teste") { Id = 1 };
     private readonly DocumentType _onboardingType = new("CNPJ", "Cartão CNPJ", DocumentCategory.Onboarding, SupplierType.Material, DocumentSubject.Company) { Id = 10 };
@@ -38,6 +39,9 @@ public class DocumentComplianceServiceTests
         _unitOfWork.SetupGet(u => u.DocumentTypeRepository).Returns(_types.Object);
         _unitOfWork.SetupGet(u => u.CompanyRepository).Returns(_companies.Object);
         _unitOfWork.SetupGet(u => u.SupplyRequestRepository).Returns(_requests.Object);
+        _unitOfWork.SetupGet(u => u.WorkerAllocationRepository).Returns(_allocations.Object);
+        _allocations.Setup(a => a.GetActiveBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<WorkerAllocation>());
+        _documents.Setup(d => d.GetOnboardingByWorkers(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document>());
         _companies.Setup(c => c.GetById(1)).ReturnsAsync(_company);
         _requests.Setup(r => r.GetById(1)).ReturnsAsync(() => Request(1));
         _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { _onboardingType, _recurringType });
@@ -69,7 +73,7 @@ public class DocumentComplianceServiceTests
 
     private Document ApprovedRecurring(long supplyRequestId, DateOnly start, DateOnly end)
     {
-        var document = new Document(1, _recurringType.Id, 1, DocumentCategory.Recurring, DocumentSubject.Company, "k", "folha.pdf", "application/pdf", supplyRequestId, null, null, start, end) { Id = 200 };
+        var document = new Document(1, _recurringType.Id, 1, DocumentCategory.Recurring, DocumentSubject.Company, "k", "folha.pdf", "application/pdf", supplyRequestId, null, start, end) { Id = 200 };
         document.Approve();
         return document;
     }
@@ -128,7 +132,7 @@ public class DocumentComplianceServiceTests
     {
         var request = Request(1);
         var period = CurrentPeriod();
-        var awaitingReview = new Document(1, _recurringType.Id, 1, DocumentCategory.Recurring, DocumentSubject.Company, "k", "folha.pdf", "application/pdf", 1, null, null, period.Start, period.End) { Id = 300 };
+        var awaitingReview = new Document(1, _recurringType.Id, 1, DocumentCategory.Recurring, DocumentSubject.Company, "k", "folha.pdf", "application/pdf", 1, null, period.Start, period.End) { Id = 300 };
         _documents.Setup(d => d.GetOnboardingByCompanies(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { ApprovedOnboarding() });
         _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>())).ReturnsAsync(new List<Document> { awaitingReview });
 
@@ -188,15 +192,39 @@ public class DocumentComplianceServiceTests
         _documents.Verify(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), CurrentPeriod().Start), Times.Once);
     }
 
-    private DocumentType WorkerType(long id, string code) =>
-        new(code, code, DocumentCategory.Recurring, SupplierType.Material, DocumentSubject.Worker) { Id = id };
+    private DocumentType WorkerType(long id, string code, DocumentCategory category = DocumentCategory.Recurring) =>
+        new(code, code, category, SupplierType.ManpowerLabor, DocumentSubject.Worker) { Id = id };
 
-    private Document Worker(DocumentType type, string cpf, long supplyRequestId, DateOnly start, DateOnly end, long id, Action<Document>? review = null)
+    private Document WorkerDocument(DocumentType type, long workerId, long supplyRequestId, DateOnly start, DateOnly end, long id, Action<Document>? review = null)
     {
-        var document = new Document(1, type.Id, 1, DocumentCategory.Recurring, DocumentSubject.Worker, "k", "f.pdf", "application/pdf", supplyRequestId, "Cícero", cpf, start, end) { Id = id };
+        var document = new Document(1, type.Id, 1, DocumentCategory.Recurring, DocumentSubject.Worker, "k", "f.pdf", "application/pdf", supplyRequestId, workerId, start, end) { Id = id };
         review?.Invoke(document);
         return document;
     }
+
+    private Document WorkerOnboardingDocument(DocumentType type, long workerId, DateOnly expirationDate, long id)
+    {
+        var document = new Document(1, type.Id, 1, DocumentCategory.Onboarding, DocumentSubject.Worker, "k", "aso.pdf", "application/pdf", workerId: workerId, expirationDate: expirationDate) { Id = id };
+        document.Approve();
+        return document;
+    }
+
+    private SupplyRequest ManpowerRequest(long id, int? requiredWorkerCount = 2)
+    {
+        var request = new SupplyRequest(_company, 1, SupplierType.ManpowerLabor, requiredWorkerCount) { Id = id };
+        typeof(SupplyRequest).GetProperty(nameof(SupplyRequest.WorkSite))!.SetValue(request, _workSite);
+        _requests.Setup(r => r.GetById(id)).ReturnsAsync(request);
+        return request;
+    }
+
+    private void Allocate(SupplyRequest request, params Worker[] workers)
+    {
+        var allocations = workers.Select((w, i) => new WorkerAllocation(request, w, i)).ToList();
+        _allocations.Setup(a => a.GetActiveBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(allocations);
+    }
+
+    private static Worker Cicero() => new(1, "Cícero", "529.982.247-25") { Id = 7 };
+    private static Worker Josefa() => new(1, "Josefa", "111.444.777-35") { Id = 8 };
 
     [Fact]
     public async Task Should_Mark_Item_As_Rejected_With_Reason_And_Document_Id()
@@ -223,9 +251,9 @@ public class DocumentComplianceServiceTests
     {
         var period = CurrentPeriod();
 
-        var rejected = new Document(1, _recurringType.Id, 1, DocumentCategory.Recurring, DocumentSubject.Company, "k", "a.pdf", "application/pdf", 1, null, null, period.Start, period.End) { Id = 1, CreatedAt = DateTime.UtcNow.AddHours(-3) };
+        var rejected = new Document(1, _recurringType.Id, 1, DocumentCategory.Recurring, DocumentSubject.Company, "k", "a.pdf", "application/pdf", 1, null, period.Start, period.End) { Id = 1, CreatedAt = DateTime.UtcNow.AddHours(-3) };
         rejected.Reject("Borrado");
-        var resubmitted = new Document(1, _recurringType.Id, 1, DocumentCategory.Recurring, DocumentSubject.Company, "k", "b.pdf", "application/pdf", 1, null, null, period.Start, period.End) { Id = 2, CreatedAt = DateTime.UtcNow.AddHours(-2) };
+        var resubmitted = new Document(1, _recurringType.Id, 1, DocumentCategory.Recurring, DocumentSubject.Company, "k", "b.pdf", "application/pdf", 1, null, period.Start, period.End) { Id = 2, CreatedAt = DateTime.UtcNow.AddHours(-2) };
         _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>())).ReturnsAsync(new List<Document> { rejected, resubmitted });
 
         var whilePending = Assert.Single((await _service.GetChecklist(1)).RecurringCompanyItems);
@@ -280,8 +308,9 @@ public class DocumentComplianceServiceTests
         var receipt = WorkerType(41, "RECEIPT");
         _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { _onboardingType, _recurringType, timesheet, receipt });
         var period = CurrentPeriod();
-        var approved = Worker(timesheet, "52998224725", 1, period.Start, period.End, 1, d => d.Approve());
-        var rejected = Worker(receipt, "52998224725", 1, period.Start, period.End, 2, d => d.Reject("CPF ilegível"));
+        Allocate(ManpowerRequest(1), Cicero());
+        var approved = WorkerDocument(timesheet, 7, 1, period.Start, period.End, 1, d => d.Approve());
+        var rejected = WorkerDocument(receipt, 7, 1, period.Start, period.End, 2, d => d.Reject("CPF ilegível"));
         _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>())).ReturnsAsync(new List<Document> { approved, rejected });
 
         var checklist = await _service.GetChecklist(1);
@@ -291,5 +320,89 @@ public class DocumentComplianceServiceTests
         Assert.Equal(0, checklist.WorkersUpToDate);
         Assert.Equal(ChecklistItemStatus.Approved, worker.Items.Single(i => i.DocumentTypeCode == "TIMESHEET").Status);
         Assert.Equal("CPF ilegível", worker.Items.Single(i => i.DocumentTypeCode == "RECEIPT").RejectionReason);
+    }
+
+    [Fact]
+    public async Task Should_List_Allocated_Workers_Even_Without_Documents()
+    {
+        var timesheet = WorkerType(40, "TIMESHEET");
+        _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { timesheet });
+        Allocate(ManpowerRequest(1), Cicero(), Josefa());
+
+        var checklist = await _service.GetChecklist(1);
+
+        Assert.Equal(new[] { "Cícero", "Josefa" }, checklist.Workers.Select(w => w.WorkerName));
+        Assert.Equal(2, checklist.AllocatedWorkerCount);
+        Assert.All(checklist.Workers, w =>
+        {
+            Assert.False(w.IsUpToDate);
+            Assert.Equal(ChecklistItemStatus.NotSent, Assert.Single(w.Items).Status);
+        });
+    }
+
+    [Fact]
+    public async Task Should_Ignore_Documents_Of_Workers_No_Longer_Allocated()
+    {
+        var timesheet = WorkerType(40, "TIMESHEET");
+        _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { timesheet });
+        var period = CurrentPeriod();
+        Allocate(ManpowerRequest(1), Josefa());
+        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>()))
+            .ReturnsAsync(new List<Document> { WorkerDocument(timesheet, 7, 1, period.Start, period.End, 1, d => d.Approve()) });
+
+        var checklist = await _service.GetChecklist(1);
+
+        var worker = Assert.Single(checklist.Workers);
+        Assert.Equal(8, worker.WorkerId);
+        Assert.Equal(0, checklist.WorkersUpToDate);
+    }
+
+    [Fact]
+    public async Task Should_Reuse_Worker_Onboarding_Document_Sent_Outside_The_Request()
+    {
+        var aso = WorkerType(50, "ASO", DocumentCategory.Onboarding);
+        var timesheet = WorkerType(40, "TIMESHEET");
+        _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { aso, timesheet });
+        var period = CurrentPeriod();
+        Allocate(ManpowerRequest(1), Cicero());
+        _documents.Setup(d => d.GetOnboardingByWorkers(It.IsAny<IReadOnlyCollection<long>>()))
+            .ReturnsAsync(new List<Document> { WorkerOnboardingDocument(aso, 7, DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(6), 1) });
+        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>()))
+            .ReturnsAsync(new List<Document> { WorkerDocument(timesheet, 7, 1, period.Start, period.End, 2, d => d.Approve()) });
+
+        var checklist = await _service.GetChecklist(1);
+
+        var worker = Assert.Single(checklist.Workers);
+        Assert.Equal(ChecklistItemStatus.Approved, Assert.Single(worker.OnboardingItems).Status);
+        Assert.True(worker.IsUpToDate);
+        Assert.Equal(1, checklist.WorkersUpToDate);
+    }
+
+    [Fact]
+    public async Task Should_Mark_Expired_Worker_Onboarding_Document_As_Not_Satisfied()
+    {
+        var aso = WorkerType(50, "ASO", DocumentCategory.Onboarding);
+        _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { aso });
+        Allocate(ManpowerRequest(1), Cicero());
+        _documents.Setup(d => d.GetOnboardingByWorkers(It.IsAny<IReadOnlyCollection<long>>()))
+            .ReturnsAsync(new List<Document> { WorkerOnboardingDocument(aso, 7, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1), 1) });
+
+        var checklist = await _service.GetChecklist(1);
+
+        var item = Assert.Single(Assert.Single(checklist.Workers).OnboardingItems);
+        Assert.Equal(ChecklistItemStatus.Expired, item.Status);
+        Assert.False(item.IsSatisfied);
+        Assert.Equal(1, item.DocumentId);
+    }
+
+    [Fact]
+    public async Task Should_Not_Require_Worker_Onboarding_Types_For_Company_Onboarding()
+    {
+        var aso = WorkerType(50, "ASO", DocumentCategory.Onboarding);
+        _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { _onboardingType, aso });
+        _documents.Setup(d => d.GetOnboardingByCompanies(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { ApprovedOnboarding() });
+
+        Assert.True(await _service.IsOnboardingComplete(1));
+        Assert.Equal(new[] { "CNPJ" }, (await _service.GetChecklist(1)).OnboardingItems.Select(i => i.DocumentTypeCode));
     }
 }

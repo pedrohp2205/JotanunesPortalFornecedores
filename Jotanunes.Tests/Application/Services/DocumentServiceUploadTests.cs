@@ -17,6 +17,10 @@ public class DocumentServiceUploadTests
     private readonly Mock<IDocumentTypeRepository> _types = new();
     private readonly Mock<ICompanyRepository> _companies = new();
     private readonly Mock<IDocumentStorageService> _storage = new();
+    private readonly Mock<IWorkerRepository> _workers = new();
+    private readonly Mock<IWorkerAllocationRepository> _allocations = new();
+    private readonly Mock<ISupplyRequestRepository> _requests = new();
+    private readonly Worker _worker = new(1, "Cicero Fernandes da Silva", "529.982.247-25") { Id = 7 };
     private readonly DocumentService _service;
 
     public DocumentServiceUploadTests()
@@ -35,6 +39,14 @@ public class DocumentServiceUploadTests
         _unitOfWork.SetupGet(u => u.DocumentRepository).Returns(_documents.Object);
         _unitOfWork.SetupGet(u => u.DocumentTypeRepository).Returns(_types.Object);
         _unitOfWork.SetupGet(u => u.CompanyRepository).Returns(_companies.Object);
+        _unitOfWork.SetupGet(u => u.WorkerRepository).Returns(_workers.Object);
+        _unitOfWork.SetupGet(u => u.WorkerAllocationRepository).Returns(_allocations.Object);
+        _unitOfWork.SetupGet(u => u.SupplyRequestRepository).Returns(_requests.Object);
+        _workers.Setup(w => w.GetById(7)).ReturnsAsync(_worker);
+        _types.Setup(t => t.GetById(11)).ReturnsAsync(
+            new DocumentType("ASO", "Atestado de saúde ocupacional", DocumentCategory.Onboarding, SupplierType.Material, DocumentSubject.Worker, requiresExpirationDate: true) { Id = 11 });
+        _types.Setup(t => t.GetById(12)).ReturnsAsync(
+            new DocumentType("PONTO", "Folha de ponto", DocumentCategory.Recurring, SupplierType.Material, DocumentSubject.Worker) { Id = 12 });
         _companies.Setup(c => c.GetById(1)).ReturnsAsync(company);
         _types.Setup(t => t.GetById(10)).ReturnsAsync(
             new DocumentType("CNPJ", "Cartão CNPJ", DocumentCategory.Onboarding, SupplierType.Material, DocumentSubject.Company) { Id = 10 });
@@ -83,5 +95,70 @@ public class DocumentServiceUploadTests
             _service.Upload(1, 5, new DocumentUploadDto { DocumentTypeId = 10 }, Pdf(), "cartao.pdf"));
 
         _storage.Verify(s => s.DeleteAsync(storedKey!, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    private DocumentUploadDto Aso(DateOnly? expirationDate) =>
+        new() { DocumentTypeId = 11, WorkerId = 7, ExpirationDate = expirationDate };
+
+    private static DateOnly InSixMonths() => DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(6);
+
+    [Fact]
+    public async Task Should_Accept_Worker_Onboarding_Document_Without_SupplyRequest()
+    {
+        Document? added = null;
+        _documents.Setup(d => d.Add(It.IsAny<Document>())).Callback<Document>(d => added = d);
+        _documents.Setup(d => d.GetById(It.IsAny<long>())).ReturnsAsync(() => added);
+
+        await _service.Upload(1, 5, Aso(InSixMonths()), Pdf(), "aso.pdf");
+
+        Assert.Equal(7, added!.WorkerId);
+        Assert.Null(added.SupplyRequestId);
+    }
+
+    [Fact]
+    public async Task Should_Require_Expiration_Date_When_Type_Demands_It()
+    {
+        var ex = await Assert.ThrowsAsync<JotanunesException>(() => _service.Upload(1, 5, Aso(null), Pdf(), "aso.pdf"));
+
+        Assert.Equal("Data de validade é obrigatória para este tipo de documento.", ex.Message);
+    }
+
+    [Fact]
+    public async Task Should_Reject_Already_Expired_Document()
+    {
+        var ex = await Assert.ThrowsAsync<JotanunesException>(() =>
+            _service.Upload(1, 5, Aso(DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1)), Pdf(), "aso.pdf"));
+
+        Assert.Equal("Documento já está vencido.", ex.Message);
+    }
+
+    [Fact]
+    public async Task Should_Reject_Document_For_Inactive_Worker()
+    {
+        _worker.Deactivate();
+
+        var ex = await Assert.ThrowsAsync<JotanunesException>(() => _service.Upload(1, 5, Aso(InSixMonths()), Pdf(), "aso.pdf"));
+
+        Assert.Equal("Trabalhador inativo não pode receber documentos.", ex.Message);
+    }
+
+    [Fact]
+    public async Task Should_Reject_Document_For_Worker_Of_Another_Company()
+    {
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.Upload(2, 5, Aso(InSixMonths()), Pdf(), "aso.pdf"));
+    }
+
+    [Fact]
+    public async Task Should_Reject_Recurring_Document_For_Worker_Not_Allocated_In_The_Request()
+    {
+        var request = new SupplyRequest(1, 1, SupplierType.Material) { Id = 20 };
+        typeof(SupplyRequest).GetProperty(nameof(SupplyRequest.WorkSite))!.SetValue(request, new WorkSite("Obra Teste") { Id = 1 });
+        _requests.Setup(r => r.GetById(20)).ReturnsAsync(request);
+
+        var ex = await Assert.ThrowsAsync<JotanunesException>(() =>
+            _service.Upload(1, 5, new DocumentUploadDto { DocumentTypeId = 12, SupplyRequestId = 20, WorkerId = 7 }, Pdf(), "ponto.pdf"));
+
+        Assert.Equal("Trabalhador não está alocado nesta solicitação.", ex.Message);
+        _storage.Verify(s => s.UploadAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

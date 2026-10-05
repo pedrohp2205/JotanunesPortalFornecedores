@@ -265,9 +265,9 @@ public class SupplierNotificationService : ISupplierNotificationService
     {
         var parts = new List<string>();
 
-        if (!string.IsNullOrWhiteSpace(document.WorkerName))
+        if (document.Worker is not null)
         {
-            parts.Add($"do trabalhador {document.WorkerName}");
+            parts.Add($"do trabalhador {document.Worker.Name}");
         }
 
         if (document.SupplyRequest is not null)

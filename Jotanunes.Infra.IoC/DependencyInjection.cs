@@ -43,6 +43,7 @@ public static class DependencyInjection
         service.AddScoped<IDocumentTypeService, DocumentTypeService>();
         service.AddScoped<IDocumentService, DocumentService>();
         service.AddScoped<IDocumentComplianceService, DocumentComplianceService>();
+        service.AddScoped<IWorkerService, WorkerService>();
 
         service.AddDocumentStorage(configuration);
         service.AddEmail(configuration);
