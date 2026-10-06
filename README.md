@@ -200,6 +200,14 @@ Analisadores disponíveis:
 |---|---|---|---|
 | `FGTS_CND` (id 4, "Certidão Negativa de FGTS") | Certificado de Regularidade do FGTS (CRF) | Texto; imagem se escaneada | CNPJ igual ao da empresa; se está vencida, se ainda não vale ou se vence em até 7 dias; validade informada no envio × certidão; razão social |
 | `PAYMENT_RECEIPT` (id 20, "Recibo de Pagamento") | Recibo de pagamento (holerite) | Imagem | CNPJ do empregador; CPF e nome do trabalhador do envio; competência dentro do período do envio; assinatura do empregado. Guarda o líquido (`netPay`) para as regras cruzadas |
+| `PAYMENT_PROOF` (id 19, "Comprovante de Pagamento") | Comprovante de pagamento do salário (PIX/TED) | Texto; imagem para outros bancos | CPF de quem recebeu × trabalhador do envio (aceita CPF parcialmente oculto, conferindo os dígitos visíveis); nome; CNPJ pagador × empresa; pagamento até o 5º dia útil do mês seguinte à competência (sábado conta como dia útil; domingos e feriados nacionais fixos não). Guarda `amount` para as regras cruzadas |
+| `FGTS_PAYMENT_PROOF` (id 12) | Comprovante de pagamento da guia do FGTS | Texto; imagem | CNPJ pagador × empresa (raiz); recebedor é a Caixa. Guarda `amount` e `paymentDate` |
+| `FGTS_DETAIL` (id 13) | Detalhamento da guia do FGTS Digital | Texto; imagem | Raiz do CNPJ do empregador; competência no período; quantidade declarada × trabalhadores listados. Guarda `workers` (nome, CPF, base, FGTS), `guideTotal`, `dueDate` e `tomadorCnpj` |
+| `FGTS_REPORT` (id 14, "Relatório do FGTS") | Guia do FGTS Digital (GFD) | Imagem | Raiz do CNPJ do empregador; competência no período. Guarda `guideTotal`, `dueDate`, `declaredWorkers` |
+| `TIMESHEET` (id 18) | Folha de ponto | Texto; imagem | CPF e nome × trabalhador; período; CNPJ do empregador (ausente gera Warning); 0:00 trabalhadas; local × obra da solicitação. Guarda `workedHours` e `expectedHours` |
+| `EMPLOYEE_LIST` (id 17) | Relação de funcionários lotados na obra | Texto (uma linha por funcionário); imagem | Obra listada × obra da solicitação. Guarda `employees` |
+
+Campos de lista (`workers`, `employees`) ficam em `fields` como JSON. Valores em reais ficam com ponto decimal (`1900.75`), datas em `dd/MM/yyyy`, competências em `MM/yyyy`, horas em `H:mm` e CPF parcialmente oculto com `*` nas posições ocultas (`***952844**`).
 
 Endpoints (frente interna):
 

@@ -30,7 +30,34 @@ public static class VisionPrompt
             """;
     }
 
+    public static (string Name, JsonNode Schema) List(string name, string description, params (string Name, string Type, string Description)[] itemFields)
+    {
+        var properties = new JsonObject();
+        foreach (var (itemName, type, itemDescription) in itemFields)
+        {
+            properties[itemName] = Nullable(type, itemDescription);
+        }
+
+        return (name, new JsonObject
+        {
+            ["type"] = new JsonArray("array", "null"),
+            ["description"] = description,
+            ["items"] = new JsonObject
+            {
+                ["type"] = "object",
+                ["properties"] = properties,
+                ["required"] = new JsonArray(properties.Select(p => (JsonNode)p.Key).ToArray()),
+                ["additionalProperties"] = false
+            }
+        });
+    }
+
     public static string Schema(params (string Name, string Type, string Description)[] fields)
+    {
+        return Schema(fields.Select(f => (f.Name, (JsonNode)Nullable(f.Type, f.Description))).ToArray());
+    }
+
+    public static string Schema(params (string Name, JsonNode Schema)[] fields)
     {
         var properties = new JsonObject
         {
@@ -42,9 +69,9 @@ public static class VisionPrompt
             [DetectedDocument] = Nullable("string", "o que o documento é, em poucas palavras")
         };
 
-        foreach (var (name, type, description) in fields)
+        foreach (var (name, fieldSchema) in fields)
         {
-            properties[name] = Nullable(type, description);
+            properties[name] = fieldSchema;
         }
 
         var schema = new JsonObject
@@ -101,6 +128,13 @@ public static class VisionPrompt
                 : null;
     }
 
+    public static IEnumerable<JsonElement> GetList(JsonElement result, string name)
+    {
+        return result.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Array
+            ? value.EnumerateArray().Where(item => item.ValueKind == JsonValueKind.Object).ToList()
+            : [];
+    }
+
     public static bool? GetBool(JsonElement result, string name)
     {
         if (!result.TryGetProperty(name, out var value))
@@ -116,7 +150,7 @@ public static class VisionPrompt
         };
     }
 
-    private static JsonObject Nullable(string type, string description)
+    public static JsonObject Nullable(string type, string description)
     {
         return new JsonObject
         {

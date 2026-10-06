@@ -11,13 +11,24 @@ internal sealed record GoldenCase(
     string? Engine,
     bool ExpectComplete,
     bool ExpectWrongDocument,
-    IReadOnlyDictionary<string, string> Expected);
+    IReadOnlyDictionary<string, string> Expected,
+    IReadOnlyDictionary<string, int> ExpectedListCounts);
 
 internal static class GoldenSet
 {
     public const string FolderName = "Documentos Jotanunes";
 
-    public static readonly IDocumentTypeAnalyzer[] Analyzers = [new CrfAnalyzer(), new PaymentReceiptAnalyzer()];
+    public static readonly IDocumentTypeAnalyzer[] Analyzers =
+    [
+        new CrfAnalyzer(),
+        new PaymentReceiptAnalyzer(),
+        new PaymentProofAnalyzer(),
+        new FgtsPaymentProofAnalyzer(),
+        new FgtsDetailAnalyzer(),
+        new FgtsGuideAnalyzer(),
+        new TimesheetAnalyzer(),
+        new EmployeeListAnalyzer()
+    ];
 
     public static string? FindFolder()
     {
@@ -45,7 +56,10 @@ internal static class GoldenSet
             c.TryGetProperty("expectWrongDocument", out var wrong) && wrong.GetBoolean(),
             c.TryGetProperty("expected", out var expected)
                 ? expected.EnumerateObject().ToDictionary(f => f.Name, f => f.Value.GetString()!)
-                : new Dictionary<string, string>())).ToList();
+                : new Dictionary<string, string>(),
+            c.TryGetProperty("expectedListCounts", out var counts)
+                ? counts.EnumerateObject().ToDictionary(f => f.Name, f => f.Value.GetInt32())
+                : new Dictionary<string, int>())).ToList();
     }
 
     public static async Task<MemoryStream> Open(string folder, GoldenCase goldenCase)
@@ -83,6 +97,15 @@ internal static class GoldenSet
         {
             yield return $"{label}: esperava leitura {(goldenCase.ExpectComplete ? "completa" : "incompleta")}; faltou [{string.Join(", ", extraction.Missing)}].";
             yield break;
+        }
+
+        foreach (var (name, count) in goldenCase.ExpectedListCounts)
+        {
+            var actual = extraction.GetList<JsonElement>(name).Count;
+            if (actual != count)
+            {
+                yield return $"{label}: lista '{name}' esperava {count} item(ns), leu {actual}.";
+            }
         }
 
         foreach (var (name, value) in goldenCase.Expected)

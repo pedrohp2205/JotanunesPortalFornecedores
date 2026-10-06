@@ -24,6 +24,40 @@ internal static class AnalysisTestData
         { Id = 1 };
     }
 
+    public const string WorkSiteName = "Residencial Aurora";
+
+    public static Document RecurringDocument(string typeCode, string typeName, DocumentSubject subject, bool withWorker = true)
+    {
+        var type = new DocumentType(typeCode, typeName, DocumentCategory.Recurring, SupplierType.ManpowerLabor, subject) { Id = 30 };
+        var supplyRequest = new SupplyRequest(1, 9, SupplierType.ManpowerLabor) { Id = 3 };
+        typeof(SupplyRequest).GetProperty(nameof(SupplyRequest.WorkSite))!.SetValue(supplyRequest, new WorkSite(WorkSiteName) { Id = 9 });
+
+        var document = new Document(
+            companyId: 1,
+            documentTypeId: 30,
+            uploadedBySupplierUserId: 5,
+            category: DocumentCategory.Recurring,
+            subject: subject,
+            storageKey: "companies/1/documents/abc.pdf",
+            originalFileName: "documento.pdf",
+            contentType: "application/pdf",
+            supplyRequestId: 3,
+            workerId: subject == DocumentSubject.Worker ? 7 : null,
+            referencePeriodStart: new DateOnly(2026, 7, 1),
+            referencePeriodEnd: new DateOnly(2026, 7, 31))
+        { Id = 300 };
+
+        typeof(Document).GetProperty(nameof(Document.Company))!.SetValue(document, Company());
+        typeof(Document).GetProperty(nameof(Document.DocumentType))!.SetValue(document, type);
+        typeof(Document).GetProperty(nameof(Document.SupplyRequest))!.SetValue(document, supplyRequest);
+        if (subject == DocumentSubject.Worker && withWorker)
+        {
+            typeof(Document).GetProperty(nameof(Document.Worker))!.SetValue(document, new Worker(1, WorkerName, WorkerCpf) { Id = 7 });
+        }
+
+        return document;
+    }
+
     public static Document ReceiptDocument(bool withWorker = true)
     {
         var type = new DocumentType("PAYMENT_RECEIPT", "Recibo de Pagamento", DocumentCategory.Recurring, SupplierType.ManpowerLabor, DocumentSubject.Worker) { Id = 20 };

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Jotanunes.Domain.Entities;
 
 namespace Jotanunes.Application.DTOs.Analysis;
@@ -20,6 +21,19 @@ public class FieldExtraction
     public string? Get(string name)
     {
         return Fields.FirstOrDefault(f => f.Name == name)?.Value;
+    }
+
+    private static readonly JsonSerializerOptions ListJson = new(JsonSerializerDefaults.Web);
+
+    public void AddList<T>(string name, IReadOnlyCollection<T> items, string? requiredLabel = null)
+    {
+        Add(name, items.Count == 0 ? null : JsonSerializer.Serialize(items, ListJson), requiredLabel);
+    }
+
+    public List<T> GetList<T>(string name)
+    {
+        var value = Get(name);
+        return value is null ? [] : JsonSerializer.Deserialize<List<T>>(value, ListJson) ?? [];
     }
 
     public void Add(string name, string? value, string? requiredLabel = null)

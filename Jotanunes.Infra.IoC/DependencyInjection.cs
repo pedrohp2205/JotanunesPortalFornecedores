@@ -83,6 +83,12 @@ public static class DependencyInjection
 
         service.AddSingleton<IDocumentTypeAnalyzer, CrfAnalyzer>();
         service.AddSingleton<IDocumentTypeAnalyzer, PaymentReceiptAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, PaymentProofAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, FgtsPaymentProofAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, FgtsDetailAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, FgtsGuideAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, TimesheetAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, EmployeeListAnalyzer>();
 
         service.AddScoped<IDocumentAnalysisService, DocumentAnalysisService>();
 
