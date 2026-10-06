@@ -127,7 +127,7 @@ namespace Jotanunes.External.BddTests.Features.Api.DocumentTests
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/DocumentTests/LeituraDocument.feature.ndjson", 7);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/DocumentTests/LeituraDocument.feature.ndjson", 8);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -346,6 +346,49 @@ await this.FeatureBackgroundAsync();
     await testRunner.AndAsync("a listagem ainda contém o documento cadastrado", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
 #line 42
+    await testRunner.AndAsync("a resposta não contém o parecer da análise automática", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Avisar o fornecedor quando o arquivo parece ser outro documento")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Document - Leitura")]
+        [global::Xunit.TraitAttribute("Description", "Avisar o fornecedor quando o arquivo parece ser outro documento")]
+        public async global::System.Threading.Tasks.Task AvisarOFornecedorQuandoOArquivoPareceSerOutroDocumento()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "5";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Avisar o fornecedor quando o arquivo parece ser outro documento", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 44
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 8
+await this.FeatureBackgroundAsync();
+#line hidden
+#line 45
+    await testRunner.GivenAsync("que a análise do documento cadastrado identificou outro documento", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
+#line hidden
+#line 46
+    await testRunner.WhenAsync("eu consultar o documento cadastrado", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+#line hidden
+#line 47
+    await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+#line hidden
+#line 48
+    await testRunner.AndAsync("o documento retornado avisa que o arquivo pode não ser o documento certo", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
+#line 49
     await testRunner.AndAsync("a resposta não contém o parecer da análise automática", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }

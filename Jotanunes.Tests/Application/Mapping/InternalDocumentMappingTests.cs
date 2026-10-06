@@ -48,4 +48,45 @@ public class InternalDocumentMappingTests
     {
         Assert.Null(typeof(DocumentDto).GetProperty(nameof(InternalDocumentDto.Analysis)));
     }
+
+    private static Document WithWrongDocumentAnalysis(Document document)
+    {
+        var analysis = new DocumentAnalysis(document);
+        analysis.Complete(TextExtractionEngine.Vision, [], [
+            new AnalysisFinding(DocumentAnalysis.WrongDocumentTypeCode, FindingSeverity.Blocking, "O arquivo parece ser CNH.")
+        ]);
+        typeof(Document).GetProperty(nameof(Document.Analysis))!.SetValue(document, analysis);
+        return document;
+    }
+
+    [Fact]
+    public void Should_Warn_Supplier_When_Pending_Document_Looks_Like_Another_Document()
+    {
+        var dto = _mapper.Map<DocumentDto>(WithWrongDocumentAnalysis(AnalysisTestData.CrfDocument()));
+
+        Assert.Equal(
+            "Não conseguimos identificar este arquivo como \"Certidão Negativa de FGTS\". Confira se enviou o documento certo; se não for, envie o documento correto.",
+            dto.UploadWarning);
+        Assert.DoesNotContain("CNH", dto.UploadWarning);
+    }
+
+    [Fact]
+    public void Should_Not_Warn_Supplier_After_The_Document_Was_Reviewed()
+    {
+        var document = WithWrongDocumentAnalysis(AnalysisTestData.CrfDocument());
+        document.Approve();
+
+        Assert.Null(_mapper.Map<DocumentDto>(document).UploadWarning);
+    }
+
+    [Fact]
+    public void Should_Not_Warn_Supplier_About_Other_Findings()
+    {
+        var document = AnalysisTestData.CrfDocument();
+        var analysis = new DocumentAnalysis(document);
+        analysis.Complete(TextExtractionEngine.NativeText, [], [new AnalysisFinding("EXPIRED", FindingSeverity.Blocking, "vencida")]);
+        typeof(Document).GetProperty(nameof(Document.Analysis))!.SetValue(document, analysis);
+
+        Assert.Null(_mapper.Map<DocumentDto>(document).UploadWarning);
+    }
 }

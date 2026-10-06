@@ -72,4 +72,11 @@ internal class DocumentApiClientFixture(
             .PostAsync($"{BASE_URL}/{id}/analysis", null);
         return await httpResponseCtx.TryReadFromJsonAsync<DocumentAnalysisDto>();
     }
+
+    public async Task<AnalysisMetricsDto?> GetAnalysisMetricsAsync()
+    {
+        httpResponseCtx.Response = await apiClientFixture.Client
+            .GetAsync($"{BASE_URL}/analysis/metrics");
+        return await httpResponseCtx.TryReadFromJsonAsync<AnalysisMetricsDto>();
+    }
 }

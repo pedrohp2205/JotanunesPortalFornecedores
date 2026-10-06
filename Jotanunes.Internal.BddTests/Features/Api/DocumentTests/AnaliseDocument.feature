@@ -45,3 +45,10 @@ Cenário: Pedir análise de um documento inexistente
     Quando eu pedir uma nova análise de um documento inexistente
     Então eu recebo uma resposta 404 Not Found
     E eu recebo uma resposta de erro com a mensagem "Documento não encontrado"
+
+Cenário: Comparar o parecer da análise com a decisão do analista
+    Dado que existe um documento de habilitação aprovado enviado pela empresa cadastrada
+    E que o documento cadastrado tem uma análise não conforme
+    Quando eu consultar as métricas da análise automática
+    Então eu recebo uma resposta 200 OK
+    E as métricas mostram 1 documento(s) avaliado(s), 0 concordância(s) e 1 alarme(s) falso(s)

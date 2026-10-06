@@ -8,7 +8,7 @@ using Jotanunes.Domain.Validation;
 
 namespace Jotanunes.Application.Services.Analyzers;
 
-public partial class CrfAnalyzer : IVisionAnalyzer
+public partial class CrfAnalyzer : IVisionAnalyzer, IExpiringDocumentAnalyzer
 {
     public const int ExpiringSoonDays = 7;
 
@@ -45,6 +45,11 @@ public partial class CrfAnalyzer : IVisionAnalyzer
         extraction.Add("certificationNumber", CertificationNumber().Match(text.Flat) is { Success: true } number ? number.Groups["number"].Value : null);
 
         return extraction;
+    }
+
+    public DateOnly? ReadExpirationDate(FieldExtraction extraction)
+    {
+        return TextPatterns.ParseDate(extraction.Get("validUntil"));
     }
 
     public FieldExtraction FromVision(JsonElement result)

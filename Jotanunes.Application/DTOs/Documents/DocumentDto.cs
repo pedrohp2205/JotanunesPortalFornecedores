@@ -30,6 +30,7 @@ public class DocumentDto
     public DocumentStatus Status { get; set; }
     public string StatusDescription { get; set; } = string.Empty;
     public string? RejectionReason { get; set; }
+    public string? UploadWarning { get; set; }
     public DateTime? ReviewedAt { get; set; }
 
     public DateTime CreatedAt { get; set; }

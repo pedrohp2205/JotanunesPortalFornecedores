@@ -61,7 +61,11 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.UploadedByName, opt => opt.MapFrom(src => src.UploadedBySupplierUser.Name))
             .ForMember(dest => dest.WorkerName, opt => opt.MapFrom(src => src.Worker != null ? src.Worker.Name : null))
             .ForMember(dest => dest.WorkerCpf, opt => opt.MapFrom(src => src.Worker != null ? src.Worker.Cpf : null))
-            .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()));
+            .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.UploadWarning, opt => opt.MapFrom(src =>
+                src.Status == DocumentStatus.Pending && src.Analysis != null && src.Analysis.FoundWrongDocument
+                    ? "Não conseguimos identificar este arquivo como \"" + src.DocumentType.Name + "\". Confira se enviou o documento certo; se não for, envie o documento correto."
+                    : null));
 
         CreateMap<Worker, WorkerDto>()
             .ForMember(dest => dest.CompanyCorporateName, opt => opt.MapFrom(src => src.Company.CorporateName))

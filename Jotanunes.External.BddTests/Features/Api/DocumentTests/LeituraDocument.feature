@@ -40,3 +40,10 @@ Cenário: Ignorar o filtro por veredito da análise na frente do fornecedor
     Então eu recebo uma resposta 200 OK
     E a listagem ainda contém o documento cadastrado
     E a resposta não contém o parecer da análise automática
+
+Cenário: Avisar o fornecedor quando o arquivo parece ser outro documento
+    Dado que a análise do documento cadastrado identificou outro documento
+    Quando eu consultar o documento cadastrado
+    Então eu recebo uma resposta 200 OK
+    E o documento retornado avisa que o arquivo pode não ser o documento certo
+    E a resposta não contém o parecer da análise automática

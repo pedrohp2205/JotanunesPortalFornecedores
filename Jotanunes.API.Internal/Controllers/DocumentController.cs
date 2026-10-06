@@ -50,6 +50,13 @@ public class DocumentController(
         return Ok(document);
     }
 
+    [HttpGet("analysis/metrics")]
+    public async Task<ActionResult<AnalysisMetricsDto>> GetAnalysisMetrics([FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
+    {
+        var metrics = await analysisService.GetMetrics(from, to);
+        return Ok(metrics);
+    }
+
     [HttpGet("{id:long}/analysis")]
     public async Task<ActionResult<DocumentAnalysisDto>> GetAnalysis(long id)
     {

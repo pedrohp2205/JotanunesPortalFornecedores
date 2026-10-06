@@ -1,6 +1,7 @@
 using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Pagination;
+using Jotanunes.Domain.Projections;
 
 namespace Jotanunes.Domain.Interfaces;
 
@@ -12,4 +13,5 @@ public interface IDocumentRepository : IGenericRepository<Document>
     Task<List<Document>> GetOnboardingByCompanies(IReadOnlyCollection<long> companyIds);
     Task<List<Document>> GetOnboardingByWorkers(IReadOnlyCollection<long> workerIds);
     Task<Document?> GetById(long id);
+    Task<List<ReviewedDocument>> GetReviewed(DateTime? reviewedFrom, DateTime? reviewedTo);
 }

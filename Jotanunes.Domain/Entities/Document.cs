@@ -86,6 +86,13 @@ public class Document : BaseEntity
         ReviewedAt = DateTime.UtcNow;
     }
 
+    public void ApplyAnalyzedExpirationDate(DateOnly expirationDate)
+    {
+        JotanunesException.When(Status != DocumentStatus.Pending, "Documento já foi avaliado.");
+
+        ExpirationDate = expirationDate;
+    }
+
     public bool IsExpired(DateOnly referenceDate)
     {
         return ExpirationDate.HasValue && ExpirationDate.Value < referenceDate;

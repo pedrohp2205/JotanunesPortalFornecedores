@@ -8,4 +8,5 @@ public interface IDocumentAnalysisService
     Task Analyze(long analysisId, CancellationToken cancellationToken = default);
     Task<DocumentAnalysisDto> GetByDocument(long documentId);
     Task<DocumentAnalysisDto> Reanalyze(long documentId);
+    Task<AnalysisMetricsDto> GetMetrics(DateOnly? from, DateOnly? to);
 }

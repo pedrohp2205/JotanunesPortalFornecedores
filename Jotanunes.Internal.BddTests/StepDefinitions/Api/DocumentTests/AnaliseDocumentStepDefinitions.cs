@@ -17,6 +17,7 @@ internal class AnaliseDocumentStepDefinitions(
     DocumentGivenContext documentCtx)
 {
     private DocumentAnalysisDto? _analise;
+    private AnalysisMetricsDto? _metricas;
 
     [Given(@"^que o documento cadastrado tem uma análise (pendente|concluída|não conforme)$")]
     public async Task DadoQueODocumentoCadastradoTemUmaAnalise(string situacao)
@@ -65,5 +66,21 @@ internal class AnaliseDocumentStepDefinitions(
         _analise.Should().NotBeNull();
         _analise!.StatusDescription.Should().Be(status);
         _analise.DocumentId.Should().Be(documentCtx.IdDocumentoCadastrado!.Value);
+    }
+
+    [When(@"eu consultar as métricas da análise automática")]
+    public async Task QuandoEuConsultarAsMetricasDaAnaliseAutomatica()
+    {
+        _metricas = await documentFix.GetAnalysisMetricsAsync();
+    }
+
+    [Then(@"as métricas mostram (\d+) documento\(s\) avaliado\(s\), (\d+) concordância\(s\) e (\d+) alarme\(s\) falso\(s\)")]
+    public void EntaoAsMetricasMostram(int avaliados, int concordancias, int alarmesFalsos)
+    {
+        _metricas.Should().NotBeNull();
+        _metricas!.Total.Reviewed.Should().Be(avaliados);
+        _metricas.Total.Agreements.Should().Be(concordancias);
+        _metricas.Total.FalseAlarms.Should().Be(alarmesFalsos);
+        _metricas.DocumentTypes.Should().ContainSingle(t => t.DocumentTypeCode == "CNPJ_CARD");
     }
 }

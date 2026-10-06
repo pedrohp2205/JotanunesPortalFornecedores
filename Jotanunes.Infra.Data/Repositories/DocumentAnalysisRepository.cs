@@ -41,6 +41,7 @@ public class DocumentAnalysisRepository : GenericRepository<DocumentAnalysis>, I
         return _context.DocumentAnalyses
                         .Include(a => a.Document).ThenInclude(d => d.Company)
                         .Include(a => a.Document).ThenInclude(d => d.DocumentType)
-                        .Include(a => a.Document).ThenInclude(d => d.Worker);
+                        .Include(a => a.Document).ThenInclude(d => d.Worker)
+                        .Include(a => a.Document).ThenInclude(d => d.SupplyRequest!).ThenInclude(sr => sr.WorkSite);
     }
 }

@@ -116,7 +116,7 @@ namespace Jotanunes.Internal.BddTests.Features.Api.DocumentTests
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/DocumentTests/AnaliseDocument.feature.ndjson", 8);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/DocumentTests/AnaliseDocument.feature.ndjson", 9);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -387,6 +387,50 @@ await this.FeatureBackgroundAsync();
 #line hidden
 #line 47
     await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Documento não encontrado\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Comparar o parecer da análise com a decisão do analista")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Document - Análise automática")]
+        [global::Xunit.TraitAttribute("Description", "Comparar o parecer da análise com a decisão do analista")]
+        public async global::System.Threading.Tasks.Task CompararOParecerDaAnaliseComADecisaoDoAnalista()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "6";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Comparar o parecer da análise com a decisão do analista", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 49
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 8
+await this.FeatureBackgroundAsync();
+#line hidden
+#line 50
+    await testRunner.GivenAsync("que existe um documento de habilitação aprovado enviado pela empresa cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
+#line hidden
+#line 51
+    await testRunner.AndAsync("que o documento cadastrado tem uma análise não conforme", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
+#line 52
+    await testRunner.WhenAsync("eu consultar as métricas da análise automática", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+#line hidden
+#line 53
+    await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+#line hidden
+#line 54
+    await testRunner.AndAsync("as métricas mostram 1 documento(s) avaliado(s), 0 concordância(s) e 1 alarme(s) f" +
+                        "also(s)", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

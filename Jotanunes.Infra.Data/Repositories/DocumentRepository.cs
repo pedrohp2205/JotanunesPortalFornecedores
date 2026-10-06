@@ -1,7 +1,9 @@
 using Jotanunes.Domain.Entities;
+using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Domain.Pagination;
+using Jotanunes.Domain.Projections;
 using Jotanunes.Infra.Data.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -88,6 +90,33 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
                                 .Include(d => d.UploadedBySupplierUser)
                                 .Include(d => d.Analysis)
                                 .FirstOrDefaultAsync(d => d.Id == id);
+    }
+
+    public async Task<List<ReviewedDocument>> GetReviewed(DateTime? reviewedFrom, DateTime? reviewedTo)
+    {
+        var query = _context.Documents
+                                .AsNoTracking()
+                                .Where(d => d.Status != DocumentStatus.Pending && d.ReviewedAt != null);
+
+        if (reviewedFrom.HasValue)
+        {
+            query = query.Where(d => d.ReviewedAt >= reviewedFrom.Value);
+        }
+
+        if (reviewedTo.HasValue)
+        {
+            query = query.Where(d => d.ReviewedAt < reviewedTo.Value);
+        }
+
+        return await query
+                        .Select(d => new ReviewedDocument(
+                            d.DocumentTypeId,
+                            d.DocumentType.Code,
+                            d.DocumentType.Name,
+                            d.Status,
+                            d.Analysis != null ? d.Analysis.Status : null,
+                            d.Analysis != null ? d.Analysis.Verdict : null))
+                        .ToListAsync();
     }
 
     private static IQueryable<Document> ApplyFilter(IQueryable<Document> query, DocumentFilter filter)

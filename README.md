@@ -208,6 +208,21 @@ Endpoints (frente interna):
 | GET | `/api/document/{id}/analysis` | Parecer do documento |
 | POST | `/api/document/{id}/analysis` | Recoloca a análise na fila (202). Também cria a análise de documentos enviados antes desta funcionalidade |
 
+**Validade automática.** Para tipos cujo analisador lê a validade (hoje, a CRF), uma leitura de **texto** ajusta o `expirationDate` do documento enquanto ele está pendente: preenche quando o fornecedor não informou (achado `EXPIRATION_DATE_FILLED`, Info) e corrige quando ele informou outra data (achado `EXPIRATION_DATE_CORRECTED`, Warning, com a data original na mensagem). Uma leitura **por imagem** nunca altera a data, só sugere (`EXPIRATION_DATE_MISMATCH`). Documento já aprovado ou recusado não é alterado.
+
+**Aviso ao fornecedor.** Quando a análise conclui que o arquivo é outro documento (`WRONG_DOCUMENT_TYPE`) e o documento ainda está pendente, o fornecedor recebe um e-mail ("Confira o documento enviado"), e o documento passa a trazer `uploadWarning` nas duas frentes. É o único sinal da análise que o fornecedor vê: a mensagem é fixa e não repete o que a IA acha que o arquivo é. O worker usa a mesma seção `Email` das APIs.
+
+**Métricas de concordância.** `GET /api/document/analysis/metrics?from=2026-07-01&to=2026-07-31` (frente interna) compara o veredito da análise com a decisão do analista nos documentos avaliados no período, no total e por tipo:
+
+| Campo | Significado |
+|---|---|
+| `agreements` | `Conforming` aprovado ou `NonConforming` recusado |
+| `falseAlarms` | `NonConforming` aprovado: a análise apontou um problema que o analista não confirmou |
+| `missedProblems` | `Conforming` recusado: a análise deixou passar algo |
+| `attentionApproved` / `attentionRejected` | `NeedsAttention`, separado por decisão |
+| `notAnalyzed` | Sem análise concluída (tipo sem analisador, revisão manual, falha) |
+| `agreementRate` | `agreements / (agreements + falseAlarms + missedProblems)`, ou `null` sem base |
+
 **Resumo na listagem (só na frente interna).** `GET /api/document` e `GET /api/document/{id}` da frente interna (e as respostas de `approve`/`reject`) trazem o campo `analysis` com `status`, `verdict`, `blockingCount`, `warningCount` e `analyzedAt`. Ele vem `null` quando o documento ainda não tem análise. A listagem aceita os filtros `analysisStatus` e `analysisVerdict` (ex.: `?analysisVerdict=3` lista só os não conformes). O documento aparece para a equipe assim que é enviado, e aprovar ou recusar **não depende da análise**: o resumo é apoio, não trava. A frente externa usa outro DTO e outro filtro, sem esses campos: o fornecedor não recebe o parecer nem consegue filtrar por ele.
 
 **Worker.** `Jotanunes.Worker` é um processo próprio (SDK `Microsoft.NET.Sdk.Worker`), separado das duas APIs, com um job agendado por cron para cada tarefa de fundo:

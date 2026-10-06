@@ -8,6 +8,7 @@ using Jotanunes.Application.Services.Analyzers;
 using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Interfaces;
+using Jotanunes.Domain.Projections;
 using Jotanunes.Tests.Support;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -31,6 +32,7 @@ public class DocumentAnalysisServiceTests
     }
 
     private readonly Mock<IDocumentRasterizer> _rasterizer = new();
+    private readonly Mock<ISupplierNotificationService> _notifications = new();
 
     private DocumentAnalysisService Service(params IDocumentTextExtractor[] extractors)
     {
@@ -49,6 +51,7 @@ public class DocumentAnalysisServiceTests
             extractors,
             [new CrfAnalyzer(), new PaymentReceiptAnalyzer()],
             _rasterizer.Object,
+            _notifications.Object,
             new FixedTimeProvider(new DateTimeOffset(2026, 7, 20, 12, 0, 0, TimeSpan.Zero)),
             NullLogger<DocumentAnalysisService>.Instance,
             vision);
@@ -70,9 +73,9 @@ public class DocumentAnalysisServiceTests
         return extractor.Object;
     }
 
-    private DocumentAnalysis PendingAnalysis(string typeCode = "FGTS_CND")
+    private DocumentAnalysis PendingAnalysis(string typeCode = "FGTS_CND", DateOnly? expirationDate = null)
     {
-        var analysis = new DocumentAnalysis(AnalysisTestData.CrfDocument(typeCode: typeCode)) { Id = 7 };
+        var analysis = new DocumentAnalysis(AnalysisTestData.CrfDocument(expirationDate, typeCode)) { Id = 7 };
         _analyses.Setup(a => a.GetById(7)).ReturnsAsync(analysis);
         return analysis;
     }
@@ -246,6 +249,130 @@ public class DocumentAnalysisServiceTests
 
         Assert.Equal(DocumentAnalysisStatus.Pending, analysis.Status);
         Assert.NotNull(analysis.NextAttemptAt);
+    }
+
+    [Fact]
+    public async Task Should_Fill_Missing_Expiration_Date_From_Text_Reading()
+    {
+        var analysis = PendingAnalysis();
+
+        await Service(Extractor(TextExtractionEngine.NativeText, AnalysisTestData.CrfText())).Analyze(7);
+
+        Assert.Equal(new DateOnly(2026, 8, 9), analysis.Document.ExpirationDate);
+        var finding = Assert.Single(analysis.Findings, f => f.Code == "EXPIRATION_DATE_FILLED");
+        Assert.Equal(FindingSeverity.Info, finding.Severity);
+        Assert.DoesNotContain(analysis.Findings, f => f.Code == "EXPIRATION_DATE_DETECTED");
+    }
+
+    [Fact]
+    public async Task Should_Correct_Wrong_Expiration_Date_From_Text_Reading_And_Warn()
+    {
+        var analysis = PendingAnalysis(expirationDate: new DateOnly(2026, 12, 31));
+
+        await Service(Extractor(TextExtractionEngine.NativeText, AnalysisTestData.CrfText())).Analyze(7);
+
+        Assert.Equal(new DateOnly(2026, 8, 9), analysis.Document.ExpirationDate);
+        var finding = Assert.Single(analysis.Findings, f => f.Code == "EXPIRATION_DATE_CORRECTED");
+        Assert.Equal(FindingSeverity.Warning, finding.Severity);
+        Assert.Contains("31/12/2026", finding.Message);
+        Assert.DoesNotContain(analysis.Findings, f => f.Code == "EXPIRATION_DATE_MISMATCH");
+    }
+
+    [Fact]
+    public async Task Should_Only_Suggest_Expiration_Date_Read_By_Vision()
+    {
+        var analysis = PendingAnalysis(expirationDate: new DateOnly(2026, 12, 31));
+
+        await Service(Vision(AnalysisTestData.CrfJson()).Object, Extractor(TextExtractionEngine.NativeText, "")).Analyze(7);
+
+        Assert.Equal(new DateOnly(2026, 12, 31), analysis.Document.ExpirationDate);
+        Assert.Contains(analysis.Findings, f => f.Code == "EXPIRATION_DATE_MISMATCH");
+    }
+
+    [Fact]
+    public async Task Should_Not_Change_Expiration_Date_Of_Document_Already_Reviewed()
+    {
+        var analysis = PendingAnalysis();
+        analysis.Document.Approve();
+
+        await Service(Extractor(TextExtractionEngine.NativeText, AnalysisTestData.CrfText())).Analyze(7);
+
+        Assert.Null(analysis.Document.ExpirationDate);
+        Assert.Equal(DocumentAnalysisStatus.Completed, analysis.Status);
+    }
+
+    [Fact]
+    public async Task Should_Notify_Supplier_When_File_Looks_Like_Another_Document()
+    {
+        var analysis = PendingAnalysis();
+
+        await Service(Vision(AnalysisTestData.CrfJson(isExpectedDocument: false, detectedDocument: "CNH")).Object, Extractor(TextExtractionEngine.NativeText, "")).Analyze(7);
+
+        _notifications.Verify(n => n.DocumentLooksWrong(analysis.Document), Times.Once);
+    }
+
+    [Fact]
+    public async Task Should_Not_Notify_Supplier_When_Document_Is_The_Expected_One()
+    {
+        PendingAnalysis();
+
+        await Service(Extractor(TextExtractionEngine.NativeText, AnalysisTestData.CrfText())).Analyze(7);
+
+        _notifications.Verify(n => n.DocumentLooksWrong(It.IsAny<Document>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Should_Not_Notify_Supplier_When_Document_Was_Already_Reviewed()
+    {
+        var analysis = PendingAnalysis();
+        analysis.Document.Reject("Documento errado");
+
+        await Service(Vision(AnalysisTestData.CrfJson(isExpectedDocument: false, detectedDocument: "CNH")).Object, Extractor(TextExtractionEngine.NativeText, "")).Analyze(7);
+
+        _notifications.Verify(n => n.DocumentLooksWrong(It.IsAny<Document>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Should_Compare_Ai_Verdict_With_Reviewer_Decision()
+    {
+        _documents.Setup(d => d.GetReviewed(It.IsAny<DateTime?>(), It.IsAny<DateTime?>())).ReturnsAsync([
+            Reviewed("FGTS_CND", DocumentStatus.Approved, AnalysisVerdict.Conforming),
+            Reviewed("FGTS_CND", DocumentStatus.Rejected, AnalysisVerdict.NonConforming),
+            Reviewed("FGTS_CND", DocumentStatus.Approved, AnalysisVerdict.NonConforming),
+            Reviewed("FGTS_CND", DocumentStatus.Rejected, AnalysisVerdict.Conforming),
+            Reviewed("FGTS_CND", DocumentStatus.Approved, AnalysisVerdict.NeedsAttention),
+            Reviewed("PAYMENT_RECEIPT", DocumentStatus.Rejected, AnalysisVerdict.NeedsAttention),
+            Reviewed("PAYMENT_RECEIPT", DocumentStatus.Approved, null, DocumentAnalysisStatus.NotSupported),
+            Reviewed("PAYMENT_RECEIPT", DocumentStatus.Approved, null, null)
+        ]);
+
+        var metrics = await Service().GetMetrics(new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31));
+
+        Assert.Equal(8, metrics.Total.Reviewed);
+        Assert.Equal(2, metrics.Total.Agreements);
+        Assert.Equal(1, metrics.Total.FalseAlarms);
+        Assert.Equal(1, metrics.Total.MissedProblems);
+        Assert.Equal(1, metrics.Total.AttentionApproved);
+        Assert.Equal(1, metrics.Total.AttentionRejected);
+        Assert.Equal(2, metrics.Total.NotAnalyzed);
+        Assert.Equal(0.5m, metrics.Total.AgreementRate);
+
+        var crf = Assert.Single(metrics.DocumentTypes, t => t.DocumentTypeCode == "FGTS_CND");
+        Assert.Equal(5, crf.Reviewed);
+        var receipt = Assert.Single(metrics.DocumentTypes, t => t.DocumentTypeCode == "PAYMENT_RECEIPT");
+        Assert.Null(receipt.AgreementRate);
+        _documents.Verify(d => d.GetReviewed(
+            new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc)), Times.Once);
+    }
+
+    private static ReviewedDocument Reviewed(
+        string code,
+        DocumentStatus status,
+        AnalysisVerdict? verdict,
+        DocumentAnalysisStatus? analysisStatus = DocumentAnalysisStatus.Completed)
+    {
+        return new ReviewedDocument(code == "FGTS_CND" ? 4 : 20, code, code, status, analysisStatus, verdict);
     }
 
     [Fact]

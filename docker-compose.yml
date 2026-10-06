@@ -84,6 +84,11 @@ services:
       OpenRouter__Enabled: ${OPENROUTER_ENABLED:-false}
       OpenRouter__ApiKey: ${OPENROUTER_API_KEY:-}
       OpenRouter__Model: ${OPENROUTER_MODEL:-google/gemini-3.8-flash}
+      Email__Enabled: ${EMAIL_ENABLED:-false}
+      Email__ApiKey: ${RESEND_API_KEY:-}
+      Email__FromAddress: ${EMAIL_FROM_ADDRESS:-onboarding@resend.dev}
+      Email__FromName: Portal do Fornecedor Jotanunes
+      Email__PortalUrl: ${PORTAL_URL:-}
     restart: unless-stopped
 
 volumes:

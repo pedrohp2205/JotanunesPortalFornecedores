@@ -5,6 +5,7 @@ namespace Jotanunes.Domain.Entities;
 
 public class DocumentAnalysis : BaseEntity
 {
+    public const string WrongDocumentTypeCode = "WRONG_DOCUMENT_TYPE";
     public const int MaxAttempts = 3;
     public const int MaxFailureReasonLength = 500;
     public static readonly TimeSpan FirstRetryDelay = TimeSpan.FromSeconds(30);
@@ -22,6 +23,8 @@ public class DocumentAnalysis : BaseEntity
     public int Attempts { get; private set; }
     public DateTime? NextAttemptAt { get; private set; }
     public DateTime? AnalyzedAt { get; private set; }
+
+    public bool FoundWrongDocument => Findings.Any(f => f.Code == WrongDocumentTypeCode);
 
     protected DocumentAnalysis() { }
 
