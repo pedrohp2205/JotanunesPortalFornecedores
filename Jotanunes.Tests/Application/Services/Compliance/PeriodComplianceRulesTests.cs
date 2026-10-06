@@ -190,4 +190,27 @@ public class PeriodComplianceRulesTests
         Assert.Contains("FGTS_REPORT", finding.Message);
         Assert.DoesNotContain("CNPJ_CARD", finding.Message);
     }
+
+    [Fact]
+    public void Should_Compare_Receipt_With_Payroll_And_Flag_Allocated_Worker_Missing_From_It()
+    {
+        Add("PAYMENT_RECEIPT", Maria, TextExtractionEngine.Vision, ("netPay", "1900.75"));
+        Add("PAYROLL", engine: TextExtractionEngine.Ocr, fields: ("employees", """[{"name":"MARIA APARECIDA DOS SANTOS","netPay":"1800.00","fgtsAmount":"164.96"}]"""));
+
+        var findings = Evaluate(Maria, Joao);
+
+        var mismatch = Assert.Single(findings, f => f.Code == "PAYROLL_RECEIPT_MISMATCH");
+        Assert.Equal(FindingSeverity.Warning, mismatch.Severity);
+        Assert.Contains("R$ 1.800,00", mismatch.Message);
+        Assert.Contains(findings, f => f.Code == "ALLOCATED_NOT_IN_PAYROLL" && f.Message.Contains("Joao Pereira Lima"));
+    }
+
+    [Fact]
+    public void Should_Accept_Receipt_That_Matches_Payroll()
+    {
+        Add("PAYMENT_RECEIPT", Maria, TextExtractionEngine.NativeText, ("netPay", "1900.75"));
+        Add("PAYROLL", engine: TextExtractionEngine.Ocr, fields: ("employees", """[{"name":"Maria Aparecida dos Santos","netPay":"1900.75","fgtsAmount":"164.96"}]"""));
+
+        Assert.Empty(Evaluate(Maria));
+    }
 }

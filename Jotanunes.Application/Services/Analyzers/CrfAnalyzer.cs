@@ -10,8 +10,6 @@ namespace Jotanunes.Application.Services.Analyzers;
 
 public partial class CrfAnalyzer : IVisionAnalyzer, IExpiringDocumentAnalyzer
 {
-    public const int ExpiringSoonDays = 7;
-
     public IReadOnlyCollection<string> DocumentTypeCodes { get; } = ["FGTS_CND"];
 
     public string Instructions { get; } = VisionPrompt.Instructions(
@@ -97,7 +95,7 @@ public partial class CrfAnalyzer : IVisionAnalyzer, IExpiringDocumentAnalyzer
         }
         else
         {
-            AddValidityFindings(findings, validFrom.Value, validUntil.Value, document.ExpirationDate, today);
+            ValidityChecks.Add(findings, "CRF", validFrom, validUntil.Value, document.ExpirationDate, today);
         }
 
         var corporateName = extraction.Get("corporateName");
@@ -116,51 +114,6 @@ public partial class CrfAnalyzer : IVisionAnalyzer, IExpiringDocumentAnalyzer
     private static string? ValidDate(string? value)
     {
         return TextPatterns.ParseDate(value) is { } date ? TextPatterns.FormatDate(date) : null;
-    }
-
-    private static void AddValidityFindings(
-        List<AnalysisFinding> findings,
-        DateOnly validFrom,
-        DateOnly validUntil,
-        DateOnly? informedExpiration,
-        DateOnly today)
-    {
-        if (validUntil < today)
-        {
-            findings.Add(new AnalysisFinding(
-                "EXPIRED",
-                FindingSeverity.Blocking,
-                $"CRF vencida em {TextPatterns.FormatDate(validUntil)}."));
-        }
-        else if (validFrom > today)
-        {
-            findings.Add(new AnalysisFinding(
-                "NOT_YET_VALID",
-                FindingSeverity.Warning,
-                $"A validade da CRF só começa em {TextPatterns.FormatDate(validFrom)}."));
-        }
-        else if (validUntil.DayNumber - today.DayNumber <= ExpiringSoonDays)
-        {
-            findings.Add(new AnalysisFinding(
-                "EXPIRING_SOON",
-                FindingSeverity.Warning,
-                $"CRF vence em {validUntil.DayNumber - today.DayNumber} dia(s), em {TextPatterns.FormatDate(validUntil)}."));
-        }
-
-        if (informedExpiration is null)
-        {
-            findings.Add(new AnalysisFinding(
-                "EXPIRATION_DATE_DETECTED",
-                FindingSeverity.Info,
-                $"Validade identificada na certidão: {TextPatterns.FormatDate(validUntil)}."));
-        }
-        else if (informedExpiration.Value != validUntil)
-        {
-            findings.Add(new AnalysisFinding(
-                "EXPIRATION_DATE_MISMATCH",
-                FindingSeverity.Warning,
-                $"A validade informada no envio ({TextPatterns.FormatDate(informedExpiration.Value)}) difere da certidão ({TextPatterns.FormatDate(validUntil)})."));
-        }
     }
 
     [GeneratedRegex(@"Certificado\s+de\s+Regularidade\s+do\s+FGTS", RegexOptions.IgnoreCase)]

@@ -27,7 +27,16 @@ internal static class GoldenSet
         new FgtsDetailAnalyzer(),
         new FgtsGuideAnalyzer(),
         new TimesheetAnalyzer(),
-        new EmployeeListAnalyzer()
+        new EmployeeListAnalyzer(),
+        new CnpjCardAnalyzer(),
+        new FederalCndAnalyzer(),
+        new SimplesNacionalAnalyzer(),
+        new DctfWebAnalyzer(),
+        new PayrollAnalyzer(),
+        new SocialContractAnalyzer(),
+        new AddressProofAnalyzer(),
+        new PartnerIdAnalyzer(),
+        .. GenericCertificateAnalyzer.Defaults()
     ];
 
     public static string? FindFolder()

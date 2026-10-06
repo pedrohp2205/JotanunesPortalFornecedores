@@ -111,4 +111,47 @@ public static class AnalysisChecks
             FindingSeverity.Blocking,
             $"O período do {documentLabel} ({TextPatterns.FormatDate(from)} a {TextPatterns.FormatDate(until)}) está fora do período do envio ({TextPatterns.FormatDate(periodStart)} a {TextPatterns.FormatDate(periodEnd)})."));
     }
+
+    public static void CorporateName(List<AnalysisFinding> findings, string? name, Company company, string documentLabel)
+    {
+        if (name is null)
+        {
+            return;
+        }
+
+        var normalized = WithoutSuffixes(TextPatterns.NormalizeName(name));
+        if (normalized == WithoutSuffixes(TextPatterns.NormalizeName(company.CorporateName)))
+        {
+            return;
+        }
+
+        findings.Add(new AnalysisFinding(
+            "CORPORATE_NAME_MISMATCH",
+            FindingSeverity.Warning,
+            $"Nome no {documentLabel} (\"{name}\") difere da razão social cadastrada (\"{company.CorporateName}\")."));
+    }
+
+    public static void IssuedRecently(List<AnalysisFinding> findings, DateOnly? issuedAt, DateOnly today, int maxAgeDays, string documentLabel)
+    {
+        if (issuedAt is not { } issued || today.DayNumber - issued.DayNumber <= maxAgeDays)
+        {
+            return;
+        }
+
+        findings.Add(new AnalysisFinding(
+            "DOCUMENT_OUTDATED",
+            FindingSeverity.Warning,
+            $"O {documentLabel} foi emitido em {TextPatterns.FormatDate(issued)}, há mais de {maxAgeDays} dias."));
+    }
+
+    private static string WithoutSuffixes(string name)
+    {
+        var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+        while (words.Count > 1 && words[^1] is "LTDA" or "ME" or "EPP" or "EIRELI" or "SA" or "S" or "A")
+        {
+            words.RemoveAt(words.Count - 1);
+        }
+
+        return string.Join(' ', words);
+    }
 }

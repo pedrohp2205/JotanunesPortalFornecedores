@@ -99,6 +99,18 @@ public static class DependencyInjection
         service.AddSingleton<IDocumentTypeAnalyzer, FgtsGuideAnalyzer>();
         service.AddSingleton<IDocumentTypeAnalyzer, TimesheetAnalyzer>();
         service.AddSingleton<IDocumentTypeAnalyzer, EmployeeListAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, CnpjCardAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, FederalCndAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, SimplesNacionalAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, DctfWebAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, PayrollAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, SocialContractAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, AddressProofAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, PartnerIdAnalyzer>();
+        foreach (var analyzer in GenericCertificateAnalyzer.Defaults())
+        {
+            service.AddSingleton<IDocumentTypeAnalyzer>(analyzer);
+        }
 
         service.AddScoped<IDocumentAnalysisService, DocumentAnalysisService>();
         service.AddScoped<IPeriodComplianceService, PeriodComplianceService>();

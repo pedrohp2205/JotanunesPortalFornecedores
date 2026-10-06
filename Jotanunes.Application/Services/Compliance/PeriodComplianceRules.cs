@@ -10,7 +10,7 @@ public static class PeriodComplianceRules
 
     private static readonly string[] CrossedTypes =
     [
-        "PAYMENT_RECEIPT", "PAYMENT_PROOF", "TIMESHEET", "FGTS_DETAIL", "FGTS_REPORT", "FGTS_PAYMENT_PROOF", "EMPLOYEE_LIST"
+        "PAYMENT_RECEIPT", "PAYMENT_PROOF", "TIMESHEET", "FGTS_DETAIL", "FGTS_REPORT", "FGTS_PAYMENT_PROOF", "EMPLOYEE_LIST", "PAYROLL"
     ];
 
     public static List<AnalysisFinding> Evaluate(PeriodContext context)
@@ -57,6 +57,8 @@ public static class PeriodComplianceRules
                 $"{worker.Name}: a folha de ponto soma 0:00 trabalhadas, mas o recibo paga líquido de {TextPatterns.FormatMoney(netPay.Value)}."));
         }
 
+        PayrollRules(findings, documents, worker, receipt, netPay);
+
         var fgtsDetail = Latest(documents, "FGTS_DETAIL");
         if (fgtsDetail is not null && !fgtsDetail.Fields!.GetList<FgtsWorker>("workers").Any(w => w.Cpf == worker.Cpf))
         {
@@ -64,6 +66,35 @@ public static class PeriodComplianceRules
                 "WORKER_WITHOUT_FGTS",
                 Severity([fgtsDetail]),
                 $"{worker.Name} está alocado(a) na obra, mas não aparece no detalhamento do FGTS da competência."));
+        }
+    }
+
+    private static void PayrollRules(List<AnalysisFinding> findings, List<PeriodDocument> documents, Worker worker, PeriodDocument? receipt, decimal? netPay)
+    {
+        var payroll = Latest(documents, "PAYROLL");
+        if (payroll is null)
+        {
+            return;
+        }
+
+        var entry = payroll.Fields!.GetList<PayrollEmployee>("employees")
+            .FirstOrDefault(e => TextPatterns.NormalizeName(e.Name) == TextPatterns.NormalizeName(worker.Name));
+
+        if (entry is null)
+        {
+            findings.Add(new AnalysisFinding(
+                "ALLOCATED_NOT_IN_PAYROLL",
+                FindingSeverity.Warning,
+                $"{worker.Name} está alocado(a) na obra, mas não aparece na folha de pagamento."));
+            return;
+        }
+
+        if (netPay is { } net && TextPatterns.ParseAmount(entry.NetPay) is { } payrollNet && Math.Abs(payrollNet - net) > Tolerance)
+        {
+            findings.Add(new AnalysisFinding(
+                "PAYROLL_RECEIPT_MISMATCH",
+                Severity([receipt, payroll]),
+                $"{worker.Name}: o recibo indica líquido de {TextPatterns.FormatMoney(net)}, mas a folha de pagamento indica {TextPatterns.FormatMoney(payrollNet)}."));
         }
     }
 

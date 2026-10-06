@@ -30,10 +30,12 @@ public class PdfiumDocumentRasterizer(IOptions<DocumentImageSettings> settings) 
             return [];
         }
 
-        var pageLimit = Math.Max(1, maxPages);
-        var images = new List<DocumentImage>();
+        var pageCount = Conversion.GetPageCount(content, leaveOpen: true);
+        content.Position = 0;
+        var pages = SelectPages(pageCount, Math.Max(1, maxPages));
+        var images = new List<DocumentImage>(pages.Count);
 
-        foreach (var bitmap in Conversion.ToImages(content, leaveOpen: true, options: new RenderOptions { Dpi = dpi }))
+        foreach (var bitmap in Conversion.ToImages(content, pages, leaveOpen: true, options: new RenderOptions { Dpi = dpi }))
         {
             using (bitmap)
             {
@@ -41,13 +43,18 @@ public class PdfiumDocumentRasterizer(IOptions<DocumentImageSettings> settings) 
                 using var encoded = bitmap.Encode(SKEncodedImageFormat.Png, 100);
                 images.Add(new DocumentImage(encoded.ToArray(), "image/png"));
             }
-
-            if (images.Count >= pageLimit)
-            {
-                break;
-            }
         }
 
         return images;
+    }
+
+    public static IReadOnlyList<int> SelectPages(int pageCount, int maxPages)
+    {
+        if (pageCount <= maxPages)
+        {
+            return Enumerable.Range(0, pageCount).ToList();
+        }
+
+        return Enumerable.Range(0, maxPages - 1).Append(pageCount - 1).ToList();
     }
 }

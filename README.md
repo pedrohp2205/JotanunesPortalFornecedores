@@ -209,6 +209,18 @@ Analisadores disponíveis:
 | `TIMESHEET` (id 18) | Folha de ponto | Texto; imagem | CPF e nome × trabalhador; período; CNPJ do empregador (ausente gera Warning); 0:00 trabalhadas; local × obra da solicitação. Guarda `workedHours` e `expectedHours` |
 | `EMPLOYEE_LIST` (id 17) | Relação de funcionários lotados na obra | Texto (uma linha por funcionário); imagem | Obra listada × obra da solicitação. Guarda `employees` |
 
+| `CNPJ_CARD` (id 1) | Cartão CNPJ | Texto; imagem | CNPJ × empresa; situação cadastral ATIVA; emitido há no máximo 90 dias; razão social; CEP × cadastro |
+| `SOCIAL_CONTRACT` (id 2) | Contrato social, alteração ou consolidação | Texto; imagem (primeiras páginas + a última, onde fica o registro) | CNPJ; razão social; registro na Junta ("Certifico o registro em ... sob nº ..."). Guarda `partners` (nome e CPF), `nire`, `registeredAt` |
+| `ADDRESS_PROOF_COMPANY` (id 3) | Comprovante de endereço comercial | Imagem | Titular × empresa (pelo CNPJ, ou pelo nome); CEP e número × cadastro; emitido há no máximo 90 dias (não vale para contrato de locação) |
+| `FEDERAL_CND` (id 5) | Certidão de tributos federais e dívida ativa | Texto; imagem | Raiz do CNPJ (vale para filiais); POSITIVA bloqueia, positiva com efeitos de negativa é informativa; validade (preenche `expirationDate` como a CRF) |
+| `SIMPLES_NACIONAL` (id 6) | Consulta de optantes ou recibo/declaração do PGDAS-D | Texto; OCR; imagem | Raiz do CNPJ; optante; documento do ano atual |
+| `MUNICIPAL_LICENSE` (7), `CGCRE_CERTIFICATION` (8), `ART` (9) | Licença municipal, certificação Cgcre/Inmetro, ART/RRT | Imagem (analisador genérico) | CNPJ do titular, quando houver × empresa; validade |
+| `PARTNER_ID` (id 10) | RG, CNH ou CIN do sócio | Imagem | CPF válido; documento vencido (Warning) |
+| `PAYROLL` (id 11) | Folha de pagamento | Texto; OCR; imagem | CNPJ; competência. Guarda `employees` (nome, líquido, FGTS), um bloco por empregado, sem confundir com o "Total Geral" |
+| `DCTFWEB_RECEIPT` (15), `DCTFWEB_REPORT` (16) | Recibo e relatório da DCTFWeb | Texto; OCR; imagem | Raiz do CNPJ; período de apuração. Guarda `totalDebits` e `receiptNumber` |
+
+Todos os 20 tipos cadastrados têm analisador. Os prazos de 90 dias (cartão CNPJ, comprovante de endereço) e de "ano atual" (Simples) são suposições a confirmar com o setor de contratos.
+
 Campos de lista (`workers`, `employees`) ficam em `fields` como JSON. Valores em reais ficam com ponto decimal (`1900.75`), datas em `dd/MM/yyyy`, competências em `MM/yyyy`, horas em `H:mm` e CPF parcialmente oculto com `*` nas posições ocultas (`***952844**`).
 
 Endpoints (frente interna):
@@ -252,6 +264,8 @@ A análise de cada documento confere o documento sozinho. O **cruzamento** compa
 | `FGTS_PAID_LATE` | Warning | Comprovante de FGTS pago depois do vencimento da guia |
 | `FGTS_FEWER_WORKERS_THAN_ALLOCATED` | Warning | Guia declara menos trabalhadores que os alocados na obra |
 | `ALLOCATED_NOT_IN_EMPLOYEE_LIST` / `LISTED_NOT_ALLOCATED` | Warning | Relação de funcionários × alocações (pelo CPF, ou pelo nome quando a relação não traz CPF) |
+| `PAYROLL_RECEIPT_MISMATCH` | Blocking* | Líquido do recibo diferente do líquido do mesmo empregado na folha de pagamento (pelo nome) |
+| `ALLOCATED_NOT_IN_PAYROLL` | Warning | Trabalhador alocado que não aparece na folha de pagamento |
 | `UNREAD_DOCUMENTS` | Info | Documentos ainda sem leitura, fora do cruzamento |
 
 \* Blocking só quando todos os documentos envolvidos foram lidos por texto; se algum foi lido por imagem, vira Warning, pela mesma regra da análise de documentos.
