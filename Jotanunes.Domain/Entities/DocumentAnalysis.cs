@@ -44,9 +44,7 @@ public class DocumentAnalysis : BaseEntity
             : findings.ToList();
         Fields = fields.ToList();
         Engine = engine;
-        Verdict = Findings.Any(f => f.Severity == FindingSeverity.Blocking) ? AnalysisVerdict.NonConforming
-            : Findings.Any(f => f.Severity == FindingSeverity.Warning) ? AnalysisVerdict.NeedsAttention
-            : AnalysisVerdict.Conforming;
+        Verdict = AnalysisVerdicts.From(Findings);
 
         Finish(DocumentAnalysisStatus.Completed, null);
     }

@@ -1,5 +1,6 @@
 using AutoMapper;
 using Jotanunes.Application.DTOs.Workers;
+using Jotanunes.Application.Interfaces;
 using Jotanunes.Application.Services;
 using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Enums;
@@ -11,6 +12,7 @@ namespace Jotanunes.Tests.Application.Services;
 
 public class WorkerServiceTests
 {
+    private readonly Mock<IPeriodComplianceService> _periodCompliance = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IWorkerRepository> _workers = new();
     private readonly Mock<IWorkerAllocationRepository> _allocations = new();
@@ -29,7 +31,7 @@ public class WorkerServiceTests
         _workers.Setup(w => w.GetById(7)).ReturnsAsync(_worker);
         _requests.Setup(r => r.GetById(10)).ReturnsAsync(_request);
 
-        _service = new WorkerService(new Mock<IMapper>().Object, _unitOfWork.Object);
+        _service = new WorkerService(new Mock<IMapper>().Object, _unitOfWork.Object, _periodCompliance.Object);
     }
 
     [Fact]
@@ -43,6 +45,16 @@ public class WorkerServiceTests
 
         Assert.Equal("Já existe um trabalhador cadastrado com este CPF.", ex.Message);
         _workers.Verify(w => w.Add(It.IsAny<Worker>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Should_Schedule_Period_Cross_Check_When_Worker_Is_Allocated()
+    {
+        _allocations.Setup(a => a.CountActive(10)).ReturnsAsync(0);
+
+        await _service.Allocate(10, 1, new WorkerAllocateDto { WorkerId = 7 });
+
+        _periodCompliance.Verify(p => p.RequestRecalculationFrom(10, DateOnly.FromDateTime(DateTime.UtcNow)), Times.Once);
     }
 
     [Fact]

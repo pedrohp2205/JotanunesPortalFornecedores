@@ -33,6 +33,7 @@ public class DocumentAnalysisServiceTests
 
     private readonly Mock<IDocumentRasterizer> _rasterizer = new();
     private readonly Mock<ISupplierNotificationService> _notifications = new();
+    private readonly Mock<IPeriodComplianceService> _periodCompliance = new();
 
     private DocumentAnalysisService Service(params IDocumentTextExtractor[] extractors)
     {
@@ -52,6 +53,7 @@ public class DocumentAnalysisServiceTests
             [new CrfAnalyzer(), new PaymentReceiptAnalyzer()],
             _rasterizer.Object,
             _notifications.Object,
+            _periodCompliance.Object,
             new FixedTimeProvider(new DateTimeOffset(2026, 7, 20, 12, 0, 0, TimeSpan.Zero)),
             NullLogger<DocumentAnalysisService>.Instance,
             vision);
@@ -373,6 +375,27 @@ public class DocumentAnalysisServiceTests
         DocumentAnalysisStatus? analysisStatus = DocumentAnalysisStatus.Completed)
     {
         return new ReviewedDocument(code == "FGTS_CND" ? 4 : 20, code, code, status, analysisStatus, verdict);
+    }
+
+    [Fact]
+    public async Task Should_Schedule_Period_Cross_Check_When_Recurring_Document_Is_Analyzed()
+    {
+        var analysis = new DocumentAnalysis(AnalysisTestData.ReceiptDocument()) { Id = 8 };
+        _analyses.Setup(a => a.GetById(8)).ReturnsAsync(analysis);
+
+        await Service(Vision(AnalysisTestData.ReceiptJson()).Object, Extractor(TextExtractionEngine.NativeText, "")).Analyze(8);
+
+        _periodCompliance.Verify(p => p.RequestRecalculation(3, new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31)), Times.Once);
+    }
+
+    [Fact]
+    public async Task Should_Not_Schedule_Period_Cross_Check_For_Onboarding_Document()
+    {
+        PendingAnalysis();
+
+        await Service(Extractor(TextExtractionEngine.NativeText, AnalysisTestData.CrfText())).Analyze(7);
+
+        _periodCompliance.Verify(p => p.RequestRecalculation(It.IsAny<long>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>()), Times.Never);
     }
 
     [Fact]

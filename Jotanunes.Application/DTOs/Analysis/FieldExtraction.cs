@@ -9,6 +9,13 @@ public class FieldExtraction
 
     public List<string> Missing { get; } = [];
 
+    public static FieldExtraction FromFields(IEnumerable<ExtractedField> fields)
+    {
+        var extraction = new FieldExtraction();
+        extraction.Fields.AddRange(fields);
+        return extraction;
+    }
+
     public string? WrongDocument { get; private set; }
 
     public bool IsComplete => Missing.Count == 0 && WrongDocument is null;

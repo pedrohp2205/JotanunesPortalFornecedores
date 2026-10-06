@@ -12,5 +12,6 @@ public interface IUnitOfWork
     IWorkerRepository WorkerRepository { get; }
     IWorkerAllocationRepository WorkerAllocationRepository { get; }
     IDocumentAnalysisRepository DocumentAnalysisRepository { get; }
+    IPeriodComplianceReportRepository PeriodComplianceReportRepository { get; }
     Task<bool> SaveChangesAsync();
 }

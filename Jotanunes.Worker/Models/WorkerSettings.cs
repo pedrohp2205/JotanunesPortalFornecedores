@@ -8,4 +8,7 @@ public class WorkerSettings
 
     [Required]
     public string DocumentAnalysisCron { get; set; } = string.Empty;
+
+    [Required]
+    public string PeriodComplianceCron { get; set; } = string.Empty;
 }

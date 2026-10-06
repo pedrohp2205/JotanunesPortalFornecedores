@@ -92,6 +92,21 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
                                 .FirstOrDefaultAsync(d => d.Id == id);
     }
 
+    public async Task<List<Document>> GetForPeriod(long supplyRequestId, DateOnly periodStart, DateOnly periodEnd)
+    {
+        return await _context.Documents
+                                .AsNoTracking()
+                                .Include(d => d.DocumentType)
+                                .Include(d => d.Worker)
+                                .Include(d => d.Analysis)
+                                .Where(d => d.SupplyRequestId == supplyRequestId
+                                    && d.Status != DocumentStatus.Rejected
+                                    && d.ReferencePeriodStart <= periodEnd
+                                    && d.ReferencePeriodEnd >= periodStart)
+                                .OrderByDescending(d => d.CreatedAt)
+                                .ToListAsync();
+    }
+
     public async Task<List<ReviewedDocument>> GetReviewed(DateTime? reviewedFrom, DateTime? reviewedTo)
     {
         var query = _context.Documents

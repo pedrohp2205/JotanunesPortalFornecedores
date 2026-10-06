@@ -1,3 +1,4 @@
+using Jotanunes.Application.DTOs.Compliance;
 using Jotanunes.Application.DTOs.SupplyRequests;
 using Jotanunes.Application.DTOs.Workers;
 using Jotanunes.Application.Interfaces;
@@ -9,7 +10,10 @@ namespace Jotanunes.API.Internal.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SupplyRequestController(ISupplyRequestService supplyRequestService, IWorkerService workerService) : ControllerBase
+public class SupplyRequestController(
+    ISupplyRequestService supplyRequestService,
+    IWorkerService workerService,
+    IPeriodComplianceService periodComplianceService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PageList<SupplyRequestDto>>> Get([FromQuery] PageParams pageParams, [FromQuery] SupplyRequestFilter filter)
@@ -30,6 +34,20 @@ public class SupplyRequestController(ISupplyRequestService supplyRequestService,
     {
         var allocations = await workerService.GetAllocations(id, includeReleased: includeReleased);
         return Ok(allocations);
+    }
+
+    [HttpGet("{id:long}/compliance-reports")]
+    public async Task<ActionResult<List<PeriodComplianceReportDto>>> GetComplianceReports(long id)
+    {
+        var reports = await periodComplianceService.GetBySupplyRequest(id);
+        return Ok(reports);
+    }
+
+    [HttpPost("{id:long}/compliance-reports")]
+    public async Task<ActionResult<PeriodComplianceReportDto>> RecalculateComplianceReport(long id, [FromBody] PeriodComplianceRecalculateDto model)
+    {
+        var report = await periodComplianceService.Recalculate(id, model);
+        return Accepted(report);
     }
 
     [HttpDelete("{id:long}/workers/{workerId:long}")]

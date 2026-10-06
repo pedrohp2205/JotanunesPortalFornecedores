@@ -2,6 +2,7 @@ using AutoMapper;
 using Jotanunes.Application.DTOs.Analysis;
 using Jotanunes.Application.DTOs.Auth;
 using Jotanunes.Application.DTOs.Companies;
+using Jotanunes.Application.DTOs.Compliance;
 using Jotanunes.Application.DTOs.DocumentTypes;
 using Jotanunes.Application.DTOs.Documents;
 using Jotanunes.Application.DTOs.SupplyRequests;
@@ -90,6 +91,10 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.VerdictDescription, opt => opt.MapFrom(src => src.Verdict != null ? src.Verdict.ToString() : null))
             .ForMember(dest => dest.BlockingCount, opt => opt.MapFrom(src => src.Findings.Count(f => f.Severity == FindingSeverity.Blocking)))
             .ForMember(dest => dest.WarningCount, opt => opt.MapFrom(src => src.Findings.Count(f => f.Severity == FindingSeverity.Warning)));
+
+        CreateMap<PeriodComplianceReport, PeriodComplianceReportDto>()
+            .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.VerdictDescription, opt => opt.MapFrom(src => src.Verdict != null ? src.Verdict.ToString() : null));
 
         CreateMap<DocumentAnalysis, DocumentAnalysisDto>()
             .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()))

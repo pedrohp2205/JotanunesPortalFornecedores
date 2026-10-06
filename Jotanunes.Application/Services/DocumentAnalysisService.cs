@@ -22,6 +22,7 @@ public class DocumentAnalysisService : IDocumentAnalysisService
     private readonly IDocumentRasterizer _rasterizer;
     private readonly IVisionClient? _visionClient;
     private readonly ISupplierNotificationService _notificationService;
+    private readonly IPeriodComplianceService _periodComplianceService;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<DocumentAnalysisService> _logger;
 
@@ -33,6 +34,7 @@ public class DocumentAnalysisService : IDocumentAnalysisService
         IEnumerable<IDocumentTypeAnalyzer> analyzers,
         IDocumentRasterizer rasterizer,
         ISupplierNotificationService notificationService,
+        IPeriodComplianceService periodComplianceService,
         TimeProvider timeProvider,
         ILogger<DocumentAnalysisService> logger,
         IVisionClient? visionClient = null)
@@ -45,6 +47,7 @@ public class DocumentAnalysisService : IDocumentAnalysisService
         _rasterizer = rasterizer;
         _visionClient = visionClient;
         _notificationService = notificationService;
+        _periodComplianceService = periodComplianceService;
         _timeProvider = timeProvider;
         _logger = logger;
     }
@@ -85,6 +88,15 @@ public class DocumentAnalysisService : IDocumentAnalysisService
         }
 
         _unitOfWork.DocumentAnalysisRepository.Update(analysis);
+
+        if (analysis.Status != DocumentAnalysisStatus.Pending
+            && document.SupplyRequestId is { } supplyRequestId
+            && document.ReferencePeriodStart is { } periodStart
+            && document.ReferencePeriodEnd is { } periodEnd)
+        {
+            await _periodComplianceService.RequestRecalculation(supplyRequestId, periodStart, periodEnd);
+        }
+
         await _unitOfWork.SaveChangesAsync();
 
         if (analysis.Status == DocumentAnalysisStatus.Completed && analysis.FoundWrongDocument && document.Status == DocumentStatus.Pending)

@@ -13,12 +13,16 @@ public class WorkerService : IWorkerService
 {
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IPeriodComplianceService _periodComplianceService;
 
-    public WorkerService(IMapper mapper, IUnitOfWork unitOfWork)
+    public WorkerService(IMapper mapper, IUnitOfWork unitOfWork, IPeriodComplianceService periodComplianceService)
     {
         _mapper = mapper;
         _unitOfWork = unitOfWork;
+        _periodComplianceService = periodComplianceService;
     }
+
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.UtcNow);
 
     public async Task<PageList<WorkerDto>> Get(PageParams pageParams, WorkerFilter filter)
     {
@@ -89,6 +93,7 @@ public class WorkerService : IWorkerService
         {
             allocation.Release();
             _unitOfWork.WorkerAllocationRepository.Update(allocation);
+            await _periodComplianceService.RequestRecalculationFrom(allocation.SupplyRequestId, Today);
         }
 
         await _unitOfWork.SaveChangesAsync();
@@ -117,6 +122,7 @@ public class WorkerService : IWorkerService
         var allocation = new WorkerAllocation(supplyRequest, worker, activeCount);
 
         _unitOfWork.WorkerAllocationRepository.Add(allocation);
+        await _periodComplianceService.RequestRecalculationFrom(supplyRequestId, Today);
         await _unitOfWork.SaveChangesAsync();
 
         return _mapper.Map<WorkerAllocationDto>(allocation);
@@ -136,6 +142,7 @@ public class WorkerService : IWorkerService
         allocation.Release();
 
         _unitOfWork.WorkerAllocationRepository.Update(allocation);
+        await _periodComplianceService.RequestRecalculationFrom(supplyRequestId, Today);
         await _unitOfWork.SaveChangesAsync();
 
         return _mapper.Map<WorkerAllocationDto>(allocation);

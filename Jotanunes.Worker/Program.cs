@@ -18,11 +18,18 @@ builder.Services.AddOptions<DocumentAnalysisSettings>()
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+builder.Services.AddOptions<PeriodComplianceSettings>()
+    .BindConfiguration(PeriodComplianceSettings.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddSingleton<IDocumentAnalysisCronSchedule, DocumentAnalysisCronSchedule>();
+builder.Services.AddSingleton<IPeriodComplianceCronSchedule, PeriodComplianceCronSchedule>();
 
 builder.Services.AddHostedService<DocumentAnalysisWorker>();
+builder.Services.AddHostedService<PeriodComplianceWorker>();
 
 var host = builder.Build();
 

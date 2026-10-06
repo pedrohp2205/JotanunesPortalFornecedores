@@ -31,6 +31,7 @@ public class UnitOfWork : IUnitOfWork
     private IWorkerRepository? _workerRepository;
     private IWorkerAllocationRepository? _workerAllocationRepository;
     private IDocumentAnalysisRepository? _documentAnalysisRepository;
+    private IPeriodComplianceReportRepository? _periodComplianceReportRepository;
 
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -114,6 +115,14 @@ public class UnitOfWork : IUnitOfWork
         get
         {
             return _documentAnalysisRepository ??= new DocumentAnalysisRepository(_context);
+        }
+    }
+
+    public IPeriodComplianceReportRepository PeriodComplianceReportRepository
+    {
+        get
+        {
+            return _periodComplianceReportRepository ??= new PeriodComplianceReportRepository(_context);
         }
     }
 

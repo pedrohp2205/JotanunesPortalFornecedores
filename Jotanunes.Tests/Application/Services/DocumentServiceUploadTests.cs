@@ -58,7 +58,8 @@ public class DocumentServiceUploadTests
             _unitOfWork.Object,
             _storage.Object,
             new Mock<IDocumentComplianceService>().Object,
-            new Mock<ISupplierNotificationService>().Object);
+            new Mock<ISupplierNotificationService>().Object,
+            new Mock<IPeriodComplianceService>().Object);
     }
 
     private static MemoryStream Pdf() => new("%PDF-1.7 conteudo"u8.ToArray());

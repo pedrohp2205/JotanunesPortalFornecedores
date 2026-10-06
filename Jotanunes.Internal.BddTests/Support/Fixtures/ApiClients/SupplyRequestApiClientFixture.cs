@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 
+using Jotanunes.Application.DTOs.Compliance;
 using Jotanunes.Application.DTOs.SupplyRequests;
 using Jotanunes.Internal.BddTests.Support.Contexts;
 using Jotanunes.Internal.BddTests.Support.Models;
@@ -60,5 +61,19 @@ internal class SupplyRequestApiClientFixture(
         httpResponseCtx.Response = await apiClientFixture.Client
             .PostAsync($"{BASE_URL}/{id}/cancel", null);
         return await httpResponseCtx.TryReadFromJsonAsync<SupplyRequestDto>();
+    }
+
+    public async Task<List<PeriodComplianceReportDto>?> GetComplianceReportsAsync(long id)
+    {
+        httpResponseCtx.Response = await apiClientFixture.Client
+            .GetAsync($"{BASE_URL}/{id}/compliance-reports");
+        return await httpResponseCtx.TryReadFromJsonAsync<List<PeriodComplianceReportDto>>();
+    }
+
+    public async Task<PeriodComplianceReportDto?> RecalculateComplianceReportAsync(long id, PeriodComplianceRecalculateDto dto)
+    {
+        httpResponseCtx.Response = await apiClientFixture.Client
+            .PostAsJsonAsync($"{BASE_URL}/{id}/compliance-reports", dto);
+        return await httpResponseCtx.TryReadFromJsonAsync<PeriodComplianceReportDto>();
     }
 }

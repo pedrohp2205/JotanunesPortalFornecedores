@@ -4,6 +4,7 @@ using Jotanunes.Application.DTOs.Mapping;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Application.Services;
 using Jotanunes.Application.Services.Analyzers;
+using Jotanunes.Application.Services.Compliance;
 using Jotanunes.Application.Settings;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Infra.Data.Context;
@@ -91,6 +92,7 @@ public static class DependencyInjection
         service.AddSingleton<IDocumentTypeAnalyzer, EmployeeListAnalyzer>();
 
         service.AddScoped<IDocumentAnalysisService, DocumentAnalysisService>();
+        service.AddScoped<IPeriodComplianceService, PeriodComplianceService>();
 
         return service;
     }

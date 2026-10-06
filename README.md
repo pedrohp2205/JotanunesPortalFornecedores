@@ -233,6 +233,34 @@ Endpoints (frente interna):
 
 **Resumo na listagem (só na frente interna).** `GET /api/document` e `GET /api/document/{id}` da frente interna (e as respostas de `approve`/`reject`) trazem o campo `analysis` com `status`, `verdict`, `blockingCount`, `warningCount` e `analyzedAt`. Ele vem `null` quando o documento ainda não tem análise. A listagem aceita os filtros `analysisStatus` e `analysisVerdict` (ex.: `?analysisVerdict=3` lista só os não conformes). O documento aparece para a equipe assim que é enviado, e aprovar ou recusar **não depende da análise**: o resumo é apoio, não trava. A frente externa usa outro DTO e outro filtro, sem esses campos: o fornecedor não recebe o parecer nem consegue filtrar por ele.
 
+### Cruzamento dos documentos do período
+
+A análise de cada documento confere o documento sozinho. O **cruzamento** compara os documentos de uma solicitação dentro de um período (`PeriodComplianceReport`, tabela `period_compliance_reports`, um por solicitação e período) com os trabalhadores alocados na obra naquele período.
+
+**Quando é recalculado.** O relatório do período é colocado na fila (`Pending`) quando a análise de um documento recorrente termina, quando um documento recorrente é recusado e quando um trabalhador é alocado, liberado ou desativado (nesse caso, todos os relatórios da solicitação que terminam a partir de hoje). O job `PeriodComplianceWorker` do `Jotanunes.Worker` recalcula os pendentes (`Schedules:PeriodComplianceCron`, padrão `*/30 * * * * *`; `PeriodCompliance:BatchSize`, padrão 10). Se um novo pedido chega durante o cálculo, o relatório volta para a fila.
+
+**O que entra.** Documentos da solicitação cujo período de referência alcança o período do relatório, exceto os recusados. Só entram na comparação documentos com análise concluída que não foram identificados como outro documento; os demais aparecem no achado `UNREAD_DOCUMENTS` (Info). Quando há mais de um documento do mesmo tipo e trabalhador, vale o mais recente; comprovantes de salário e de FGTS são somados, para aceitar pagamentos divididos. Trabalhadores alocados são os com alocação ativa em algum dia do período.
+
+| Achado | Gravidade | Regra |
+|---|---|---|
+| `PAYMENT_AMOUNT_MISMATCH` | Blocking* | Líquido do recibo diferente da soma dos comprovantes de salário do mesmo trabalhador (tolerância de R$ 0,01) |
+| `PAID_WITHOUT_WORKED_HOURS` | Warning | Recibo com líquido maior que zero e folha de ponto com 0:00 trabalhadas |
+| `WORKER_WITHOUT_FGTS` | Blocking* | Trabalhador alocado que não aparece (pelo CPF) no detalhamento do FGTS |
+| `FGTS_PAYMENT_MISMATCH` | Blocking* | Total da guia (GFD, ou o detalhamento se não houver guia) diferente da soma dos comprovantes de FGTS |
+| `FGTS_PAID_LATE` | Warning | Comprovante de FGTS pago depois do vencimento da guia |
+| `FGTS_FEWER_WORKERS_THAN_ALLOCATED` | Warning | Guia declara menos trabalhadores que os alocados na obra |
+| `ALLOCATED_NOT_IN_EMPLOYEE_LIST` / `LISTED_NOT_ALLOCATED` | Warning | Relação de funcionários × alocações (pelo CPF, ou pelo nome quando a relação não traz CPF) |
+| `UNREAD_DOCUMENTS` | Info | Documentos ainda sem leitura, fora do cruzamento |
+
+\* Blocking só quando todos os documentos envolvidos foram lidos por texto; se algum foi lido por imagem, vira Warning, pela mesma regra da análise de documentos.
+
+Endpoints (frente interna):
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/supplyrequest/{id}/compliance-reports` | Relatórios de cruzamento da solicitação, do período mais recente para o mais antigo |
+| POST | `/api/supplyrequest/{id}/compliance-reports` | Coloca o período (`periodStart`, `periodEnd`) na fila de recálculo (202) |
+
 **Worker.** `Jotanunes.Worker` é um processo próprio (SDK `Microsoft.NET.Sdk.Worker`), separado das duas APIs, com um job agendado por cron para cada tarefa de fundo:
 
 - Cada job herda de `CronBackgroundService` e recebe um `ICronSchedule` próprio (`Schedules/`). A cada disparo, o job abre um escopo de DI e chama o serviço da aplicação. Um disparo só começa depois que o anterior termina.
