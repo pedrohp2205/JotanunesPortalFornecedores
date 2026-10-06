@@ -64,5 +64,24 @@ services:
       - "80:80"
     restart: unless-stopped
 
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: jotanunes-worker
+    depends_on:
+      - sqlserver
+      - api-internal
+    environment:
+      DATABASE: Server=sqlserver,1433;Database=jotanunes_portal;User Id=sa;Password=SenhaForte123!;TrustServerCertificate=True
+      S3__BucketName: ${R2_BUCKET_NAME}
+      S3__Region: auto
+      S3__AccessKey: ${R2_ACCESS_KEY_ID}
+      S3__SecretKey: ${R2_SECRET_ACCESS_KEY}
+      S3__ServiceUrl: ${R2_ENDPOINT}
+      S3__ForcePathStyle: "true"
+      Schedules__DocumentAnalysisCron: "${DOCUMENT_ANALYSIS_CRON:-*/10 * * * * *}"
+    restart: unless-stopped
+
 volumes:
   sqlserver_data:

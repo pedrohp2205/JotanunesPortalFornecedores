@@ -30,14 +30,17 @@ JotanunesPortalFornecedores/
 ├── Jotanunes.Infra.Data       # DbContext, configurations, repositórios, migrations
 ├── Jotanunes.Infra.Security   # Hash de senha (BCrypt) e emissão de JWT
 ├── Jotanunes.Infra.Storage    # Armazenamento de documentos (S3)
-├── Jotanunes.Infra.DocumentAi # Leitura de documentos (PdfPig) e worker da análise automática
+├── Jotanunes.Infra.DocumentAi # Leitura de documentos (PdfPig)
 ├── Jotanunes.Infra.IoC        # Injeção de dependências
-├── Jotanunes.AppHost          # Orquestração local com .NET Aspire (SQL Server + APIs)
+├── Jotanunes.Worker           # Processo de jobs agendados por cron (análise automática de documentos)
+├── Jotanunes.AppHost          # Orquestração local com .NET Aspire (SQL Server + APIs + worker)
 ├── Jotanunes.Tests            # Testes unitários (xUnit)
+├── Jotanunes.Worker.Tests     # Testes do worker: jobs e agendamentos (xUnit v3)
 ├── Jotanunes.External.BddTests # Testes de integração/BDD da API externa (Reqnroll)
 ├── Jotanunes.Internal.BddTests # Testes de integração/BDD da API interna (Reqnroll)
 ├── Dockerfile.external
 ├── Dockerfile.internal
+├── Dockerfile.worker
 └── docker-compose.yml
 ```
 
@@ -152,7 +155,7 @@ O checklist também passa a trazer `allocatedWorkerCount`. Tipos de habilitaçã
 
 ### Análise automática de documentos
 
-Todo upload grava, na mesma transação, uma análise `Pending` em `document_analyses`. Um worker (`DocumentAnalysisWorker`) busca as pendentes no banco, lê o arquivo e produz um **parecer sugerido**: campos extraídos, achados e um veredito. **Não aprova nem recusa nada**: `approve`/`reject` continuam manuais, e o parecer serve de apoio ao analista.
+Todo upload grava, na mesma transação, uma análise `Pending` em `document_analyses`. O job `DocumentAnalysisWorker`, do processo `Jotanunes.Worker`, busca as pendentes no banco, lê o arquivo e produz um **parecer sugerido**: campos extraídos, achados e um veredito. **Não aprova nem recusa nada**: `approve`/`reject` continuam manuais, e o parecer serve de apoio ao analista.
 
 **Cadeia de fallback.** Cada tipo de documento tem um analisador (`IDocumentTypeAnalyzer`, escolhido pelo `code` do tipo) que declara os campos obrigatórios. A leitura tenta os extratores (`IDocumentTextExtractor`) do mais barato ao mais caro (`NativeText` → `Ocr` → `Vision`) e para no primeiro que lê todos os obrigatórios. CNPJ ou CPF com dígito verificador inválido conta como não lido, o que faz a leitura subir de nível. Se nenhum nível completa, a análise vai para `ManualReviewRequired` com a lista do que faltou. Por enquanto só existe o nível `NativeText` (camada de texto do PDF, via PdfPig); OCR e modelo de visão entram nas próximas etapas.
 
@@ -179,7 +182,13 @@ Endpoints (frente interna):
 | GET | `/api/document/{id}/analysis` | Parecer do documento |
 | POST | `/api/document/{id}/analysis` | Recoloca a análise na fila (202). Também cria a análise de documentos enviados antes desta funcionalidade |
 
-Configuração (`DocumentAnalysis`): `WorkerEnabled` (ligado só na frente externa, porque o worker não trava as linhas e **deve rodar em um único processo**), `PollingIntervalSeconds` (10) e `BatchSize` (10).
+**Worker.** `Jotanunes.Worker` é um processo próprio (SDK `Microsoft.NET.Sdk.Worker`), separado das duas APIs, com um job agendado por cron para cada tarefa de fundo:
+
+- Cada job herda de `CronBackgroundService` e recebe um `ICronSchedule` próprio (`Schedules/`). A cada disparo, o job abre um escopo de DI e chama o serviço da aplicação. Um disparo só começa depois que o anterior termina.
+- `DocumentAnalysisWorker` esvazia a fila em lotes de `DocumentAnalysis:BatchSize` (10), com um escopo por análise para uma falha não afetar as demais. Se alguma análise do lote não puder ser gravada, ele para e espera o próximo disparo.
+- As crons ficam na seção `Schedules` e são validadas na subida: sem cron, o processo não sobe. `DocumentAnalysisCron` aceita 5 campos (padrão) ou 6 (com segundos); o padrão é `*/10 * * * * *`. Use `-` ou `never` para desligar um job.
+- A fila não trava as linhas que está processando, então **só uma instância do worker pode rodar por vez**.
+- O worker não aplica migrations: o schema continua sendo da API interna.
 
 ---
 
@@ -197,7 +206,7 @@ Configuração (`DocumentAnalysis`): `WorkerEnabled` (ligado só na frente exter
 docker-compose up -d --build
 ```
 
-Sobe o SQL Server, a API interna na porta `8080` e a API externa na porta `80`. As migrations são aplicadas automaticamente pela API interna, que é a dona do schema.
+Sobe o SQL Server, a API interna na porta `8080`, a API externa na porta `80` e o worker (sem porta). As migrations são aplicadas automaticamente pela API interna, que é a dona do schema.
 
 Swagger:
 
@@ -208,7 +217,7 @@ Swagger:
 
 ## Executando com Aspire
 
-O `Jotanunes.AppHost` (.NET Aspire 13, exige o SDK do .NET 10) sobe o SQL Server em container, cria as bases `jotanunes_portal` (dev), `jotanunes_portal_test_external` e `jotanunes_portal_test_internal` (uma para cada projeto `*.BddTests`), aplica as migrations do EF Core e inicia as duas APIs já apontando para a base de dev. O dashboard mostra o status, os logs e o health de cada recurso.
+O `Jotanunes.AppHost` (.NET Aspire 13, exige o SDK do .NET 10) sobe o SQL Server em container, cria as bases `jotanunes_portal` (dev), `jotanunes_portal_test_external` e `jotanunes_portal_test_internal` (uma para cada projeto `*.BddTests`), aplica as migrations do EF Core e inicia as duas APIs e o worker já apontando para a base de dev. O dashboard mostra o status, os logs e o health de cada recurso.
 
 ```bash
 dotnet run --project Jotanunes.AppHost    # ou: aspire run
@@ -225,6 +234,7 @@ dotnet run --project Jotanunes.AppHost    # ou: aspire run
 ```bash
 dotnet run --project Jotanunes.API.Internal   # http://localhost:5200/swagger
 dotnet run --project Jotanunes.API.External   # http://localhost:5100/swagger
+dotnet run --project Jotanunes.Worker         # jobs agendados (análise automática)
 ```
 
 A connection string vem da variável de ambiente `DATABASE` ou, na falta dela, de `ConnectionStrings:ConnectionString` no `appsettings.json`.
@@ -242,11 +252,12 @@ dotnet ef database update --project Jotanunes.Infra.Data --startup-project Jotan
 
 ## Testes
 
-São três projetos:
+São quatro projetos:
 
 | Projeto | Tipo | Depende de banco |
 | --- | --- | --- |
 | `Jotanunes.Tests` | Unitários (xUnit + Moq), organizados em pastas que espelham as camadas: `Domain/`, `Application/`, `Infra/` | Não |
+| `Jotanunes.Worker.Tests` | Unitários (xUnit v3 + Moq) dos jobs e agendamentos do worker | Não |
 | `Jotanunes.External.BddTests` | Integração/BDD (Reqnroll + xUnit v3) da API externa, via `WebApplicationFactory` | Sim (SQL Server) |
 | `Jotanunes.Internal.BddTests` | Integração/BDD (Reqnroll + xUnit v3) da API interna, via `WebApplicationFactory` | Sim (SQL Server) |
 

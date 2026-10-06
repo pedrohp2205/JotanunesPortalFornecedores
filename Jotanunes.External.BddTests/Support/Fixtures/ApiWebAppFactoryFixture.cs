@@ -30,7 +30,6 @@ internal class ApiWebAppFactoryFixture(
 
         builder.UseSetting("ConnectionStrings:ConnectionString", testSettingsFixture.TestSettings.DataBase.ConnectionString);
         builder.UseSetting("Email:Enabled", "false");
-        builder.UseSetting("DocumentAnalysis:WorkerEnabled", "false");
 
         builder.ConfigureServices(services =>
         {
