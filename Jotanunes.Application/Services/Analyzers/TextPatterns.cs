@@ -13,6 +13,28 @@ public static partial class TextPatterns
         return match.Success && Cnpj.IsValid(match.Value) ? Cnpj.Normalize(match.Value) : null;
     }
 
+    public static string? ValidCnpj(string? value)
+    {
+        return Cnpj.IsValid(value) ? Cnpj.Normalize(value) : null;
+    }
+
+    public static string? ValidCpf(string? value)
+    {
+        return Cpf.IsValid(value) ? Cpf.Normalize(value) : null;
+    }
+
+    public static DateOnly? ParseCompetence(string? value)
+    {
+        return DateOnly.TryParseExact(value, "MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var month)
+            ? month
+            : null;
+    }
+
+    public static string FormatMoney(decimal value)
+    {
+        return value.ToString("C", CultureInfo.GetCultureInfo("pt-BR"));
+    }
+
     public static DateOnly? ParseDate(string? value)
     {
         return DateOnly.TryParseExact(value, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)

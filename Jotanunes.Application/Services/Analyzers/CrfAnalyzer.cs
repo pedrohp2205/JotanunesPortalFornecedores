@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Jotanunes.Application.DTOs.Analysis;
 using Jotanunes.Application.Interfaces;
@@ -7,11 +8,27 @@ using Jotanunes.Domain.Validation;
 
 namespace Jotanunes.Application.Services.Analyzers;
 
-public partial class CrfAnalyzer : IDocumentTypeAnalyzer
+public partial class CrfAnalyzer : IVisionAnalyzer
 {
     public const int ExpiringSoonDays = 7;
 
     public IReadOnlyCollection<string> DocumentTypeCodes { get; } = ["FGTS_CND"];
+
+    public string Instructions { get; } = VisionPrompt.Instructions(
+        "Certificado de Regularidade do FGTS (CRF), emitido pela Caixa Econômica Federal",
+        "cnpj: o número de \"Inscrição\" do empregador",
+        "corporateName: a \"Razão social\"",
+        "validFrom e validUntil: as duas datas do período de \"Validade\"",
+        "certificationNumber: o \"Certificação Número\"");
+
+    public string SchemaName => "crf_fgts";
+
+    public string JsonSchema { get; } = VisionPrompt.Schema(
+        ("cnpj", "string", "CNPJ da inscrição"),
+        ("corporateName", "string", "razão social"),
+        ("validFrom", "string", "início da validade, dd/MM/yyyy"),
+        ("validUntil", "string", "fim da validade, dd/MM/yyyy"),
+        ("certificationNumber", "string", "número da certificação"));
 
     public FieldExtraction Extract(DocumentText text)
     {
@@ -26,6 +43,26 @@ public partial class CrfAnalyzer : IDocumentTypeAnalyzer
 
         extraction.Add("corporateName", CorporateName().Match(text.Flat) is { Success: true } name ? name.Groups["name"].Value : null);
         extraction.Add("certificationNumber", CertificationNumber().Match(text.Flat) is { Success: true } number ? number.Groups["number"].Value : null);
+
+        return extraction;
+    }
+
+    public FieldExtraction FromVision(JsonElement result)
+    {
+        var extraction = new FieldExtraction();
+
+        if (!VisionPrompt.IsExpected(result))
+        {
+            extraction.MarkWrongDocument(VisionPrompt.Detected(result));
+            return extraction;
+        }
+
+        extraction.Add("documentKind", "CRF");
+        extraction.Add("cnpj", TextPatterns.ValidCnpj(VisionPrompt.GetString(result, "cnpj")), "CNPJ");
+        extraction.Add("validFrom", ValidDate(VisionPrompt.GetString(result, "validFrom")), "início da validade");
+        extraction.Add("validUntil", ValidDate(VisionPrompt.GetString(result, "validUntil")), "fim da validade");
+        extraction.Add("corporateName", VisionPrompt.GetString(result, "corporateName"));
+        extraction.Add("certificationNumber", VisionPrompt.GetString(result, "certificationNumber"));
 
         return extraction;
     }
@@ -69,6 +106,11 @@ public partial class CrfAnalyzer : IDocumentTypeAnalyzer
         }
 
         return findings;
+    }
+
+    private static string? ValidDate(string? value)
+    {
+        return TextPatterns.ParseDate(value) is { } date ? TextPatterns.FormatDate(date) : null;
     }
 
     private static void AddValidityFindings(

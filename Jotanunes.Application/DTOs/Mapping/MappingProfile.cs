@@ -9,6 +9,7 @@ using Jotanunes.Application.DTOs.Users;
 using Jotanunes.Application.DTOs.Workers;
 using Jotanunes.Application.DTOs.WorkSites;
 using Jotanunes.Domain.Entities;
+using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Validation;
 
 namespace Jotanunes.Application.DTOs.Mapping;
@@ -76,6 +77,15 @@ public class MappingProfile : Profile
 
         CreateMap<AnalysisFinding, AnalysisFindingDto>()
             .ForMember(dest => dest.SeverityDescription, opt => opt.MapFrom(src => src.Severity.ToString()));
+
+        CreateMap<Document, InternalDocumentDto>()
+            .IncludeBase<Document, DocumentDto>();
+
+        CreateMap<DocumentAnalysis, DocumentAnalysisSummaryDto>()
+            .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.VerdictDescription, opt => opt.MapFrom(src => src.Verdict != null ? src.Verdict.ToString() : null))
+            .ForMember(dest => dest.BlockingCount, opt => opt.MapFrom(src => src.Findings.Count(f => f.Severity == FindingSeverity.Blocking)))
+            .ForMember(dest => dest.WarningCount, opt => opt.MapFrom(src => src.Findings.Count(f => f.Severity == FindingSeverity.Warning)));
 
         CreateMap<DocumentAnalysis, DocumentAnalysisDto>()
             .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()))

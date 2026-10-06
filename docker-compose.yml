@@ -81,6 +81,9 @@ services:
       S3__ServiceUrl: ${R2_ENDPOINT}
       S3__ForcePathStyle: "true"
       Schedules__DocumentAnalysisCron: "${DOCUMENT_ANALYSIS_CRON:-*/10 * * * * *}"
+      OpenRouter__Enabled: ${OPENROUTER_ENABLED:-false}
+      OpenRouter__ApiKey: ${OPENROUTER_API_KEY:-}
+      OpenRouter__Model: ${OPENROUTER_MODEL:-google/gemini-3.8-flash}
     restart: unless-stopped
 
 volumes:

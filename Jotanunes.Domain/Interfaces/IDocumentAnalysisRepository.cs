@@ -6,5 +6,5 @@ public interface IDocumentAnalysisRepository : IGenericRepository<DocumentAnalys
 {
     Task<DocumentAnalysis?> GetById(long id);
     Task<DocumentAnalysis?> GetByDocumentId(long documentId);
-    Task<List<long>> GetPendingIds(int take);
+    Task<List<long>> GetPendingIds(int take, DateTime now);
 }

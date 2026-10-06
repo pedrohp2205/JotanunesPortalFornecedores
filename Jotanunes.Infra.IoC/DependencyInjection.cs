@@ -9,6 +9,7 @@ using Jotanunes.Domain.Interfaces;
 using Jotanunes.Infra.Data.Context;
 using Jotanunes.Infra.Data.Repositories;
 using Jotanunes.Infra.DocumentAi.Services;
+using Jotanunes.Infra.DocumentAi.Settings;
 using Jotanunes.Infra.Email.Services;
 using Jotanunes.Infra.Email.Settings;
 using Jotanunes.Infra.Security.Services;
@@ -49,18 +50,39 @@ public static class DependencyInjection
 
         service.AddDocumentStorage(configuration);
         service.AddEmail(configuration);
-        service.AddDocumentAnalysis();
+        service.AddDocumentAnalysis(configuration);
 
         return service;
     }
 
-    private static IServiceCollection AddDocumentAnalysis(this IServiceCollection service)
+    private static IServiceCollection AddDocumentAnalysis(this IServiceCollection service, IConfiguration configuration)
     {
+        var openRouterSection = configuration.GetSection(OpenRouterSettings.SectionName);
+        var openRouter = openRouterSection.Get<OpenRouterSettings>() ?? new OpenRouterSettings();
+
+        service.Configure<OpenRouterSettings>(openRouterSection);
+        service.Configure<DocumentImageSettings>(configuration.GetSection(DocumentImageSettings.SectionName));
         service.AddSingleton(TimeProvider.System);
 
         service.AddSingleton<IDocumentTextExtractor, PdfNativeTextExtractor>();
+        service.AddSingleton<IDocumentRasterizer, PdfiumDocumentRasterizer>();
+
+        if (openRouter.Enabled)
+        {
+            if (string.IsNullOrWhiteSpace(openRouter.ApiKey))
+            {
+                throw new InvalidOperationException("OpenRouter:ApiKey é obrigatório quando OpenRouter:Enabled=true.");
+            }
+
+            service.AddHttpClient<IVisionClient, OpenRouterVisionClient>(client =>
+            {
+                client.BaseAddress = new Uri(openRouter.BaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(openRouter.TimeoutSeconds);
+            });
+        }
 
         service.AddSingleton<IDocumentTypeAnalyzer, CrfAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, PaymentReceiptAnalyzer>();
 
         service.AddScoped<IDocumentAnalysisService, DocumentAnalysisService>();
 

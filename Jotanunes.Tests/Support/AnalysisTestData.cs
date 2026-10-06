@@ -7,10 +7,12 @@ internal static class AnalysisTestData
 {
     public const string CompanyCnpj = "11.222.333/0001-81";
     public const string CompanyName = "Construtora Exemplo LTDA";
+    public const string WorkerName = "Maria Aparecida dos Santos";
+    public const string WorkerCpf = "529.982.247-25";
 
-    public static Document CrfDocument(DateOnly? expirationDate = null, string typeCode = "FGTS_CND")
+    public static Company Company()
     {
-        var company = new Company(
+        return new Company(
             CompanyCnpj,
             CompanyName,
             "Construtora Exemplo",
@@ -20,6 +22,87 @@ internal static class AnalysisTestData
             new Address("Rua Sao Cristovao", "123", "Centro", "Aracaju", "SE", "49000-000"),
             SupplierType.ManpowerLabor)
         { Id = 1 };
+    }
+
+    public static Document ReceiptDocument(bool withWorker = true)
+    {
+        var type = new DocumentType("PAYMENT_RECEIPT", "Recibo de Pagamento", DocumentCategory.Recurring, SupplierType.ManpowerLabor, DocumentSubject.Worker) { Id = 20 };
+        var worker = new Worker(1, WorkerName, WorkerCpf) { Id = 7 };
+
+        var document = new Document(
+            companyId: 1,
+            documentTypeId: 20,
+            uploadedBySupplierUserId: 5,
+            category: DocumentCategory.Recurring,
+            subject: DocumentSubject.Worker,
+            storageKey: "companies/1/documents/abc-recibo.pdf",
+            originalFileName: "recibo.pdf",
+            contentType: "application/pdf",
+            supplyRequestId: 3,
+            workerId: 7,
+            referencePeriodStart: new DateOnly(2026, 7, 1),
+            referencePeriodEnd: new DateOnly(2026, 7, 31))
+        { Id = 200 };
+
+        typeof(Document).GetProperty(nameof(Document.Company))!.SetValue(document, Company());
+        typeof(Document).GetProperty(nameof(Document.DocumentType))!.SetValue(document, type);
+        if (withWorker)
+        {
+            typeof(Document).GetProperty(nameof(Document.Worker))!.SetValue(document, worker);
+        }
+
+        return document;
+    }
+
+    public static string ReceiptJson(
+        string? employeeCpf = WorkerCpf,
+        string employeeName = "MARIA APARECIDA DOS SANTOS",
+        string? employerCnpj = CompanyCnpj,
+        string? competence = "07/2026",
+        string netPay = "1900.75",
+        string employeeSigned = "false",
+        bool isExpectedDocument = true,
+        string? detectedDocument = "recibo de pagamento")
+    {
+        return $$"""
+            {
+              "isExpectedDocument": {{(isExpectedDocument ? "true" : "false")}},
+              "detectedDocument": {{Json(detectedDocument)}},
+              "employerName": "CONSTRUTORA EXEMPLO LTDA",
+              "employerCnpj": {{Json(employerCnpj)}},
+              "employeeName": {{Json(employeeName)}},
+              "employeeCpf": {{Json(employeeCpf)}},
+              "competence": {{Json(competence)}},
+              "netPay": {{netPay}},
+              "employeeSigned": {{employeeSigned}}
+            }
+            """;
+    }
+
+    public static string CrfJson(
+        bool isExpectedDocument = true,
+        string? detectedDocument = "CRF do FGTS",
+        string? validUntil = "09/08/2026")
+    {
+        return $$"""
+            {
+              "isExpectedDocument": {{(isExpectedDocument ? "true" : "false")}},
+              "detectedDocument": {{Json(detectedDocument)}},
+              "cnpj": "{{CompanyCnpj}}",
+              "corporateName": "{{CompanyName}}",
+              "validFrom": "11/07/2026",
+              "validUntil": {{Json(validUntil)}},
+              "certificationNumber": "2026071115160835286076"
+            }
+            """;
+    }
+
+    private static string Json(string? value) => value is null ? "null" : $"\"{value}\"";
+
+
+    public static Document CrfDocument(DateOnly? expirationDate = null, string typeCode = "FGTS_CND")
+    {
+        var company = Company();
 
         var type = new DocumentType(typeCode, "Certidão Negativa de FGTS", DocumentCategory.Onboarding, SupplierType.ManpowerLabor, DocumentSubject.Company) { Id = 10 };
 

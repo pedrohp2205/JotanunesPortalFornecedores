@@ -25,7 +25,8 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
                 .Include(d => d.DocumentType)
                 .Include(d => d.SupplyRequest!).ThenInclude(sr => sr.WorkSite)
                 .Include(d => d.Worker)
-                .Include(d => d.UploadedBySupplierUser),
+                .Include(d => d.UploadedBySupplierUser)
+                .Include(d => d.Analysis),
             filter);
 
         var totalCount = await query.CountAsync();
@@ -85,6 +86,7 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
                                 .Include(d => d.SupplyRequest!).ThenInclude(sr => sr.WorkSite)
                                 .Include(d => d.Worker)
                                 .Include(d => d.UploadedBySupplierUser)
+                                .Include(d => d.Analysis)
                                 .FirstOrDefaultAsync(d => d.Id == id);
     }
 
@@ -133,6 +135,16 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
         if (filter.PeriodEnd.HasValue)
         {
             query = query.Where(d => d.ReferencePeriodStart == null || d.ReferencePeriodStart <= filter.PeriodEnd.Value);
+        }
+
+        if (filter is InternalDocumentFilter { AnalysisStatus: { } analysisStatus })
+        {
+            query = query.Where(d => d.Analysis != null && d.Analysis.Status == analysisStatus);
+        }
+
+        if (filter is InternalDocumentFilter { AnalysisVerdict: { } analysisVerdict })
+        {
+            query = query.Where(d => d.Analysis != null && d.Analysis.Verdict == analysisVerdict);
         }
 
         return query;

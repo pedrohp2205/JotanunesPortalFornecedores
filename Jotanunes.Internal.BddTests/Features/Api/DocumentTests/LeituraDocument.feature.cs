@@ -118,7 +118,7 @@ namespace Jotanunes.Internal.BddTests.Features.Api.DocumentTests
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/DocumentTests/LeituraDocument.feature.ndjson", 5);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/DocumentTests/LeituraDocument.feature.ndjson", 9);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -252,6 +252,164 @@ await this.FeatureBackgroundAsync();
 #line hidden
 #line 25
     await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Documento não encontrado\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Listar os documentos com o resumo da análise automática")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Document - Leitura")]
+        [global::Xunit.TraitAttribute("Description", "Listar os documentos com o resumo da análise automática")]
+        public async global::System.Threading.Tasks.Task ListarOsDocumentosComOResumoDaAnaliseAutomatica()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "3";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Listar os documentos com o resumo da análise automática", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 27
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 8
+await this.FeatureBackgroundAsync();
+#line hidden
+#line 28
+    await testRunner.GivenAsync("que o documento cadastrado tem uma análise não conforme", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
+#line hidden
+#line 29
+    await testRunner.WhenAsync("eu listar os documentos da empresa cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+#line hidden
+#line 30
+    await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+#line hidden
+#line 31
+    await testRunner.AndAsync("o documento listado mostra a análise com veredito \"NonConforming\" e 1 apontamento" +
+                        "(s) bloqueante(s)", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Consultar um documento que ainda não foi analisado")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Document - Leitura")]
+        [global::Xunit.TraitAttribute("Description", "Consultar um documento que ainda não foi analisado")]
+        public async global::System.Threading.Tasks.Task ConsultarUmDocumentoQueAindaNaoFoiAnalisado()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "4";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Consultar um documento que ainda não foi analisado", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 33
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 8
+await this.FeatureBackgroundAsync();
+#line hidden
+#line 34
+    await testRunner.WhenAsync("eu consultar o documento cadastrado", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+#line hidden
+#line 35
+    await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+#line hidden
+#line 36
+    await testRunner.AndAsync("o documento retornado não tem resumo da análise", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Filtrar os documentos pelo veredito da análise")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Document - Leitura")]
+        [global::Xunit.TraitAttribute("Description", "Filtrar os documentos pelo veredito da análise")]
+        public async global::System.Threading.Tasks.Task FiltrarOsDocumentosPeloVereditoDaAnalise()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "5";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Filtrar os documentos pelo veredito da análise", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 38
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 8
+await this.FeatureBackgroundAsync();
+#line hidden
+#line 39
+    await testRunner.GivenAsync("que o documento cadastrado tem uma análise não conforme", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
+#line hidden
+#line 40
+    await testRunner.WhenAsync("eu listar os documentos da empresa cadastrada com veredito da análise 3", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+#line hidden
+#line 41
+    await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+#line hidden
+#line 42
+    await testRunner.AndAsync("a listagem de documentos contém o documento cadastrado", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Filtrar os documentos por um veredito que nenhum documento tem")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Document - Leitura")]
+        [global::Xunit.TraitAttribute("Description", "Filtrar os documentos por um veredito que nenhum documento tem")]
+        public async global::System.Threading.Tasks.Task FiltrarOsDocumentosPorUmVereditoQueNenhumDocumentoTem()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "6";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Filtrar os documentos por um veredito que nenhum documento tem", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 44
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 8
+await this.FeatureBackgroundAsync();
+#line hidden
+#line 45
+    await testRunner.GivenAsync("que o documento cadastrado tem uma análise não conforme", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
+#line hidden
+#line 46
+    await testRunner.WhenAsync("eu listar os documentos da empresa cadastrada com veredito da análise 1", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+#line hidden
+#line 47
+    await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+#line hidden
+#line 48
+    await testRunner.AndAsync("a listagem de documentos está vazia", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

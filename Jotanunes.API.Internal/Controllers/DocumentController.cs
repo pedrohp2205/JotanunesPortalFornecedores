@@ -16,16 +16,16 @@ public class DocumentController(
     IDocumentAnalysisService analysisService) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PageList<DocumentDto>>> Get([FromQuery] PageParams pageParams, [FromQuery] DocumentFilter filter)
+    public async Task<ActionResult<PageList<InternalDocumentDto>>> Get([FromQuery] PageParams pageParams, [FromQuery] InternalDocumentFilter filter)
     {
-        var result = await documentService.Get(pageParams, filter);
+        var result = await documentService.GetForReview(pageParams, filter);
         return Ok(result);
     }
 
     [HttpGet("{id:long}")]
-    public async Task<ActionResult<DocumentDto>> GetById(long id)
+    public async Task<ActionResult<InternalDocumentDto>> GetById(long id)
     {
-        var document = await documentService.GetById(id);
+        var document = await documentService.GetByIdForReview(id);
         return Ok(document);
     }
 
@@ -37,14 +37,14 @@ public class DocumentController(
     }
 
     [HttpPost("{id:long}/approve")]
-    public async Task<ActionResult<DocumentDto>> Approve(long id)
+    public async Task<ActionResult<InternalDocumentDto>> Approve(long id)
     {
         var document = await documentService.Approve(id);
         return Ok(document);
     }
 
     [HttpPost("{id:long}/reject")]
-    public async Task<ActionResult<DocumentDto>> Reject(long id, [FromBody] DocumentRejectDto rejectDto)
+    public async Task<ActionResult<InternalDocumentDto>> Reject(long id, [FromBody] DocumentRejectDto rejectDto)
     {
         var document = await documentService.Reject(id, rejectDto.Reason);
         return Ok(document);

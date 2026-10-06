@@ -26,3 +26,17 @@ Cenário: Não permitir consultar o documento de outra empresa
     Quando eu consultar o documento da outra empresa
     Então eu recebo uma resposta 404 Not Found
     E eu recebo uma resposta de erro com a mensagem "Documento não encontrado"
+
+Cenário: Não expor a análise automática ao fornecedor
+    Dado que o documento cadastrado tem uma análise não conforme
+    Quando eu listar os documentos da minha empresa
+    Então eu recebo uma resposta 200 OK
+    E a listagem de documentos contém apenas o documento da minha empresa
+    E a resposta não contém o parecer da análise automática
+
+Cenário: Ignorar o filtro por veredito da análise na frente do fornecedor
+    Dado que o documento cadastrado tem uma análise não conforme
+    Quando eu listar os documentos da minha empresa filtrando pelo veredito da análise
+    Então eu recebo uma resposta 200 OK
+    E a listagem ainda contém o documento cadastrado
+    E a resposta não contém o parecer da análise automática

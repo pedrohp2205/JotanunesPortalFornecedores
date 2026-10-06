@@ -45,6 +45,19 @@ public class DocumentService : IDocumentService
         return _mapper.Map<DocumentDto>(document);
     }
 
+    public async Task<PageList<InternalDocumentDto>> GetForReview(PageParams pageParams, InternalDocumentFilter filter)
+    {
+        var documents = await _unitOfWork.DocumentRepository.Get(pageParams, filter);
+        var dtos = _mapper.Map<IEnumerable<InternalDocumentDto>>(documents.Items);
+        return new PageList<InternalDocumentDto>(dtos.ToList(), documents.TotalCount, pageParams.PageNumber, pageParams.PageSize);
+    }
+
+    public async Task<InternalDocumentDto> GetByIdForReview(long id)
+    {
+        var document = await GetExisting(id);
+        return _mapper.Map<InternalDocumentDto>(document);
+    }
+
     public async Task<DocumentDto> Upload(
         long companyId,
         long uploadedBySupplierUserId,
@@ -160,7 +173,7 @@ public class DocumentService : IDocumentService
         };
     }
 
-    public async Task<DocumentDto> Approve(long id)
+    public async Task<InternalDocumentDto> Approve(long id)
     {
         var document = await GetExisting(id);
 
@@ -176,10 +189,10 @@ public class DocumentService : IDocumentService
             await TryMarkCompanyEligible(document.CompanyId);
         }
 
-        return _mapper.Map<DocumentDto>(document);
+        return _mapper.Map<InternalDocumentDto>(document);
     }
 
-    public async Task<DocumentDto> Reject(long id, string reason)
+    public async Task<InternalDocumentDto> Reject(long id, string reason)
     {
         var document = await GetExisting(id);
 
@@ -190,7 +203,7 @@ public class DocumentService : IDocumentService
 
         await _notificationService.DocumentRejected(document);
 
-        return _mapper.Map<DocumentDto>(document);
+        return _mapper.Map<InternalDocumentDto>(document);
     }
 
     private async Task TryMarkCompanyEligible(long companyId)

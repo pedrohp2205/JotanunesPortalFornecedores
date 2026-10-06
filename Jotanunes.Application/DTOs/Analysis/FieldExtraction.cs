@@ -8,7 +8,14 @@ public class FieldExtraction
 
     public List<string> Missing { get; } = [];
 
-    public bool IsComplete => Missing.Count == 0;
+    public string? WrongDocument { get; private set; }
+
+    public bool IsComplete => Missing.Count == 0 && WrongDocument is null;
+
+    public void MarkWrongDocument(string? detectedDocument)
+    {
+        WrongDocument = string.IsNullOrWhiteSpace(detectedDocument) ? "outro documento" : detectedDocument.Trim();
+    }
 
     public string? Get(string name)
     {

@@ -2,6 +2,7 @@ using AwesomeAssertions;
 
 using Jotanunes.Application.DTOs.Analysis;
 using Jotanunes.Domain.Entities;
+using Jotanunes.Domain.Enums;
 using Jotanunes.Internal.BddTests.Support;
 using Jotanunes.Internal.BddTests.Support.Contexts;
 using Jotanunes.Internal.BddTests.Support.Fixtures;
@@ -17,7 +18,7 @@ internal class AnaliseDocumentStepDefinitions(
 {
     private DocumentAnalysisDto? _analise;
 
-    [Given(@"^que o documento cadastrado tem uma análise (pendente|concluída)$")]
+    [Given(@"^que o documento cadastrado tem uma análise (pendente|concluída|não conforme)$")]
     public async Task DadoQueODocumentoCadastradoTemUmaAnalise(string situacao)
     {
         await using var context = databaseFixture.CreateDbContext();
@@ -27,6 +28,13 @@ internal class AnaliseDocumentStepDefinitions(
         if (situacao == "concluída")
         {
             analise.MarkNotSupported();
+        }
+        else if (situacao == "não conforme")
+        {
+            analise.Complete(TextExtractionEngine.NativeText, [], [
+                new AnalysisFinding("EXPIRED", FindingSeverity.Blocking, "CRF vencida em 09/08/2026."),
+                new AnalysisFinding("EXPIRATION_DATE_DETECTED", FindingSeverity.Info, "Validade identificada na certidão: 09/08/2026.")
+            ]);
         }
 
         context.DocumentAnalyses.Add(analise);

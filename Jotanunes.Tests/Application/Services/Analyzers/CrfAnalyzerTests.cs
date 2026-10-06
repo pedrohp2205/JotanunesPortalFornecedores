@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Jotanunes.Application.DTOs.Analysis;
 using Jotanunes.Application.Services.Analyzers;
 using Jotanunes.Domain.Entities;
@@ -153,5 +154,39 @@ public class CrfAnalyzerTests
         var findings = Analyze(AnalysisTestData.CrfText(validity: "09/08/2026 a 11/07/2026"), Today);
 
         Assert.Contains(findings, f => f.Code == "INVALID_VALIDITY");
+    }
+
+    private FieldExtraction FromVision(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return _analyzer.FromVision(document.RootElement);
+    }
+
+    [Fact]
+    public void Should_Map_Vision_Result_To_The_Same_Fields_As_Text()
+    {
+        var extraction = FromVision(AnalysisTestData.CrfJson());
+
+        Assert.True(extraction.IsComplete);
+        Assert.Equal("11222333000181", extraction.Get("cnpj"));
+        Assert.Equal("09/08/2026", extraction.Get("validUntil"));
+        Assert.Equal(AnalysisTestData.CompanyName, extraction.Get("corporateName"));
+    }
+
+    [Fact]
+    public void Should_Treat_Invalid_Date_From_Vision_As_Not_Read()
+    {
+        var extraction = FromVision(AnalysisTestData.CrfJson(validUntil: "31/02/2026"));
+
+        Assert.Contains("fim da validade", extraction.Missing);
+    }
+
+    [Fact]
+    public void Should_Flag_Other_Document_Read_By_Vision()
+    {
+        var extraction = FromVision(AnalysisTestData.CrfJson(isExpectedDocument: false, detectedDocument: "CNH"));
+
+        Assert.Equal("CNH", extraction.WrongDocument);
+        Assert.False(extraction.IsComplete);
     }
 }

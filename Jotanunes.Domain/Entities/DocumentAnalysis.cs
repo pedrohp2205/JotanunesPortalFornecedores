@@ -7,6 +7,8 @@ public class DocumentAnalysis : BaseEntity
 {
     public const int MaxAttempts = 3;
     public const int MaxFailureReasonLength = 500;
+    public static readonly TimeSpan FirstRetryDelay = TimeSpan.FromSeconds(30);
+    public static readonly TimeSpan MaxRetryDelay = TimeSpan.FromHours(1);
 
     public long DocumentId { get; private set; }
     public Document Document { get; private set; } = null!;
@@ -18,6 +20,7 @@ public class DocumentAnalysis : BaseEntity
     public List<AnalysisFinding> Findings { get; private set; } = [];
     public string? FailureReason { get; private set; }
     public int Attempts { get; private set; }
+    public DateTime? NextAttemptAt { get; private set; }
     public DateTime? AnalyzedAt { get; private set; }
 
     protected DocumentAnalysis() { }
@@ -33,7 +36,9 @@ public class DocumentAnalysis : BaseEntity
     {
         EnsurePending();
 
-        Findings = findings.ToList();
+        Findings = engine == TextExtractionEngine.Vision
+            ? findings.Select(CapVisionSeverity).ToList()
+            : findings.ToList();
         Fields = fields.ToList();
         Engine = engine;
         Verdict = Findings.Any(f => f.Severity == FindingSeverity.Blocking) ? AnalysisVerdict.NonConforming
@@ -62,18 +67,28 @@ public class DocumentAnalysis : BaseEntity
         Finish(DocumentAnalysisStatus.NotSupported, null);
     }
 
-    public void RegisterFailure(string reason)
+    public void RegisterFailure(string reason, bool transient, DateTime now)
     {
         EnsurePending();
 
         Attempts++;
         FailureReason = Truncate(reason);
 
-        if (Attempts >= MaxAttempts)
+        if (!transient && Attempts >= MaxAttempts)
         {
             Status = DocumentAnalysisStatus.Failed;
-            AnalyzedAt = DateTime.UtcNow;
+            NextAttemptAt = null;
+            AnalyzedAt = now;
+            return;
         }
+
+        NextAttemptAt = now + RetryDelay(Attempts);
+    }
+
+    public static TimeSpan RetryDelay(int attempts)
+    {
+        var delay = FirstRetryDelay * Math.Pow(2, Math.Min(attempts - 1, 16));
+        return delay < MaxRetryDelay ? delay : MaxRetryDelay;
     }
 
     public void Restart()
@@ -87,12 +102,21 @@ public class DocumentAnalysis : BaseEntity
         Findings = [];
         FailureReason = null;
         Attempts = 0;
+        NextAttemptAt = null;
         AnalyzedAt = null;
+    }
+
+    private static AnalysisFinding CapVisionSeverity(AnalysisFinding finding)
+    {
+        return finding.Severity == FindingSeverity.Blocking
+            ? new AnalysisFinding(finding.Code, FindingSeverity.Warning, finding.Message)
+            : finding;
     }
 
     private void Finish(DocumentAnalysisStatus status, string? reason)
     {
         Status = status;
+        NextAttemptAt = null;
         FailureReason = reason is null ? null : Truncate(reason);
         AnalyzedAt = DateTime.UtcNow;
     }

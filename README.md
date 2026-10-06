@@ -157,23 +157,49 @@ O checklist também passa a trazer `allocatedWorkerCount`. Tipos de habilitaçã
 
 Todo upload grava, na mesma transação, uma análise `Pending` em `document_analyses`. O job `DocumentAnalysisWorker`, do processo `Jotanunes.Worker`, busca as pendentes no banco, lê o arquivo e produz um **parecer sugerido**: campos extraídos, achados e um veredito. **Não aprova nem recusa nada**: `approve`/`reject` continuam manuais, e o parecer serve de apoio ao analista.
 
-**Cadeia de fallback.** Cada tipo de documento tem um analisador (`IDocumentTypeAnalyzer`, escolhido pelo `code` do tipo) que declara os campos obrigatórios. A leitura tenta os extratores (`IDocumentTextExtractor`) do mais barato ao mais caro (`NativeText` → `Ocr` → `Vision`) e para no primeiro que lê todos os obrigatórios. CNPJ ou CPF com dígito verificador inválido conta como não lido, o que faz a leitura subir de nível. Se nenhum nível completa, a análise vai para `ManualReviewRequired` com a lista do que faltou. Por enquanto só existe o nível `NativeText` (camada de texto do PDF, via PdfPig); OCR e modelo de visão entram nas próximas etapas.
+**Cadeia de fallback.** Cada tipo de documento tem um analisador (`IDocumentTypeAnalyzer`, escolhido pelo `code` do tipo) que declara os campos obrigatórios. A leitura vai do mais barato ao mais caro e para no primeiro nível que lê todos os obrigatórios:
+
+1. `NativeText`: camada de texto do PDF, via PdfPig. Grátis e instantâneo.
+2. `Ocr`: reservado para o Tesseract (próxima etapa).
+3. `Vision`: modelo de IA com entrada de imagem, para analisadores que implementam `IVisionAnalyzer`. As páginas do PDF viram PNG (PDFtoImage/PDFium, até `DocumentImages:MaxPages`); imagens enviadas vão como estão.
+
+CNPJ ou CPF com dígito verificador inválido conta como não lido, o que faz a leitura subir de nível. Se nenhum nível completa, a análise vai para `ManualReviewRequired` com a lista do que faltou.
+
+**Papel da IA.** A IA só transcreve: recebe as imagens, as instruções e um JSON Schema do tipo de documento, e devolve os campos. Quem confere os campos com o cadastro é o mesmo código em C# usado para o texto. A IA faz três coisas:
+
+- **Identifica o documento** (`isExpectedDocument`/`detectedDocument`). Um arquivo trocado (ex.: CNH enviada como CRF) gera o achado `WRONG_DOCUMENT_TYPE`.
+- **Extrai os campos** de documentos escaneados ou sem layout fixo.
+- **Responde perguntas visuais**, como "o recibo está assinado?".
+
+Para não aceitar alucinação como fato: o schema permite `null` e as instruções mandam não deduzir; CPF, CNPJ e datas passam pelas mesmas validações do texto; e **todo achado de uma leitura por imagem fica no máximo como `Warning`**. Um `Blocking` exige leitura de texto.
+
+**Provedor (OpenRouter).** A leitura por imagem usa o `OpenRouterVisionClient`, que chama `/chat/completions` com `response_format` em JSON Schema e `temperature: 0`. Toda requisição exige `provider.zdr: true`: o OpenRouter só usa provedores com retenção zero (no Gemini, o Vertex; o AI Studio fica de fora). Prompts e respostas não são gravados nos logs, só tokens e custo. Configuração no worker (`OpenRouter`): `Enabled` (padrão `false`), `ApiKey`, `Model` (padrão `google/gemini-3.8-flash`) e `TimeoutSeconds`. Sem `Enabled`, o nível `Vision` não existe e os documentos que dependem dele vão para revisão manual. A chave nunca vai para o `appsettings`:
+
+```bash
+dotnet user-secrets set "OpenRouter:ApiKey" "<chave>" --project Jotanunes.Worker
+dotnet user-secrets set "OpenRouter:Enabled" "true" --project Jotanunes.Worker
+```
+
+No docker-compose, use as variáveis `OPENROUTER_ENABLED`, `OPENROUTER_API_KEY` e `OPENROUTER_MODEL`.
+
+**Falhas e novas tentativas.** Cada falha agenda a próxima tentativa (`NextAttemptAt`) com espera crescente: 30 s, 1 min, 2 min... até 1 h. Erros temporários do provedor (429, 408, 5xx, timeout, rede) nunca levam a `Failed`. Os demais erros levam a `Failed` na 3ª tentativa.
 
 | Status | Significado |
 |---|---|
 | `Pending` (1) | Na fila do worker |
 | `Completed` (2) | Lido; ver `verdict` e `findings` |
 | `ManualReviewRequired` (3) | Nenhum nível leu todos os campos obrigatórios; `failureReason` diz quais faltaram |
-| `Failed` (4) | Erro técnico (ex.: bucket indisponível) em `MaxAttempts` (3) tentativas seguidas |
+| `Failed` (4) | Erro técnico não temporário (ex.: PDF corrompido) em `MaxAttempts` (3) tentativas |
 | `NotSupported` (5) | Ainda não há analisador para o código do tipo |
 
 Veredito: `Conforming` (1) sem achados relevantes, `NeedsAttention` (2) com algum `Warning` e `NonConforming` (3) com algum `Blocking`. Achados `Info` só informam (ex.: validade identificada na certidão).
 
 Analisadores disponíveis:
 
-| Código do tipo | Documento | Confere |
-|---|---|---|
-| `FGTS_CND` (id 4, "Certidão Negativa de FGTS") | Certificado de Regularidade do FGTS (CRF) | CNPJ igual ao da empresa; se está vencida, se ainda não vale ou se vence em até 7 dias; validade informada no envio × certidão; razão social |
+| Código do tipo | Documento | Leitura | Confere |
+|---|---|---|---|
+| `FGTS_CND` (id 4, "Certidão Negativa de FGTS") | Certificado de Regularidade do FGTS (CRF) | Texto; imagem se escaneada | CNPJ igual ao da empresa; se está vencida, se ainda não vale ou se vence em até 7 dias; validade informada no envio × certidão; razão social |
+| `PAYMENT_RECEIPT` (id 20, "Recibo de Pagamento") | Recibo de pagamento (holerite) | Imagem | CNPJ do empregador; CPF e nome do trabalhador do envio; competência dentro do período do envio; assinatura do empregado. Guarda o líquido (`netPay`) para as regras cruzadas |
 
 Endpoints (frente interna):
 
@@ -181,6 +207,8 @@ Endpoints (frente interna):
 |---|---|---|
 | GET | `/api/document/{id}/analysis` | Parecer do documento |
 | POST | `/api/document/{id}/analysis` | Recoloca a análise na fila (202). Também cria a análise de documentos enviados antes desta funcionalidade |
+
+**Resumo na listagem (só na frente interna).** `GET /api/document` e `GET /api/document/{id}` da frente interna (e as respostas de `approve`/`reject`) trazem o campo `analysis` com `status`, `verdict`, `blockingCount`, `warningCount` e `analyzedAt`. Ele vem `null` quando o documento ainda não tem análise. A listagem aceita os filtros `analysisStatus` e `analysisVerdict` (ex.: `?analysisVerdict=3` lista só os não conformes). O documento aparece para a equipe assim que é enviado, e aprovar ou recusar **não depende da análise**: o resumo é apoio, não trava. A frente externa usa outro DTO e outro filtro, sem esses campos: o fornecedor não recebe o parecer nem consegue filtrar por ele.
 
 **Worker.** `Jotanunes.Worker` é um processo próprio (SDK `Microsoft.NET.Sdk.Worker`), separado das duas APIs, com um job agendado por cron para cada tarefa de fundo:
 
@@ -286,7 +314,18 @@ Jotanunes.{External,Internal}.BddTests/
 - **Autenticação** (externa): os passos `Dado que eu estou autenticado ...` fazem login real em `/api/auth/login` e usam o JWT devolvido. A frente interna ainda não tem autenticação.
 - **Armazenamento**: `IDocumentStorageService` é substituído por um mock; e-mail usa o `LogEmailSender`.
 
-**Golden set da análise automática.** `GoldenSetTests` roda os analisadores contra documentos reais anotados em `Documentos Jotanunes/golden-set.json`. A pasta fica fora do git porque os arquivos têm dados pessoais; sem ela, o teste passa sem conferir nada. Cada caso informa o arquivo, o código do tipo, se a leitura deve ser completa (`expectComplete`) e os campos esperados (`expected`). Casos com `expectComplete: false` garantem que um documento errado (ex.: CNH enviada no lugar da CRF) não seja aceito como aquele tipo. Ao escrever um analisador novo, anote primeiro os arquivos reais dele aqui.
+**Golden set da análise automática.** Os analisadores são conferidos contra documentos reais anotados em `Documentos Jotanunes/golden-set.json`. A pasta fica fora do git porque os arquivos têm dados pessoais; sem ela, os testes passam sem conferir nada. Cada caso informa o arquivo, o código do tipo, os campos esperados (`expected`) e, para documentos errados de propósito, `expectComplete: false` (leitura de texto) ou `expectWrongDocument: true` (leitura por imagem). Ao escrever um analisador novo, anote primeiro os arquivos reais dele aqui.
+
+- `GoldenSetTests` roda os casos de texto. É grátis e roda sempre.
+- `VisionGoldenSetTests` roda os casos com `"engine": "vision"` contra o modelo de verdade. É um **teste de avaliação** (categoria `Eval`), não um teste unitário: mede a precisão do modelo e pode falhar sem bug no código, se o modelo errar um campo. **Gasta créditos do OpenRouter**, então só roda quando pedido. Rode num terminal fora de qualquer ferramenta que grave histórico, para a chave não ficar exposta:
+
+```bash
+JOTANUNES_VISION_GOLDEN=1 OPENROUTER_API_KEY=<chave> dotnet test Jotanunes.Tests --filter Category=Eval --logger "console;verbosity=detailed"
+```
+
+Para rodar a bateria normal sem a avaliação, use `--filter Category!=Eval`. Sem `JOTANUNES_VISION_GOLDEN=1`, a avaliação passa sem chamar o modelo.
+
+A saída mostra, por arquivo, se conferiu, quantas páginas foram enviadas, o tempo e o JSON devolvido. `OPENROUTER_MODEL` troca o modelo, para comparar opções (ex.: `google/gemini-3.5-flash-lite`).
 
 ---
 

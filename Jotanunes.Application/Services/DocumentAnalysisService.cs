@@ -1,5 +1,7 @@
+using System.Text.Json;
 using AutoMapper;
 using Jotanunes.Application.DTOs.Analysis;
+using Jotanunes.Application.Exceptions;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Enums;
@@ -15,6 +17,8 @@ public class DocumentAnalysisService : IDocumentAnalysisService
     private readonly IDocumentStorageService _storageService;
     private readonly IReadOnlyList<IDocumentTextExtractor> _extractors;
     private readonly IReadOnlyList<IDocumentTypeAnalyzer> _analyzers;
+    private readonly IDocumentRasterizer _rasterizer;
+    private readonly IVisionClient? _visionClient;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<DocumentAnalysisService> _logger;
 
@@ -24,21 +28,25 @@ public class DocumentAnalysisService : IDocumentAnalysisService
         IDocumentStorageService storageService,
         IEnumerable<IDocumentTextExtractor> extractors,
         IEnumerable<IDocumentTypeAnalyzer> analyzers,
+        IDocumentRasterizer rasterizer,
         TimeProvider timeProvider,
-        ILogger<DocumentAnalysisService> logger)
+        ILogger<DocumentAnalysisService> logger,
+        IVisionClient? visionClient = null)
     {
         _mapper = mapper;
         _unitOfWork = unitOfWork;
         _storageService = storageService;
         _extractors = extractors.OrderBy(e => e.Engine).ToList();
         _analyzers = analyzers.ToList();
+        _rasterizer = rasterizer;
+        _visionClient = visionClient;
         _timeProvider = timeProvider;
         _logger = logger;
     }
 
     public async Task<List<long>> GetPendingIds(int take)
     {
-        return await _unitOfWork.DocumentAnalysisRepository.GetPendingIds(take);
+        return await _unitOfWork.DocumentAnalysisRepository.GetPendingIds(take, _timeProvider.GetUtcNow().UtcDateTime);
     }
 
     public async Task Analyze(long analysisId, CancellationToken cancellationToken = default)
@@ -63,10 +71,11 @@ public class DocumentAnalysisService : IDocumentAnalysisService
             {
                 await RunFallbackChain(analysis, analyzer, cancellationToken);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
             {
-                _logger.LogWarning(ex, "Falha ao analisar o documento {DocumentId} (tentativa {Attempt}).", document.Id, analysis.Attempts + 1);
-                analysis.RegisterFailure(ex.Message);
+                var transient = ex is TransientAnalysisException;
+                _logger.LogWarning(ex, "Falha ao analisar o documento {DocumentId} (tentativa {Attempt}, temporária: {Transient}).", document.Id, analysis.Attempts + 1, transient);
+                analysis.RegisterFailure(ex.Message, transient, _timeProvider.GetUtcNow().UtcDateTime);
             }
         }
 
@@ -124,17 +133,35 @@ public class DocumentAnalysisService : IDocumentAnalysisService
             var text = await extractor.Extract(content, document.ContentType, cancellationToken);
             var extraction = analyzer.Extract(text);
 
+            if (TryFinish(analysis, analyzer, extractor.Engine, extraction))
+            {
+                return;
+            }
+
             if (best is null || extraction.Fields.Count > best.Fields.Count)
             {
                 best = extraction;
                 bestEngine = extractor.Engine;
             }
+        }
 
-            if (extraction.IsComplete)
+        if (analyzer is IVisionAnalyzer visionAnalyzer && _visionClient is not null)
+        {
+            content.Position = 0;
+            var extraction = await ReadWithVision(visionAnalyzer, content, document.ContentType, cancellationToken);
+
+            if (extraction is not null)
             {
-                var today = DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime);
-                analysis.Complete(extractor.Engine, extraction.Fields, analyzer.Validate(extraction, document, today));
-                return;
+                if (TryFinish(analysis, analyzer, TextExtractionEngine.Vision, extraction))
+                {
+                    return;
+                }
+
+                if (best is null || extraction.Fields.Count > best.Fields.Count)
+                {
+                    best = extraction;
+                    bestEngine = TextExtractionEngine.Vision;
+                }
             }
         }
 
@@ -143,5 +170,50 @@ public class DocumentAnalysisService : IDocumentAnalysisService
             : $"Não foi possível ler: {string.Join(", ", best.Missing)}.";
 
         analysis.RequireManualReview(bestEngine, best?.Fields ?? [], reason);
+    }
+
+    private bool TryFinish(DocumentAnalysis analysis, IDocumentTypeAnalyzer analyzer, TextExtractionEngine engine, FieldExtraction extraction)
+    {
+        var document = analysis.Document;
+
+        if (extraction.WrongDocument is not null)
+        {
+            analysis.Complete(engine, extraction.Fields, [
+                new AnalysisFinding(
+                    "WRONG_DOCUMENT_TYPE",
+                    FindingSeverity.Blocking,
+                    $"O arquivo parece ser {extraction.WrongDocument}, e não {document.DocumentType.Name}.")
+            ]);
+            return true;
+        }
+
+        if (!extraction.IsComplete)
+        {
+            return false;
+        }
+
+        var today = DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime);
+        analysis.Complete(engine, extraction.Fields, analyzer.Validate(extraction, document, today));
+        return true;
+    }
+
+    private async Task<FieldExtraction?> ReadWithVision(
+        IVisionAnalyzer analyzer,
+        Stream content,
+        string contentType,
+        CancellationToken cancellationToken)
+    {
+        var images = await _rasterizer.Render(content, contentType, cancellationToken);
+        if (images.Count == 0)
+        {
+            return null;
+        }
+
+        var json = await _visionClient!.ExtractJson(
+            new VisionRequest(analyzer.Instructions, analyzer.SchemaName, analyzer.JsonSchema, images),
+            cancellationToken);
+
+        using var result = JsonDocument.Parse(json);
+        return analyzer.FromVision(result.RootElement);
     }
 }

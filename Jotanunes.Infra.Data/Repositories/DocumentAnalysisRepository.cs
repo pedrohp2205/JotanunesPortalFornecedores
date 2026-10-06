@@ -25,11 +25,11 @@ public class DocumentAnalysisRepository : GenericRepository<DocumentAnalysis>, I
         return await WithDocument().FirstOrDefaultAsync(a => a.DocumentId == documentId);
     }
 
-    public async Task<List<long>> GetPendingIds(int take)
+    public async Task<List<long>> GetPendingIds(int take, DateTime now)
     {
         return await _context.DocumentAnalyses
                                 .AsNoTracking()
-                                .Where(a => a.Status == DocumentAnalysisStatus.Pending)
+                                .Where(a => a.Status == DocumentAnalysisStatus.Pending && (a.NextAttemptAt == null || a.NextAttemptAt <= now))
                                 .OrderBy(a => a.Id)
                                 .Select(a => a.Id)
                                 .Take(take)
@@ -40,6 +40,7 @@ public class DocumentAnalysisRepository : GenericRepository<DocumentAnalysis>, I
     {
         return _context.DocumentAnalyses
                         .Include(a => a.Document).ThenInclude(d => d.Company)
-                        .Include(a => a.Document).ThenInclude(d => d.DocumentType);
+                        .Include(a => a.Document).ThenInclude(d => d.DocumentType)
+                        .Include(a => a.Document).ThenInclude(d => d.Worker);
     }
 }

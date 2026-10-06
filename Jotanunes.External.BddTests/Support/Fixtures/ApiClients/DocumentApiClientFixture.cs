@@ -14,10 +14,10 @@ internal class DocumentApiClientFixture(
 {
     public const string BASE_URL = "/api/Document";
 
-    public async Task<PageListResponseDto<DocumentDto>?> GetAsync()
+    public async Task<PageListResponseDto<DocumentDto>?> GetAsync(string? queryString = null)
     {
         httpResponseCtx.Response = await apiClientFixture.Client
-            .GetAsync(BASE_URL);
+            .GetAsync($"{BASE_URL}{queryString}");
         return await httpResponseCtx.TryReadFromJsonAsync<PageListResponseDto<DocumentDto>>();
     }
 

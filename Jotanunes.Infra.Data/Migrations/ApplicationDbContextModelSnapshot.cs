@@ -199,6 +199,9 @@ namespace Jotanunes.Infra.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<DateTime?>("NextAttemptAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -668,8 +671,8 @@ namespace Jotanunes.Infra.Data.Migrations
             modelBuilder.Entity("Jotanunes.Domain.Entities.DocumentAnalysis", b =>
                 {
                     b.HasOne("Jotanunes.Domain.Entities.Document", "Document")
-                        .WithMany()
-                        .HasForeignKey("DocumentId")
+                        .WithOne("Analysis")
+                        .HasForeignKey("Jotanunes.Domain.Entities.DocumentAnalysis", "DocumentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -811,6 +814,11 @@ namespace Jotanunes.Infra.Data.Migrations
             modelBuilder.Entity("Jotanunes.Domain.Entities.Company", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("Jotanunes.Domain.Entities.Document", b =>
+                {
+                    b.Navigation("Analysis");
                 });
 
             modelBuilder.Entity("Jotanunes.Domain.Entities.WorkSite", b =>

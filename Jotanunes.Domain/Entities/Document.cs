@@ -28,6 +28,8 @@ public class Document : BaseEntity
     public DateOnly? ReferencePeriodEnd { get; private set; }
     public DateOnly? ExpirationDate { get; private set; }
 
+    public DocumentAnalysis? Analysis { get; private set; }
+
     public DocumentStatus Status { get; private set; }
     public string? RejectionReason { get; private set; }
     public DateTime? ReviewedAt { get; private set; }

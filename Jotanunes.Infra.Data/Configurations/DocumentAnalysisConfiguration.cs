@@ -39,8 +39,8 @@ public class DocumentAnalysisConfiguration : IEntityTypeConfiguration<DocumentAn
         builder.HasIndex(a => a.Status);
 
         builder.HasOne(a => a.Document)
-            .WithMany()
-            .HasForeignKey(a => a.DocumentId)
+            .WithOne(d => d.Analysis)
+            .HasForeignKey<DocumentAnalysis>(a => a.DocumentId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
