@@ -1,12 +1,13 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Jotanunes.Application.DTOs.Analysis;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Entities;
 
 namespace Jotanunes.Application.Services.Analyzers;
 
-public class FgtsGuideAnalyzer : IVisionAnalyzer
+public partial class FgtsGuideAnalyzer : IVisionAnalyzer
 {
     private const string Label = "guia do FGTS";
 
@@ -34,8 +35,25 @@ public class FgtsGuideAnalyzer : IVisionAnalyzer
     public FieldExtraction Extract(DocumentText text)
     {
         var extraction = new FieldExtraction();
-        extraction.Add("documentKind", null, "leitura da guia por imagem");
+        var flat = text.Flat;
+
+        extraction.Add("documentKind", Title().IsMatch(flat) && GuideTotal().IsMatch(flat) ? "FGTS_REPORT" : null, "identificação como guia do FGTS");
+        extraction.Add("employerCnpjRoot", EmployerRoot().Match(flat) is { Success: true } root ? new string(root.Groups["root"].Value.Where(char.IsDigit).ToArray()) : null, "CNPJ do empregador");
+
+        var row = CompetenceRow().Match(flat);
+        var competence = row.Success ? row.Groups["comp"].Value : MonthlyTag().Match(flat) is { Success: true } tag ? tag.Groups["comp"].Value : null;
+        extraction.Add("competence", TextPatterns.ParseCompetence(competence) is { } month ? TextPatterns.FormatCompetence(month) : null, "competência");
+        extraction.Add("declaredWorkers", row.Success ? row.Groups["count"].Value : null);
+        extraction.Add("guideTotal", GuideTotal().Match(flat) is { Success: true } total && TextPatterns.ParseMoney(total.Groups["value"].Value) is { } amount ? TextPatterns.FormatAmount(amount) : null, "valor a recolher");
+        extraction.Add("dueDate", DueDate().Match(flat) is { Success: true } due ? ValidDate(due.Groups["date"].Value) : null);
+        extraction.Add("guideIdentifier", Identifier().Match(flat) is { Success: true } id ? id.Value : null);
+
         return extraction;
+    }
+
+    private static string? ValidDate(string value)
+    {
+        return TextPatterns.ParseDate(new string(value.Where(c => !char.IsWhiteSpace(c)).ToArray())) is { } date ? TextPatterns.FormatDate(date) : null;
     }
 
     public FieldExtraction FromVision(JsonElement result)
@@ -70,4 +88,25 @@ public class FgtsGuideAnalyzer : IVisionAnalyzer
 
         return findings;
     }
+
+    [GeneratedRegex(@"FGTS\s+Digital|Guia\s+do\s+FGTS|\bGFD\b|recolhimentos?\s+do\s+FGTS|Fundo\s+de\s+Garantia", RegexOptions.IgnoreCase)]
+    private static partial Regex Title();
+
+    [GeneratedRegex(@"Empregador.{0,80}?(?<root>\d{2}\.\d{3}\.\d{3})(?![/\d])", RegexOptions.IgnoreCase)]
+    private static partial Regex EmployerRoot();
+
+    [GeneratedRegex(@"(?<comp>(?:0[1-9]|1[0-2])/20\d{2})\s+(?<count>\d{1,5})\s+[\d.]+,\d{2}")]
+    private static partial Regex CompetenceRow();
+
+    [GeneratedRegex(@"(?<comp>(?:0[1-9]|1[0-2])/20\d{2})\s+MENSAL", RegexOptions.IgnoreCase)]
+    private static partial Regex MonthlyTag();
+
+    [GeneratedRegex(@"Total\s+da\s+Guia:?\s*(?<value>[\d.]+,\d{2})", RegexOptions.IgnoreCase)]
+    private static partial Regex GuideTotal();
+
+    [GeneratedRegex(@"Pagar\s+este\s+documento\s+at[eé]\s*(?<date>\d{2}\s*/\s*\d{2}\s*/\s*\d{4})(?!\d)", RegexOptions.IgnoreCase)]
+    private static partial Regex DueDate();
+
+    [GeneratedRegex(@"\b\d{16}-\d\b")]
+    private static partial Regex Identifier();
 }

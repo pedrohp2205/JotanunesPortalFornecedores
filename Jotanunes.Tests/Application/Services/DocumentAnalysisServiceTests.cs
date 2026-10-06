@@ -399,6 +399,36 @@ public class DocumentAnalysisServiceTests
     }
 
     [Fact]
+    public async Task Should_Warn_When_Vision_Reading_Is_Not_Confirmed_By_Ocr()
+    {
+        var analysis = new DocumentAnalysis(AnalysisTestData.ReceiptDocument()) { Id = 8 };
+        _analyses.Setup(a => a.GetById(8)).ReturnsAsync(analysis);
+        var ocr = "Recibo de Pagamento CONSTRUTORA EXEMPLO LTDA 11.222.333/0001-81 Julho de 2026 MARIA APARECIDA DOS SANTOS CPF 529.982.247-25 Líquido a Receber 1.500,00";
+
+        await Service(
+            Vision(AnalysisTestData.ReceiptJson(employeeSigned: "true")).Object,
+            Extractor(TextExtractionEngine.NativeText, ""),
+            Extractor(TextExtractionEngine.Ocr, ocr)).Analyze(8);
+
+        Assert.Equal(TextExtractionEngine.Vision, analysis.Engine);
+        var finding = Assert.Single(analysis.Findings);
+        Assert.Equal("VISION_NOT_CONFIRMED_BY_OCR", finding.Code);
+        Assert.Contains("1900.75", finding.Message);
+    }
+
+    [Fact]
+    public async Task Should_Read_With_Ocr_Without_Calling_Vision_When_Ocr_Is_Enough()
+    {
+        var analysis = PendingAnalysis();
+        var vision = Vision(AnalysisTestData.CrfJson());
+
+        await Service(vision.Object, Extractor(TextExtractionEngine.NativeText, ""), Extractor(TextExtractionEngine.Ocr, AnalysisTestData.CrfText())).Analyze(7);
+
+        Assert.Equal(TextExtractionEngine.Ocr, analysis.Engine);
+        vision.Verify(v => v.ExtractJson(It.IsAny<VisionRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Should_Ignore_Analysis_That_Is_No_Longer_Pending()
     {
         var analysis = PendingAnalysis();

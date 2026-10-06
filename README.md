@@ -160,7 +160,7 @@ Todo upload grava, na mesma transação, uma análise `Pending` em `document_ana
 **Cadeia de fallback.** Cada tipo de documento tem um analisador (`IDocumentTypeAnalyzer`, escolhido pelo `code` do tipo) que declara os campos obrigatórios. A leitura vai do mais barato ao mais caro e para no primeiro nível que lê todos os obrigatórios:
 
 1. `NativeText`: camada de texto do PDF, via PdfPig. Grátis e instantâneo.
-2. `Ocr`: reservado para o Tesseract (próxima etapa).
+2. `Ocr`: Tesseract (`tesseract-ocr` + `tesseract-ocr-por`), pela linha de comando, sobre as páginas convertidas em imagem a 300 DPI. Grátis e roda no próprio worker. Lê documentos escaneados de layout fixo sem chamar a IA (hoje, a guia do FGTS) e serve de conferência para a leitura por imagem. Configuração em `Ocr`: `Enabled` (padrão `true`), `TesseractPath`, `Language` (`por`), `PageSegmentationMode` (6), `Dpi` (300), `MaxPages` (6) e `TimeoutSeconds` (60). Se o Tesseract não estiver instalado, o nível é pulado com um aviso no log.
 3. `Vision`: modelo de IA com entrada de imagem, para analisadores que implementam `IVisionAnalyzer`. As páginas do PDF viram PNG (PDFtoImage/PDFium, até `DocumentImages:MaxPages`); imagens enviadas vão como estão.
 
 CNPJ ou CPF com dígito verificador inválido conta como não lido, o que faz a leitura subir de nível. Se nenhum nível completa, a análise vai para `ManualReviewRequired` com a lista do que faltou.
@@ -172,6 +172,8 @@ CNPJ ou CPF com dígito verificador inválido conta como não lido, o que faz a 
 - **Responde perguntas visuais**, como "o recibo está assinado?".
 
 Para não aceitar alucinação como fato: o schema permite `null` e as instruções mandam não deduzir; CPF, CNPJ e datas passam pelas mesmas validações do texto; e **todo achado de uma leitura por imagem fica no máximo como `Warning`**. Um `Blocking` exige leitura de texto.
+
+**Conferência pelo OCR.** Quando o documento também passou pelo OCR, todo valor com 6 dígitos ou mais lido pela IA (CPF, CNPJ, valores, datas, competências) precisa aparecer no texto do OCR, comparando só os dígitos, de modo que `1.900,75` confere com `1900.75` e "Julho de 2026" com `07/2026`. Os que não aparecem geram o achado `VISION_NOT_CONFIRMED_BY_OCR` (Warning), com os valores. Valores parcialmente ocultos e listas ficam de fora, e a conferência não é feita quando o OCR leu menos de 20 dígitos na página.
 
 **Provedor (OpenRouter).** A leitura por imagem usa o `OpenRouterVisionClient`, que chama `/chat/completions` com `response_format` em JSON Schema e `temperature: 0`. Toda requisição exige `provider.zdr: true`: o OpenRouter só usa provedores com retenção zero (no Gemini, o Vertex; o AI Studio fica de fora). Prompts e respostas não são gravados nos logs, só tokens e custo. Configuração no worker (`OpenRouter`): `Enabled` (padrão `false`), `ApiKey`, `Model` (padrão `google/gemini-3.8-flash`) e `TimeoutSeconds`. Sem `Enabled`, o nível `Vision` não existe e os documentos que dependem dele vão para revisão manual. A chave nunca vai para o `appsettings`:
 
@@ -316,6 +318,8 @@ dotnet run --project Jotanunes.API.External   # http://localhost:5100/swagger
 dotnet run --project Jotanunes.Worker         # jobs agendados (análise automática)
 ```
 
+O worker usa o Tesseract para o OCR. No macOS, instale com `brew install tesseract tesseract-lang`; a imagem Docker do worker já vem com ele.
+
 A connection string vem da variável de ambiente `DATABASE` ou, na falta dela, de `ConnectionStrings:ConnectionString` no `appsettings.json`.
 
 ---
@@ -368,6 +372,7 @@ Jotanunes.{External,Internal}.BddTests/
 **Golden set da análise automática.** Os analisadores são conferidos contra documentos reais anotados em `Documentos Jotanunes/golden-set.json`. A pasta fica fora do git porque os arquivos têm dados pessoais; sem ela, os testes passam sem conferir nada. Cada caso informa o arquivo, o código do tipo, os campos esperados (`expected`) e, para documentos errados de propósito, `expectComplete: false` (leitura de texto) ou `expectWrongDocument: true` (leitura por imagem). Ao escrever um analisador novo, anote primeiro os arquivos reais dele aqui.
 
 - `GoldenSetTests` roda os casos de texto. É grátis e roda sempre.
+- `OcrGoldenSetTests` roda os casos com `"engine": "ocr"` com o Tesseract de verdade. É grátis, mas só confere quando o Tesseract está instalado; sem ele, passa sem conferir. No macOS: `brew install tesseract tesseract-lang`.
 - `VisionGoldenSetTests` roda os casos com `"engine": "vision"` contra o modelo de verdade. É um **teste de avaliação** (categoria `Eval`), não um teste unitário: mede a precisão do modelo e pode falhar sem bug no código, se o modelo errar um campo. **Gasta créditos do OpenRouter**, então só roda quando pedido. Rode num terminal fora de qualquer ferramenta que grave histórico, para a chave não ficar exposta:
 
 ```bash

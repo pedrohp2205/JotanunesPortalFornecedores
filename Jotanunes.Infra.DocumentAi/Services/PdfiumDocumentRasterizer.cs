@@ -11,7 +11,12 @@ public class PdfiumDocumentRasterizer(IOptions<DocumentImageSettings> settings) 
 {
     private readonly DocumentImageSettings _settings = settings.Value;
 
-    public async Task<IReadOnlyList<DocumentImage>> Render(Stream content, string contentType, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<DocumentImage>> Render(Stream content, string contentType, CancellationToken cancellationToken = default)
+    {
+        return Render(content, contentType, _settings.Dpi, _settings.MaxPages, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<DocumentImage>> Render(Stream content, string contentType, int dpi, int maxPages, CancellationToken cancellationToken = default)
     {
         if (contentType is "image/png" or "image/jpeg")
         {
@@ -25,10 +30,10 @@ public class PdfiumDocumentRasterizer(IOptions<DocumentImageSettings> settings) 
             return [];
         }
 
-        var maxPages = Math.Max(1, _settings.MaxPages);
+        var pageLimit = Math.Max(1, maxPages);
         var images = new List<DocumentImage>();
 
-        foreach (var bitmap in Conversion.ToImages(content, leaveOpen: true, options: new RenderOptions { Dpi = _settings.Dpi }))
+        foreach (var bitmap in Conversion.ToImages(content, leaveOpen: true, options: new RenderOptions { Dpi = dpi }))
         {
             using (bitmap)
             {
@@ -37,7 +42,7 @@ public class PdfiumDocumentRasterizer(IOptions<DocumentImageSettings> settings) 
                 images.Add(new DocumentImage(encoded.ToArray(), "image/png"));
             }
 
-            if (images.Count >= maxPages)
+            if (images.Count >= pageLimit)
             {
                 break;
             }

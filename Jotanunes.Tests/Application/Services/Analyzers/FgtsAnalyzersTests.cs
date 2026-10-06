@@ -125,4 +125,41 @@ public class FgtsAnalyzersTests
         Assert.Equal("3", extraction.Get("declaredWorkers"));
         Assert.Empty(analyzer.Validate(extraction, CompanyDocument("FGTS_REPORT"), Today));
     }
+
+    [Fact]
+    public void Should_Read_Fgts_Guide_From_Ocr_Text()
+    {
+        var analyzer = new FgtsGuideAnalyzer();
+        var extraction = analyzer.Extract(new DocumentText(["""
+            Digital
+            Pagar este documento até
+            CPF/CNPJ do Empregador Nome/ Razão Social do Empregador 20 / 0) 8 / 20206
+            11.222.333 | | CONSTRUTORA EXEMPLO LTDA a
+            Valor a recolher
+            Núm. de Pág. Identificador Tag 2 421 15
+            1 0126080754149858-0 | | 11222333 07/2026 MENSAL ' '
+            Informações de recolhimentos do FGTS
+            Competência Trabalhadores FGTS Mensal FGTS Rescisório Compensatória Encargos FGTS Total
+            07/2026 3 2.253,85 0,00 0,00 0,00 2253,85
+            Total da Guia: 2.421,15
+            """]));
+
+        Assert.True(extraction.IsComplete, string.Join(", ", extraction.Missing));
+        Assert.Equal("11222333", extraction.Get("employerCnpjRoot"));
+        Assert.Equal("07/2026", extraction.Get("competence"));
+        Assert.Equal("3", extraction.Get("declaredWorkers"));
+        Assert.Equal("2421.15", extraction.Get("guideTotal"));
+        Assert.Equal("0126080754149858-0", extraction.Get("guideIdentifier"));
+        Assert.Null(extraction.Get("dueDate"));
+        Assert.Empty(analyzer.Validate(extraction, CompanyDocument("FGTS_REPORT"), Today));
+    }
+
+    [Fact]
+    public void Should_Read_Readable_Due_Date_From_Ocr_Text()
+    {
+        var extraction = new FgtsGuideAnalyzer().Extract(new DocumentText([
+            "Guia do FGTS Digital Pagar este documento até 20/08/2026 Empregador 11.222.333 07/2026 3 2.253,85 Total da Guia: 2.421,15"]));
+
+        Assert.Equal("20/08/2026", extraction.Get("dueDate"));
+    }
 }

@@ -205,11 +205,17 @@ public class DocumentAnalysisService : IDocumentAnalysisService
 
         FieldExtraction? best = null;
         TextExtractionEngine? bestEngine = null;
+        DocumentText? ocrText = null;
 
         foreach (var extractor in _extractors)
         {
             content.Position = 0;
             var text = await extractor.Extract(content, document.ContentType, cancellationToken);
+            if (extractor.Engine == TextExtractionEngine.Ocr && !text.IsEmpty)
+            {
+                ocrText = text;
+            }
+
             var extraction = analyzer.Extract(text);
 
             if (TryFinish(analysis, analyzer, extractor.Engine, extraction))
@@ -231,7 +237,7 @@ public class DocumentAnalysisService : IDocumentAnalysisService
 
             if (extraction is not null)
             {
-                if (TryFinish(analysis, analyzer, TextExtractionEngine.Vision, extraction))
+                if (TryFinish(analysis, analyzer, TextExtractionEngine.Vision, extraction, VisionGrounding.Check(extraction, ocrText)))
                 {
                     return;
                 }
@@ -251,7 +257,12 @@ public class DocumentAnalysisService : IDocumentAnalysisService
         analysis.RequireManualReview(bestEngine, best?.Fields ?? [], reason);
     }
 
-    private bool TryFinish(DocumentAnalysis analysis, IDocumentTypeAnalyzer analyzer, TextExtractionEngine engine, FieldExtraction extraction)
+    private bool TryFinish(
+        DocumentAnalysis analysis,
+        IDocumentTypeAnalyzer analyzer,
+        TextExtractionEngine engine,
+        FieldExtraction extraction,
+        AnalysisFinding? groundingFinding = null)
     {
         var document = analysis.Document;
 
@@ -277,6 +288,11 @@ public class DocumentAnalysisService : IDocumentAnalysisService
         if (expirationFinding is not null)
         {
             findings.Add(expirationFinding);
+        }
+
+        if (groundingFinding is not null)
+        {
+            findings.Add(groundingFinding);
         }
 
         analysis.Complete(engine, extraction.Fields, findings);

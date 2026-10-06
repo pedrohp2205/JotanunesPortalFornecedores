@@ -63,10 +63,19 @@ public static class DependencyInjection
 
         service.Configure<OpenRouterSettings>(openRouterSection);
         service.Configure<DocumentImageSettings>(configuration.GetSection(DocumentImageSettings.SectionName));
+        var ocrSection = configuration.GetSection(OcrSettings.SectionName);
+        service.Configure<OcrSettings>(ocrSection);
         service.AddSingleton(TimeProvider.System);
 
         service.AddSingleton<IDocumentTextExtractor, PdfNativeTextExtractor>();
-        service.AddSingleton<IDocumentRasterizer, PdfiumDocumentRasterizer>();
+        service.AddSingleton<PdfiumDocumentRasterizer>();
+        service.AddSingleton<IDocumentRasterizer>(provider => provider.GetRequiredService<PdfiumDocumentRasterizer>());
+
+        if ((ocrSection.Get<OcrSettings>() ?? new OcrSettings()).Enabled)
+        {
+            service.AddSingleton<ITesseractRunner, TesseractCliRunner>();
+            service.AddSingleton<IDocumentTextExtractor, TesseractOcrExtractor>();
+        }
 
         if (openRouter.Enabled)
         {

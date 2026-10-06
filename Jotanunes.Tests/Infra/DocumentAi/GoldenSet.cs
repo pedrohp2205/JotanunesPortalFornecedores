@@ -64,8 +64,11 @@ internal static class GoldenSet
 
     public static async Task<MemoryStream> Open(string folder, GoldenCase goldenCase)
     {
-        var buffer = new MemoryStream(await File.ReadAllBytesAsync(Path.Combine(folder, goldenCase.File)));
-        return buffer;
+        var path = new[] { goldenCase.File, goldenCase.File.Normalize(System.Text.NormalizationForm.FormD), goldenCase.File.Normalize(System.Text.NormalizationForm.FormC) }
+            .Select(file => Path.Combine(folder, file))
+            .FirstOrDefault(File.Exists) ?? Path.Combine(folder, goldenCase.File);
+
+        return new MemoryStream(await File.ReadAllBytesAsync(path));
     }
 
     public static IDocumentTypeAnalyzer AnalyzerFor(GoldenCase goldenCase)
