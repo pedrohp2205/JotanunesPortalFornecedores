@@ -9,6 +9,8 @@ namespace Jotanunes.Infra.Storage.Services;
 public class S3DocumentStorageService(IAmazonS3 s3Client, IOptions<S3Settings> options) : IDocumentStorageService
 {
     private readonly string _bucketName = options.Value.BucketName;
+    
+    private readonly bool _isS3Compatible = !string.IsNullOrWhiteSpace(options.Value.ServiceUrl);
 
     public async Task UploadAsync(string key, Stream content, string contentType, CancellationToken cancellationToken = default)
     {
@@ -18,7 +20,8 @@ public class S3DocumentStorageService(IAmazonS3 s3Client, IOptions<S3Settings> o
             Key = key,
             InputStream = content,
             ContentType = contentType,
-            AutoCloseStream = false
+            AutoCloseStream = false,
+            UseChunkEncoding = !_isS3Compatible
         };
 
         await s3Client.PutObjectAsync(request, cancellationToken);

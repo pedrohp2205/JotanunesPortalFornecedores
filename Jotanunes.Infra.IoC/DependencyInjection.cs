@@ -1,4 +1,5 @@
 using Amazon;
+using Amazon.Runtime;
 using Amazon.S3;
 using Jotanunes.Application.DTOs.Mapping;
 using Jotanunes.Application.Interfaces;
@@ -179,6 +180,9 @@ public static class DependencyInjection
             {
                 config.ServiceURL = settings.ServiceUrl;
                 config.ForcePathStyle = settings.ForcePathStyle;
+                
+                config.RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED;
+                config.ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED;
             }
 
             return !string.IsNullOrWhiteSpace(settings.AccessKey) && !string.IsNullOrWhiteSpace(settings.SecretKey)
