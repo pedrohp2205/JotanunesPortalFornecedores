@@ -1,0 +1,10 @@
+Documentos Jotanunes/
+**/bin/
+**/obj/
+.git/
+.vs/
+.idea/
+.vscode/
+*.env
+appsettings.Local.json
+**/TestResults/

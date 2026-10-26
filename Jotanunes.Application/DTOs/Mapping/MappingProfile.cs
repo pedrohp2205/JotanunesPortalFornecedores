@@ -1,6 +1,8 @@
 using AutoMapper;
+using Jotanunes.Application.DTOs.Analysis;
 using Jotanunes.Application.DTOs.Auth;
 using Jotanunes.Application.DTOs.Companies;
+using Jotanunes.Application.DTOs.Compliance;
 using Jotanunes.Application.DTOs.DocumentTypes;
 using Jotanunes.Application.DTOs.Documents;
 using Jotanunes.Application.DTOs.SupplyRequests;
@@ -8,6 +10,7 @@ using Jotanunes.Application.DTOs.Users;
 using Jotanunes.Application.DTOs.Workers;
 using Jotanunes.Application.DTOs.WorkSites;
 using Jotanunes.Domain.Entities;
+using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Validation;
 
 namespace Jotanunes.Application.DTOs.Mapping;
@@ -59,7 +62,11 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.UploadedByName, opt => opt.MapFrom(src => src.UploadedBySupplierUser.Name))
             .ForMember(dest => dest.WorkerName, opt => opt.MapFrom(src => src.Worker != null ? src.Worker.Name : null))
             .ForMember(dest => dest.WorkerCpf, opt => opt.MapFrom(src => src.Worker != null ? src.Worker.Cpf : null))
-            .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()));
+            .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.UploadWarning, opt => opt.MapFrom(src =>
+                src.Status == DocumentStatus.Pending && src.Analysis != null && src.Analysis.FoundWrongDocument
+                    ? "Não conseguimos identificar este arquivo como \"" + src.DocumentType.Name + "\". Confira se enviou o documento certo; se não for, envie o documento correto."
+                    : null));
 
         CreateMap<Worker, WorkerDto>()
             .ForMember(dest => dest.CompanyCorporateName, opt => opt.MapFrom(src => src.Company.CorporateName))
@@ -70,5 +77,28 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.WorkerCpf, opt => opt.MapFrom(src => src.Worker.Cpf))
             .ForMember(dest => dest.WorkerFormattedCpf, opt => opt.MapFrom(src => Cpf.Format(src.Worker.Cpf)))
             .ForMember(dest => dest.WorkerActive, opt => opt.MapFrom(src => src.Worker.Active));
+
+        CreateMap<ExtractedField, ExtractedFieldDto>();
+
+        CreateMap<AnalysisFinding, AnalysisFindingDto>()
+            .ForMember(dest => dest.SeverityDescription, opt => opt.MapFrom(src => src.Severity.ToString()));
+
+        CreateMap<Document, InternalDocumentDto>()
+            .IncludeBase<Document, DocumentDto>();
+
+        CreateMap<DocumentAnalysis, DocumentAnalysisSummaryDto>()
+            .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.VerdictDescription, opt => opt.MapFrom(src => src.Verdict != null ? src.Verdict.ToString() : null))
+            .ForMember(dest => dest.BlockingCount, opt => opt.MapFrom(src => src.Findings.Count(f => f.Severity == FindingSeverity.Blocking)))
+            .ForMember(dest => dest.WarningCount, opt => opt.MapFrom(src => src.Findings.Count(f => f.Severity == FindingSeverity.Warning)));
+
+        CreateMap<PeriodComplianceReport, PeriodComplianceReportDto>()
+            .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.VerdictDescription, opt => opt.MapFrom(src => src.Verdict != null ? src.Verdict.ToString() : null));
+
+        CreateMap<DocumentAnalysis, DocumentAnalysisDto>()
+            .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.VerdictDescription, opt => opt.MapFrom(src => src.Verdict != null ? src.Verdict.ToString() : null))
+            .ForMember(dest => dest.EngineDescription, opt => opt.MapFrom(src => src.Engine != null ? src.Engine.ToString() : null));
     }
 }

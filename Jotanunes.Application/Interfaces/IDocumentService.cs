@@ -8,6 +8,8 @@ public interface IDocumentService
 {
     Task<PageList<DocumentDto>> Get(PageParams pageParams, DocumentFilter filter);
     Task<DocumentDto> GetById(long id, long? companyId = null);
+    Task<PageList<InternalDocumentDto>> GetForReview(PageParams pageParams, InternalDocumentFilter filter);
+    Task<InternalDocumentDto> GetByIdForReview(long id);
     Task<DocumentDto> Upload(
         long companyId,
         long uploadedBySupplierUserId,
@@ -15,6 +17,6 @@ public interface IDocumentService
         Stream fileContent,
         string originalFileName);
     Task<DocumentDownloadDto> Download(long id, long? companyId = null);
-    Task<DocumentDto> Approve(long id);
-    Task<DocumentDto> Reject(long id, string reason);
+    Task<InternalDocumentDto> Approve(long id);
+    Task<InternalDocumentDto> Reject(long id, string reason);
 }

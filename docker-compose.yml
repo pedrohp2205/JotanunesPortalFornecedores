@@ -64,5 +64,33 @@ services:
       - "80:80"
     restart: unless-stopped
 
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: jotanunes-worker
+    depends_on:
+      - sqlserver
+      - api-internal
+    environment:
+      DATABASE: Server=sqlserver,1433;Database=jotanunes_portal;User Id=sa;Password=SenhaForte123!;TrustServerCertificate=True
+      S3__BucketName: ${R2_BUCKET_NAME}
+      S3__Region: auto
+      S3__AccessKey: ${R2_ACCESS_KEY_ID}
+      S3__SecretKey: ${R2_SECRET_ACCESS_KEY}
+      S3__ServiceUrl: ${R2_ENDPOINT}
+      S3__ForcePathStyle: "true"
+      Schedules__DocumentAnalysisCron: "${DOCUMENT_ANALYSIS_CRON:-*/10 * * * * *}"
+      Schedules__PeriodComplianceCron: "${PERIOD_COMPLIANCE_CRON:-*/30 * * * * *}"
+      OpenRouter__Enabled: ${OPENROUTER_ENABLED:-false}
+      OpenRouter__ApiKey: ${OPENROUTER_API_KEY:-}
+      OpenRouter__Model: ${OPENROUTER_MODEL:-google/gemini-3.8-flash}
+      Email__Enabled: ${EMAIL_ENABLED:-false}
+      Email__ApiKey: ${RESEND_API_KEY:-}
+      Email__FromAddress: ${EMAIL_FROM_ADDRESS:-onboarding@resend.dev}
+      Email__FromName: Portal do Fornecedor Jotanunes
+      Email__PortalUrl: ${PORTAL_URL:-}
+    restart: unless-stopped
+
 volumes:
   sqlserver_data:

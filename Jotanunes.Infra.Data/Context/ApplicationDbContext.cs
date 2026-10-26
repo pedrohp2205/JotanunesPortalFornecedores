@@ -17,6 +17,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Document> Documents { get; set; }
     public DbSet<Worker> Workers { get; set; }
     public DbSet<WorkerAllocation> WorkerAllocations { get; set; }
+    public DbSet<DocumentAnalysis> DocumentAnalyses { get; set; }
+    public DbSet<PeriodComplianceReport> PeriodComplianceReports { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -17,19 +17,22 @@ public class DocumentService : IDocumentService
     private readonly IDocumentStorageService _storageService;
     private readonly IDocumentComplianceService _complianceService;
     private readonly ISupplierNotificationService _notificationService;
+    private readonly IPeriodComplianceService _periodComplianceService;
 
     public DocumentService(
         IMapper mapper,
         IUnitOfWork unitOfWork,
         IDocumentStorageService storageService,
         IDocumentComplianceService complianceService,
-        ISupplierNotificationService notificationService)
+        ISupplierNotificationService notificationService,
+        IPeriodComplianceService periodComplianceService)
     {
         _mapper = mapper;
         _unitOfWork = unitOfWork;
         _storageService = storageService;
         _complianceService = complianceService;
         _notificationService = notificationService;
+        _periodComplianceService = periodComplianceService;
     }
 
     public async Task<PageList<DocumentDto>> Get(PageParams pageParams, DocumentFilter filter)
@@ -43,6 +46,19 @@ public class DocumentService : IDocumentService
     {
         var document = await GetExisting(id, companyId);
         return _mapper.Map<DocumentDto>(document);
+    }
+
+    public async Task<PageList<InternalDocumentDto>> GetForReview(PageParams pageParams, InternalDocumentFilter filter)
+    {
+        var documents = await _unitOfWork.DocumentRepository.Get(pageParams, filter);
+        var dtos = _mapper.Map<IEnumerable<InternalDocumentDto>>(documents.Items);
+        return new PageList<InternalDocumentDto>(dtos.ToList(), documents.TotalCount, pageParams.PageNumber, pageParams.PageSize);
+    }
+
+    public async Task<InternalDocumentDto> GetByIdForReview(long id)
+    {
+        var document = await GetExisting(id);
+        return _mapper.Map<InternalDocumentDto>(document);
     }
 
     public async Task<DocumentDto> Upload(
@@ -132,6 +148,7 @@ public class DocumentService : IDocumentService
         await _storageService.UploadAsync(storageKey, fileContent, contentType);
 
         _unitOfWork.DocumentRepository.Add(document);
+        _unitOfWork.DocumentAnalysisRepository.Add(new DocumentAnalysis(document));
 
         try
         {
@@ -159,7 +176,7 @@ public class DocumentService : IDocumentService
         };
     }
 
-    public async Task<DocumentDto> Approve(long id)
+    public async Task<InternalDocumentDto> Approve(long id)
     {
         var document = await GetExisting(id);
 
@@ -175,21 +192,27 @@ public class DocumentService : IDocumentService
             await TryMarkCompanyEligible(document.CompanyId);
         }
 
-        return _mapper.Map<DocumentDto>(document);
+        return _mapper.Map<InternalDocumentDto>(document);
     }
 
-    public async Task<DocumentDto> Reject(long id, string reason)
+    public async Task<InternalDocumentDto> Reject(long id, string reason)
     {
         var document = await GetExisting(id);
 
         document.Reject(reason);
 
         _unitOfWork.DocumentRepository.Update(document);
+
+        if (document.SupplyRequestId is { } supplyRequestId && document.ReferencePeriodStart is { } periodStart && document.ReferencePeriodEnd is { } periodEnd)
+        {
+            await _periodComplianceService.RequestRecalculation(supplyRequestId, periodStart, periodEnd);
+        }
+
         await _unitOfWork.SaveChangesAsync();
 
         await _notificationService.DocumentRejected(document);
 
-        return _mapper.Map<DocumentDto>(document);
+        return _mapper.Map<InternalDocumentDto>(document);
     }
 
     private async Task TryMarkCompanyEligible(long companyId)

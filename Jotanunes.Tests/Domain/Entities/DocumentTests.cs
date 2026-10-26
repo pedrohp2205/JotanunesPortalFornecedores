@@ -201,4 +201,23 @@ public class DocumentTests
         Assert.True(document.IsExpired(new DateOnly(2026, 2, 1)));
         Assert.False(document.IsExpired(new DateOnly(2025, 12, 1)));
     }
+
+    [Fact]
+    public void Should_Apply_Expiration_Date_Read_By_Analysis_While_Pending()
+    {
+        var document = CompanyDocument();
+
+        document.ApplyAnalyzedExpirationDate(new DateOnly(2026, 8, 9));
+
+        Assert.Equal(new DateOnly(2026, 8, 9), document.ExpirationDate);
+    }
+
+    [Fact]
+    public void Should_Not_Apply_Expiration_Date_After_Review()
+    {
+        var document = CompanyDocument();
+        document.Approve();
+
+        Assert.Throws<JotanunesException>(() => document.ApplyAnalyzedExpirationDate(new DateOnly(2026, 8, 9)));
+    }
 }

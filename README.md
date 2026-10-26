@@ -30,13 +30,17 @@ JotanunesPortalFornecedores/
 ├── Jotanunes.Infra.Data       # DbContext, configurations, repositórios, migrations
 ├── Jotanunes.Infra.Security   # Hash de senha (BCrypt) e emissão de JWT
 ├── Jotanunes.Infra.Storage    # Armazenamento de documentos (S3)
+├── Jotanunes.Infra.DocumentAi # Leitura de documentos (PdfPig)
 ├── Jotanunes.Infra.IoC        # Injeção de dependências
-├── Jotanunes.AppHost          # Orquestração local com .NET Aspire (SQL Server + APIs)
+├── Jotanunes.Worker           # Processo de jobs agendados por cron (análise automática de documentos)
+├── Jotanunes.AppHost          # Orquestração local com .NET Aspire (SQL Server + APIs + worker)
 ├── Jotanunes.Tests            # Testes unitários (xUnit)
+├── Jotanunes.Worker.Tests     # Testes do worker: jobs e agendamentos (xUnit v3)
 ├── Jotanunes.External.BddTests # Testes de integração/BDD da API externa (Reqnroll)
 ├── Jotanunes.Internal.BddTests # Testes de integração/BDD da API interna (Reqnroll)
 ├── Dockerfile.external
 ├── Dockerfile.internal
+├── Dockerfile.worker
 └── docker-compose.yml
 ```
 
@@ -149,6 +153,138 @@ No checklist, `workers` lista os **alocados**, com ou sem documento enviado. Cad
 
 O checklist também passa a trazer `allocatedWorkerCount`. Tipos de habilitação de trabalhador não entram na habilitação da empresa.
 
+### Análise automática de documentos
+
+Todo upload grava, na mesma transação, uma análise `Pending` em `document_analyses`. O job `DocumentAnalysisWorker`, do processo `Jotanunes.Worker`, busca as pendentes no banco, lê o arquivo e produz um **parecer sugerido**: campos extraídos, achados e um veredito. **Não aprova nem recusa nada**: `approve`/`reject` continuam manuais, e o parecer serve de apoio ao analista.
+
+**Cadeia de fallback.** Cada tipo de documento tem um analisador (`IDocumentTypeAnalyzer`, escolhido pelo `code` do tipo) que declara os campos obrigatórios. A leitura vai do mais barato ao mais caro e para no primeiro nível que lê todos os obrigatórios:
+
+1. `NativeText`: camada de texto do PDF, via PdfPig. Grátis e instantâneo.
+2. `Ocr`: Tesseract (`tesseract-ocr` + `tesseract-ocr-por`), pela linha de comando, sobre as páginas convertidas em imagem a 300 DPI. Grátis e roda no próprio worker. Lê documentos escaneados de layout fixo sem chamar a IA (hoje, a guia do FGTS) e serve de conferência para a leitura por imagem. Configuração em `Ocr`: `Enabled` (padrão `true`), `TesseractPath`, `Language` (`por`), `PageSegmentationMode` (6), `Dpi` (300), `MaxPages` (6) e `TimeoutSeconds` (60). Se o Tesseract não estiver instalado, o nível é pulado com um aviso no log.
+3. `Vision`: modelo de IA com entrada de imagem, para analisadores que implementam `IVisionAnalyzer`. As páginas do PDF viram PNG (PDFtoImage/PDFium, até `DocumentImages:MaxPages`); imagens enviadas vão como estão.
+
+CNPJ ou CPF com dígito verificador inválido conta como não lido, o que faz a leitura subir de nível. Se nenhum nível completa, a análise vai para `ManualReviewRequired` com a lista do que faltou.
+
+**Papel da IA.** A IA só transcreve: recebe as imagens, as instruções e um JSON Schema do tipo de documento, e devolve os campos. Quem confere os campos com o cadastro é o mesmo código em C# usado para o texto. A IA faz três coisas:
+
+- **Identifica o documento** (`isExpectedDocument`/`detectedDocument`). Um arquivo trocado (ex.: CNH enviada como CRF) gera o achado `WRONG_DOCUMENT_TYPE`.
+- **Extrai os campos** de documentos escaneados ou sem layout fixo.
+- **Responde perguntas visuais**, como "o recibo está assinado?".
+
+Para não aceitar alucinação como fato: o schema permite `null` e as instruções mandam não deduzir; CPF, CNPJ e datas passam pelas mesmas validações do texto; e **todo achado de uma leitura por imagem fica no máximo como `Warning`**. Um `Blocking` exige leitura de texto.
+
+**Conferência pelo OCR.** Quando o documento também passou pelo OCR, todo valor com 6 dígitos ou mais lido pela IA (CPF, CNPJ, valores, datas, competências) precisa aparecer no texto do OCR, comparando só os dígitos, de modo que `1.900,75` confere com `1900.75` e "Julho de 2026" com `07/2026`. Os que não aparecem geram o achado `VISION_NOT_CONFIRMED_BY_OCR` (Warning), com os valores. Valores parcialmente ocultos e listas ficam de fora, e a conferência não é feita quando o OCR leu menos de 20 dígitos na página.
+
+**Provedor (OpenRouter).** A leitura por imagem usa o `OpenRouterVisionClient`, que chama `/chat/completions` com `response_format` em JSON Schema e `temperature: 0`. Toda requisição exige `provider.zdr: true`: o OpenRouter só usa provedores com retenção zero (no Gemini, o Vertex; o AI Studio fica de fora). Prompts e respostas não são gravados nos logs, só tokens e custo. Configuração no worker (`OpenRouter`): `Enabled` (padrão `false`), `ApiKey`, `Model` (padrão `google/gemini-3.8-flash`) e `TimeoutSeconds`. Sem `Enabled`, o nível `Vision` não existe e os documentos que dependem dele vão para revisão manual. A chave nunca vai para o `appsettings`:
+
+```bash
+dotnet user-secrets set "OpenRouter:ApiKey" "<chave>" --project Jotanunes.Worker
+dotnet user-secrets set "OpenRouter:Enabled" "true" --project Jotanunes.Worker
+```
+
+No docker-compose, use as variáveis `OPENROUTER_ENABLED`, `OPENROUTER_API_KEY` e `OPENROUTER_MODEL`.
+
+**Falhas e novas tentativas.** Cada falha agenda a próxima tentativa (`NextAttemptAt`) com espera crescente: 30 s, 1 min, 2 min... até 1 h. Erros temporários do provedor (429, 408, 5xx, timeout, rede) nunca levam a `Failed`. Os demais erros levam a `Failed` na 3ª tentativa.
+
+| Status | Significado |
+|---|---|
+| `Pending` (1) | Na fila do worker |
+| `Completed` (2) | Lido; ver `verdict` e `findings` |
+| `ManualReviewRequired` (3) | Nenhum nível leu todos os campos obrigatórios; `failureReason` diz quais faltaram |
+| `Failed` (4) | Erro técnico não temporário (ex.: PDF corrompido) em `MaxAttempts` (3) tentativas |
+| `NotSupported` (5) | Ainda não há analisador para o código do tipo |
+
+Veredito: `Conforming` (1) sem achados relevantes, `NeedsAttention` (2) com algum `Warning` e `NonConforming` (3) com algum `Blocking`. Achados `Info` só informam (ex.: validade identificada na certidão).
+
+Analisadores disponíveis:
+
+| Código do tipo | Documento | Leitura | Confere |
+|---|---|---|---|
+| `FGTS_CND` (id 4, "Certidão Negativa de FGTS") | Certificado de Regularidade do FGTS (CRF) | Texto; imagem se escaneada | CNPJ igual ao da empresa; se está vencida, se ainda não vale ou se vence em até 7 dias; validade informada no envio × certidão; razão social |
+| `PAYMENT_RECEIPT` (id 20, "Recibo de Pagamento") | Recibo de pagamento (holerite) | Imagem | CNPJ do empregador; CPF e nome do trabalhador do envio; competência dentro do período do envio; assinatura do empregado. Guarda o líquido (`netPay`) para as regras cruzadas |
+| `PAYMENT_PROOF` (id 19, "Comprovante de Pagamento") | Comprovante de pagamento do salário (PIX/TED) | Texto; imagem para outros bancos | CPF de quem recebeu × trabalhador do envio (aceita CPF parcialmente oculto, conferindo os dígitos visíveis); nome; CNPJ pagador × empresa; pagamento até o 5º dia útil do mês seguinte à competência (sábado conta como dia útil; domingos e feriados nacionais fixos não). Guarda `amount` para as regras cruzadas |
+| `FGTS_PAYMENT_PROOF` (id 12) | Comprovante de pagamento da guia do FGTS | Texto; imagem | CNPJ pagador × empresa (raiz); recebedor é a Caixa. Guarda `amount` e `paymentDate` |
+| `FGTS_DETAIL` (id 13) | Detalhamento da guia do FGTS Digital | Texto; imagem | Raiz do CNPJ do empregador; competência no período; quantidade declarada × trabalhadores listados. Guarda `workers` (nome, CPF, base, FGTS), `guideTotal`, `dueDate` e `tomadorCnpj` |
+| `FGTS_REPORT` (id 14, "Relatório do FGTS") | Guia do FGTS Digital (GFD) | Imagem | Raiz do CNPJ do empregador; competência no período. Guarda `guideTotal`, `dueDate`, `declaredWorkers` |
+| `TIMESHEET` (id 18) | Folha de ponto | Texto; imagem | CPF e nome × trabalhador; período; CNPJ do empregador (ausente gera Warning); 0:00 trabalhadas; local × obra da solicitação. Guarda `workedHours` e `expectedHours` |
+| `EMPLOYEE_LIST` (id 17) | Relação de funcionários lotados na obra | Texto (uma linha por funcionário); imagem | Obra listada × obra da solicitação. Guarda `employees` |
+
+| `CNPJ_CARD` (id 1) | Cartão CNPJ | Texto; imagem | CNPJ × empresa; situação cadastral ATIVA; emitido há no máximo 90 dias; razão social; CEP × cadastro |
+| `SOCIAL_CONTRACT` (id 2) | Contrato social, alteração ou consolidação | Texto; imagem (primeiras páginas + a última, onde fica o registro) | CNPJ; razão social; registro na Junta ("Certifico o registro em ... sob nº ..."). Guarda `partners` (nome e CPF), `nire`, `registeredAt` |
+| `ADDRESS_PROOF_COMPANY` (id 3) | Comprovante de endereço comercial | Imagem | Titular × empresa (pelo CNPJ, ou pelo nome); CEP e número × cadastro; emitido há no máximo 90 dias (não vale para contrato de locação) |
+| `FEDERAL_CND` (id 5) | Certidão de tributos federais e dívida ativa | Texto; imagem | Raiz do CNPJ (vale para filiais); POSITIVA bloqueia, positiva com efeitos de negativa é informativa; validade (preenche `expirationDate` como a CRF) |
+| `SIMPLES_NACIONAL` (id 6) | Consulta de optantes ou recibo/declaração do PGDAS-D | Texto; OCR; imagem | Raiz do CNPJ; optante; documento do ano atual |
+| `MUNICIPAL_LICENSE` (7), `CGCRE_CERTIFICATION` (8), `ART` (9) | Licença municipal, certificação Cgcre/Inmetro, ART/RRT | Imagem (analisador genérico) | CNPJ do titular, quando houver × empresa; validade |
+| `PARTNER_ID` (id 10) | RG, CNH ou CIN do sócio | Imagem | CPF válido; documento vencido (Warning) |
+| `PAYROLL` (id 11) | Folha de pagamento | Texto; OCR; imagem | CNPJ; competência. Guarda `employees` (nome, líquido, FGTS), um bloco por empregado, sem confundir com o "Total Geral" |
+| `DCTFWEB_RECEIPT` (15), `DCTFWEB_REPORT` (16) | Recibo e relatório da DCTFWeb | Texto; OCR; imagem | Raiz do CNPJ; período de apuração. Guarda `totalDebits` e `receiptNumber` |
+
+Todos os 20 tipos cadastrados têm analisador. Os prazos de 90 dias (cartão CNPJ, comprovante de endereço) e de "ano atual" (Simples) são suposições a confirmar com o setor de contratos.
+
+Campos de lista (`workers`, `employees`) ficam em `fields` como JSON. Valores em reais ficam com ponto decimal (`1900.75`), datas em `dd/MM/yyyy`, competências em `MM/yyyy`, horas em `H:mm` e CPF parcialmente oculto com `*` nas posições ocultas (`***952844**`).
+
+Endpoints (frente interna):
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/document/{id}/analysis` | Parecer do documento |
+| POST | `/api/document/{id}/analysis` | Recoloca a análise na fila (202). Também cria a análise de documentos enviados antes desta funcionalidade |
+
+**Validade automática.** Para tipos cujo analisador lê a validade (hoje, a CRF), uma leitura de **texto** ajusta o `expirationDate` do documento enquanto ele está pendente: preenche quando o fornecedor não informou (achado `EXPIRATION_DATE_FILLED`, Info) e corrige quando ele informou outra data (achado `EXPIRATION_DATE_CORRECTED`, Warning, com a data original na mensagem). Uma leitura **por imagem** nunca altera a data, só sugere (`EXPIRATION_DATE_MISMATCH`). Documento já aprovado ou recusado não é alterado.
+
+**Aviso ao fornecedor.** Quando a análise conclui que o arquivo é outro documento (`WRONG_DOCUMENT_TYPE`) e o documento ainda está pendente, o fornecedor recebe um e-mail ("Confira o documento enviado"), e o documento passa a trazer `uploadWarning` nas duas frentes. É o único sinal da análise que o fornecedor vê: a mensagem é fixa e não repete o que a IA acha que o arquivo é. O worker usa a mesma seção `Email` das APIs.
+
+**Métricas de concordância.** `GET /api/document/analysis/metrics?from=2026-07-01&to=2026-07-31` (frente interna) compara o veredito da análise com a decisão do analista nos documentos avaliados no período, no total e por tipo:
+
+| Campo | Significado |
+|---|---|
+| `agreements` | `Conforming` aprovado ou `NonConforming` recusado |
+| `falseAlarms` | `NonConforming` aprovado: a análise apontou um problema que o analista não confirmou |
+| `missedProblems` | `Conforming` recusado: a análise deixou passar algo |
+| `attentionApproved` / `attentionRejected` | `NeedsAttention`, separado por decisão |
+| `notAnalyzed` | Sem análise concluída (tipo sem analisador, revisão manual, falha) |
+| `agreementRate` | `agreements / (agreements + falseAlarms + missedProblems)`, ou `null` sem base |
+
+**Resumo na listagem (só na frente interna).** `GET /api/document` e `GET /api/document/{id}` da frente interna (e as respostas de `approve`/`reject`) trazem o campo `analysis` com `status`, `verdict`, `blockingCount`, `warningCount` e `analyzedAt`. Ele vem `null` quando o documento ainda não tem análise. A listagem aceita os filtros `analysisStatus` e `analysisVerdict` (ex.: `?analysisVerdict=3` lista só os não conformes). O documento aparece para a equipe assim que é enviado, e aprovar ou recusar **não depende da análise**: o resumo é apoio, não trava. A frente externa usa outro DTO e outro filtro, sem esses campos: o fornecedor não recebe o parecer nem consegue filtrar por ele.
+
+### Cruzamento dos documentos do período
+
+A análise de cada documento confere o documento sozinho. O **cruzamento** compara os documentos de uma solicitação dentro de um período (`PeriodComplianceReport`, tabela `period_compliance_reports`, um por solicitação e período) com os trabalhadores alocados na obra naquele período.
+
+**Quando é recalculado.** O relatório do período é colocado na fila (`Pending`) quando a análise de um documento recorrente termina, quando um documento recorrente é recusado e quando um trabalhador é alocado, liberado ou desativado (nesse caso, todos os relatórios da solicitação que terminam a partir de hoje). O job `PeriodComplianceWorker` do `Jotanunes.Worker` recalcula os pendentes (`Schedules:PeriodComplianceCron`, padrão `*/30 * * * * *`; `PeriodCompliance:BatchSize`, padrão 10). Se um novo pedido chega durante o cálculo, o relatório volta para a fila.
+
+**O que entra.** Documentos da solicitação cujo período de referência alcança o período do relatório, exceto os recusados. Só entram na comparação documentos com análise concluída que não foram identificados como outro documento; os demais aparecem no achado `UNREAD_DOCUMENTS` (Info). Quando há mais de um documento do mesmo tipo e trabalhador, vale o mais recente; comprovantes de salário e de FGTS são somados, para aceitar pagamentos divididos. Trabalhadores alocados são os com alocação ativa em algum dia do período.
+
+| Achado | Gravidade | Regra |
+|---|---|---|
+| `PAYMENT_AMOUNT_MISMATCH` | Blocking* | Líquido do recibo diferente da soma dos comprovantes de salário do mesmo trabalhador (tolerância de R$ 0,01) |
+| `PAID_WITHOUT_WORKED_HOURS` | Warning | Recibo com líquido maior que zero e folha de ponto com 0:00 trabalhadas |
+| `WORKER_WITHOUT_FGTS` | Blocking* | Trabalhador alocado que não aparece (pelo CPF) no detalhamento do FGTS |
+| `FGTS_PAYMENT_MISMATCH` | Blocking* | Total da guia (GFD, ou o detalhamento se não houver guia) diferente da soma dos comprovantes de FGTS |
+| `FGTS_PAID_LATE` | Warning | Comprovante de FGTS pago depois do vencimento da guia |
+| `FGTS_FEWER_WORKERS_THAN_ALLOCATED` | Warning | Guia declara menos trabalhadores que os alocados na obra |
+| `ALLOCATED_NOT_IN_EMPLOYEE_LIST` / `LISTED_NOT_ALLOCATED` | Warning | Relação de funcionários × alocações (pelo CPF, ou pelo nome quando a relação não traz CPF) |
+| `PAYROLL_RECEIPT_MISMATCH` | Blocking* | Líquido do recibo diferente do líquido do mesmo empregado na folha de pagamento (pelo nome) |
+| `ALLOCATED_NOT_IN_PAYROLL` | Warning | Trabalhador alocado que não aparece na folha de pagamento |
+| `UNREAD_DOCUMENTS` | Info | Documentos ainda sem leitura, fora do cruzamento |
+
+\* Blocking só quando todos os documentos envolvidos foram lidos por texto; se algum foi lido por imagem, vira Warning, pela mesma regra da análise de documentos.
+
+Endpoints (frente interna):
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/supplyrequest/{id}/compliance-reports` | Relatórios de cruzamento da solicitação, do período mais recente para o mais antigo |
+| POST | `/api/supplyrequest/{id}/compliance-reports` | Coloca o período (`periodStart`, `periodEnd`) na fila de recálculo (202) |
+
+**Worker.** `Jotanunes.Worker` é um processo próprio (SDK `Microsoft.NET.Sdk.Worker`), separado das duas APIs, com um job agendado por cron para cada tarefa de fundo:
+
+- Cada job herda de `CronBackgroundService` e recebe um `ICronSchedule` próprio (`Schedules/`). A cada disparo, o job abre um escopo de DI e chama o serviço da aplicação. Um disparo só começa depois que o anterior termina.
+- `DocumentAnalysisWorker` esvazia a fila em lotes de `DocumentAnalysis:BatchSize` (10), com um escopo por análise para uma falha não afetar as demais. Se alguma análise do lote não puder ser gravada, ele para e espera o próximo disparo.
+- As crons ficam na seção `Schedules` e são validadas na subida: sem cron, o processo não sobe. `DocumentAnalysisCron` aceita 5 campos (padrão) ou 6 (com segundos); o padrão é `*/10 * * * * *`. Use `-` ou `never` para desligar um job.
+- A fila não trava as linhas que está processando, então **só uma instância do worker pode rodar por vez**.
+- O worker não aplica migrations: o schema continua sendo da API interna.
+
 ---
 
 ## Pré-requisitos
@@ -165,7 +301,7 @@ O checklist também passa a trazer `allocatedWorkerCount`. Tipos de habilitaçã
 docker-compose up -d --build
 ```
 
-Sobe o SQL Server, a API interna na porta `8080` e a API externa na porta `80`. As migrations são aplicadas automaticamente pela API interna, que é a dona do schema.
+Sobe o SQL Server, a API interna na porta `8080`, a API externa na porta `80` e o worker (sem porta). As migrations são aplicadas automaticamente pela API interna, que é a dona do schema.
 
 Swagger:
 
@@ -176,7 +312,7 @@ Swagger:
 
 ## Executando com Aspire
 
-O `Jotanunes.AppHost` (.NET Aspire 13, exige o SDK do .NET 10) sobe o SQL Server em container, cria as bases `jotanunes_portal` (dev), `jotanunes_portal_test_external` e `jotanunes_portal_test_internal` (uma para cada projeto `*.BddTests`), aplica as migrations do EF Core e inicia as duas APIs já apontando para a base de dev. O dashboard mostra o status, os logs e o health de cada recurso.
+O `Jotanunes.AppHost` (.NET Aspire 13, exige o SDK do .NET 10) sobe o SQL Server em container, cria as bases `jotanunes_portal` (dev), `jotanunes_portal_test_external` e `jotanunes_portal_test_internal` (uma para cada projeto `*.BddTests`), aplica as migrations do EF Core e inicia as duas APIs e o worker já apontando para a base de dev. O dashboard mostra o status, os logs e o health de cada recurso.
 
 ```bash
 dotnet run --project Jotanunes.AppHost    # ou: aspire run
@@ -193,7 +329,10 @@ dotnet run --project Jotanunes.AppHost    # ou: aspire run
 ```bash
 dotnet run --project Jotanunes.API.Internal   # http://localhost:5200/swagger
 dotnet run --project Jotanunes.API.External   # http://localhost:5100/swagger
+dotnet run --project Jotanunes.Worker         # jobs agendados (análise automática)
 ```
+
+O worker usa o Tesseract para o OCR. No macOS, instale com `brew install tesseract tesseract-lang`; a imagem Docker do worker já vem com ele.
 
 A connection string vem da variável de ambiente `DATABASE` ou, na falta dela, de `ConnectionStrings:ConnectionString` no `appsettings.json`.
 
@@ -210,11 +349,12 @@ dotnet ef database update --project Jotanunes.Infra.Data --startup-project Jotan
 
 ## Testes
 
-São três projetos:
+São quatro projetos:
 
 | Projeto | Tipo | Depende de banco |
 | --- | --- | --- |
 | `Jotanunes.Tests` | Unitários (xUnit + Moq), organizados em pastas que espelham as camadas: `Domain/`, `Application/`, `Infra/` | Não |
+| `Jotanunes.Worker.Tests` | Unitários (xUnit v3 + Moq) dos jobs e agendamentos do worker | Não |
 | `Jotanunes.External.BddTests` | Integração/BDD (Reqnroll + xUnit v3) da API externa, via `WebApplicationFactory` | Sim (SQL Server) |
 | `Jotanunes.Internal.BddTests` | Integração/BDD (Reqnroll + xUnit v3) da API interna, via `WebApplicationFactory` | Sim (SQL Server) |
 
@@ -242,6 +382,20 @@ Jotanunes.{External,Internal}.BddTests/
 - **Banco**: cada projeto usa a sua base (`jotanunes_portal_test_external` e `jotanunes_portal_test_internal`), criada e migrada automaticamente. São bases separadas porque o `dotnet test` roda os dois projetos em paralelo e, numa base só, os cenários de um disputariam os mesmos registros com os do outro. Cada cenário roda dentro de uma transação que é desfeita ao final, então os testes não deixam dados. Para apontar para outro servidor, defina `DataBase:ConnectionString` em user secrets (`dotnet user-secrets set "DataBase:ConnectionString" "..." --project Jotanunes.External.BddTests`, e o mesmo para o `Internal`) ou pela variável `DataBase__ConnectionString`. A variável `DATABASE` usada pelas APIs tem precedência sobre essa configuração, então não a deixe exportada no shell ao rodar os testes.
 - **Autenticação** (externa): os passos `Dado que eu estou autenticado ...` fazem login real em `/api/auth/login` e usam o JWT devolvido. A frente interna ainda não tem autenticação.
 - **Armazenamento**: `IDocumentStorageService` é substituído por um mock; e-mail usa o `LogEmailSender`.
+
+**Golden set da análise automática.** Os analisadores são conferidos contra documentos reais anotados em `Documentos Jotanunes/golden-set.json`. A pasta fica fora do git porque os arquivos têm dados pessoais; sem ela, os testes passam sem conferir nada. Cada caso informa o arquivo, o código do tipo, os campos esperados (`expected`) e, para documentos errados de propósito, `expectComplete: false` (leitura de texto) ou `expectWrongDocument: true` (leitura por imagem). Ao escrever um analisador novo, anote primeiro os arquivos reais dele aqui.
+
+- `GoldenSetTests` roda os casos de texto. É grátis e roda sempre.
+- `OcrGoldenSetTests` roda os casos com `"engine": "ocr"` com o Tesseract de verdade. É grátis, mas só confere quando o Tesseract está instalado; sem ele, passa sem conferir. No macOS: `brew install tesseract tesseract-lang`.
+- `VisionGoldenSetTests` roda os casos com `"engine": "vision"` contra o modelo de verdade. É um **teste de avaliação** (categoria `Eval`), não um teste unitário: mede a precisão do modelo e pode falhar sem bug no código, se o modelo errar um campo. **Gasta créditos do OpenRouter**, então só roda quando pedido. Rode num terminal fora de qualquer ferramenta que grave histórico, para a chave não ficar exposta:
+
+```bash
+JOTANUNES_VISION_GOLDEN=1 OPENROUTER_API_KEY=<chave> dotnet test Jotanunes.Tests --filter Category=Eval --logger "console;verbosity=detailed"
+```
+
+Para rodar a bateria normal sem a avaliação, use `--filter Category!=Eval`. Sem `JOTANUNES_VISION_GOLDEN=1`, a avaliação passa sem chamar o modelo.
+
+A saída mostra, por arquivo, se conferiu, quantas páginas foram enviadas, o tempo e o JSON devolvido. `OPENROUTER_MODEL` troca o modelo, para comparar opções (ex.: `google/gemini-3.5-flash-lite`).
 
 ---
 

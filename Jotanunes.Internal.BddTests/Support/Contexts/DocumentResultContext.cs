@@ -4,5 +4,5 @@ namespace Jotanunes.Internal.BddTests.Support.Contexts;
 
 public class DocumentResultContext
 {
-    public DocumentDto? Documento { get; set; }
+    public InternalDocumentDto? Documento { get; set; }
 }

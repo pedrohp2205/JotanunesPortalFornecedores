@@ -28,6 +28,8 @@ public class Document : BaseEntity
     public DateOnly? ReferencePeriodEnd { get; private set; }
     public DateOnly? ExpirationDate { get; private set; }
 
+    public DocumentAnalysis? Analysis { get; private set; }
+
     public DocumentStatus Status { get; private set; }
     public string? RejectionReason { get; private set; }
     public DateTime? ReviewedAt { get; private set; }
@@ -82,6 +84,13 @@ public class Document : BaseEntity
         Status = DocumentStatus.Rejected;
         RejectionReason = reason.Trim();
         ReviewedAt = DateTime.UtcNow;
+    }
+
+    public void ApplyAnalyzedExpirationDate(DateOnly expirationDate)
+    {
+        JotanunesException.When(Status != DocumentStatus.Pending, "Documento já foi avaliado.");
+
+        ExpirationDate = expirationDate;
     }
 
     public bool IsExpired(DateOnly referenceDate)

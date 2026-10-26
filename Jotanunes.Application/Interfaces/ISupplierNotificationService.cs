@@ -7,6 +7,7 @@ public interface ISupplierNotificationService
 {
     Task DocumentApproved(Document document);
     Task DocumentRejected(Document document);
+    Task DocumentLooksWrong(Document document);
     Task CompanyEligible(Company company);
     Task SupplyRequestCreated(SupplyRequest supplyRequest);
     Task SupplyRequestCompleted(SupplyRequest supplyRequest);

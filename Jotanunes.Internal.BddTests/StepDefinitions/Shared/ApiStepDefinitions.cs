@@ -10,7 +10,7 @@ namespace Jotanunes.Internal.BddTests.StepDefinitions.Shared;
 [Binding]
 internal class ApiStepDefinitions(HttpResponseContext httpResponseCtx)
 {
-    [Then(@"^eu recebo uma resposta (200 OK|201 Created|204 No Content)$")]
+    [Then(@"^eu recebo uma resposta (200 OK|201 Created|202 Accepted|204 No Content)$")]
     public async Task EntaoEuReceboUmaRespostaComStatusDeSucesso(string status)
     {
         ArgumentNullException.ThrowIfNull(httpResponseCtx.Response);
@@ -18,6 +18,7 @@ internal class ApiStepDefinitions(HttpResponseContext httpResponseCtx)
         {
             "200 OK" => StatusCodes.Status200OK,
             "201 Created" => StatusCodes.Status201Created,
+            "202 Accepted" => StatusCodes.Status202Accepted,
             "204 No Content" => StatusCodes.Status204NoContent,
             _ => throw new ArgumentException($"Status '{status}' não é reconhecido")
         };

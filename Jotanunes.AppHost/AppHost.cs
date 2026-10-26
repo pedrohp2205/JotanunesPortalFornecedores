@@ -51,4 +51,9 @@ builder.AddProject<Projects.Jotanunes_API_External>("jotanunes-api-external")
     .WithHttpHealthCheck("/api/Health");
 
 
+builder.AddProject<Projects.Jotanunes_Worker>("jotanunes-worker")
+    .WithReference(jotanunesDb).WaitFor(jotanunesDb)
+    .WithEnvironment("ConnectionStrings__ConnectionString", jotanunesDb);
+
+
 await builder.Build().RunAsync();

@@ -60,6 +60,20 @@ public class SupplierNotificationService : ISupplierNotificationService
             });
     }
 
+    public Task DocumentLooksWrong(Document document)
+    {
+        return NotifyCompany(
+            document.Company,
+            $"Confira o documento enviado: {document.DocumentType.Name}",
+            "Confira o documento enviado",
+            new[]
+            {
+                $"Não conseguimos identificar o arquivo \"{document.OriginalFileName}\" como \"{document.DocumentType.Name}\"{DescribeContext(document)}.",
+                "Confira se enviou o documento certo. Se não for, envie o documento correto pelo portal.",
+                "A avaliação final continua sendo feita pela equipe da Jotanunes."
+            });
+    }
+
     public Task CompanyEligible(Company company)
     {
         return NotifyCompany(

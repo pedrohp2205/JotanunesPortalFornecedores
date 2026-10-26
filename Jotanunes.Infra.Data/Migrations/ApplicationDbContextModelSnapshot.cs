@@ -169,6 +169,58 @@ namespace Jotanunes.Infra.Data.Migrations
                     b.ToTable("documents", (string)null);
                 });
 
+            modelBuilder.Entity("Jotanunes.Domain.Entities.DocumentAnalysis", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("AnalyzedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("DocumentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int?>("Engine")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("NextAttemptAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("Verdict")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("document_analyses", (string)null);
+                });
+
             modelBuilder.Entity("Jotanunes.Domain.Entities.DocumentType", b =>
                 {
                     b.Property<long>("Id")
@@ -225,6 +277,54 @@ namespace Jotanunes.Infra.Data.Migrations
                         .HasFilter("[DeletedAt] IS NULL");
 
                     b.ToTable("document_types", (string)null);
+                });
+
+            modelBuilder.Entity("Jotanunes.Domain.Entities.PeriodComplianceReport", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("GeneratedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<long>("SupplyRequestId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("Verdict")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SupplyRequestId", "PeriodStart", "PeriodEnd")
+                        .IsUnique();
+
+                    b.ToTable("period_compliance_reports", (string)null);
                 });
 
             modelBuilder.Entity("Jotanunes.Domain.Entities.SupplierUser", b =>
@@ -616,6 +716,121 @@ namespace Jotanunes.Infra.Data.Migrations
                     b.Navigation("Worker");
                 });
 
+            modelBuilder.Entity("Jotanunes.Domain.Entities.DocumentAnalysis", b =>
+                {
+                    b.HasOne("Jotanunes.Domain.Entities.Document", "Document")
+                        .WithOne("Analysis")
+                        .HasForeignKey("Jotanunes.Domain.Entities.DocumentAnalysis", "DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.OwnsMany("Jotanunes.Domain.Entities.AnalysisFinding", "Findings", b1 =>
+                        {
+                            b1.Property<long>("DocumentAnalysisId")
+                                .HasColumnType("bigint");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            b1.Property<string>("Code")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Message")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<int>("Severity")
+                                .HasColumnType("int");
+
+                            b1.HasKey("DocumentAnalysisId", "Id");
+
+                            b1.ToTable("document_analyses");
+
+                            b1.ToJson("Findings");
+
+                            b1.WithOwner()
+                                .HasForeignKey("DocumentAnalysisId");
+                        });
+
+                    b.OwnsMany("Jotanunes.Domain.Entities.ExtractedField", "Fields", b1 =>
+                        {
+                            b1.Property<long>("DocumentAnalysisId")
+                                .HasColumnType("bigint");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.HasKey("DocumentAnalysisId", "Id");
+
+                            b1.ToTable("document_analyses");
+
+                            b1.ToJson("Fields");
+
+                            b1.WithOwner()
+                                .HasForeignKey("DocumentAnalysisId");
+                        });
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Fields");
+
+                    b.Navigation("Findings");
+                });
+
+            modelBuilder.Entity("Jotanunes.Domain.Entities.PeriodComplianceReport", b =>
+                {
+                    b.HasOne("Jotanunes.Domain.Entities.SupplyRequest", "SupplyRequest")
+                        .WithMany()
+                        .HasForeignKey("SupplyRequestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.OwnsMany("Jotanunes.Domain.Entities.AnalysisFinding", "Findings", b1 =>
+                        {
+                            b1.Property<long>("PeriodComplianceReportId")
+                                .HasColumnType("bigint");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            b1.Property<string>("Code")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Message")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<int>("Severity")
+                                .HasColumnType("int");
+
+                            b1.HasKey("PeriodComplianceReportId", "Id");
+
+                            b1.ToTable("period_compliance_reports");
+
+                            b1.ToJson("Findings");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PeriodComplianceReportId");
+                        });
+
+                    b.Navigation("Findings");
+
+                    b.Navigation("SupplyRequest");
+                });
+
             modelBuilder.Entity("Jotanunes.Domain.Entities.SupplierUser", b =>
                 {
                     b.HasOne("Jotanunes.Domain.Entities.Company", "Company")
@@ -690,6 +905,11 @@ namespace Jotanunes.Infra.Data.Migrations
             modelBuilder.Entity("Jotanunes.Domain.Entities.Company", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("Jotanunes.Domain.Entities.Document", b =>
+                {
+                    b.Navigation("Analysis");
                 });
 
             modelBuilder.Entity("Jotanunes.Domain.Entities.WorkSite", b =>

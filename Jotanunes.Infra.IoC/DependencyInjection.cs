@@ -1,12 +1,17 @@
 using Amazon;
+using Amazon.Runtime;
 using Amazon.S3;
 using Jotanunes.Application.DTOs.Mapping;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Application.Services;
+using Jotanunes.Application.Services.Analyzers;
+using Jotanunes.Application.Services.Compliance;
 using Jotanunes.Application.Settings;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Infra.Data.Context;
 using Jotanunes.Infra.Data.Repositories;
+using Jotanunes.Infra.DocumentAi.Services;
+using Jotanunes.Infra.DocumentAi.Settings;
 using Jotanunes.Infra.Email.Services;
 using Jotanunes.Infra.Email.Settings;
 using Jotanunes.Infra.Security.Services;
@@ -47,6 +52,69 @@ public static class DependencyInjection
 
         service.AddDocumentStorage(configuration);
         service.AddEmail(configuration);
+        service.AddDocumentAnalysis(configuration);
+
+        return service;
+    }
+
+    private static IServiceCollection AddDocumentAnalysis(this IServiceCollection service, IConfiguration configuration)
+    {
+        var openRouterSection = configuration.GetSection(OpenRouterSettings.SectionName);
+        var openRouter = openRouterSection.Get<OpenRouterSettings>() ?? new OpenRouterSettings();
+
+        service.Configure<OpenRouterSettings>(openRouterSection);
+        service.Configure<DocumentImageSettings>(configuration.GetSection(DocumentImageSettings.SectionName));
+        var ocrSection = configuration.GetSection(OcrSettings.SectionName);
+        service.Configure<OcrSettings>(ocrSection);
+        service.AddSingleton(TimeProvider.System);
+
+        service.AddSingleton<IDocumentTextExtractor, PdfNativeTextExtractor>();
+        service.AddSingleton<PdfiumDocumentRasterizer>();
+        service.AddSingleton<IDocumentRasterizer>(provider => provider.GetRequiredService<PdfiumDocumentRasterizer>());
+
+        if ((ocrSection.Get<OcrSettings>() ?? new OcrSettings()).Enabled)
+        {
+            service.AddSingleton<ITesseractRunner, TesseractCliRunner>();
+            service.AddSingleton<IDocumentTextExtractor, TesseractOcrExtractor>();
+        }
+
+        if (openRouter.Enabled)
+        {
+            if (string.IsNullOrWhiteSpace(openRouter.ApiKey))
+            {
+                throw new InvalidOperationException("OpenRouter:ApiKey é obrigatório quando OpenRouter:Enabled=true.");
+            }
+
+            service.AddHttpClient<IVisionClient, OpenRouterVisionClient>(client =>
+            {
+                client.BaseAddress = new Uri(openRouter.BaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(openRouter.TimeoutSeconds);
+            });
+        }
+
+        service.AddSingleton<IDocumentTypeAnalyzer, CrfAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, PaymentReceiptAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, PaymentProofAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, FgtsPaymentProofAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, FgtsDetailAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, FgtsGuideAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, TimesheetAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, EmployeeListAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, CnpjCardAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, FederalCndAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, SimplesNacionalAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, DctfWebAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, PayrollAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, SocialContractAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, AddressProofAnalyzer>();
+        service.AddSingleton<IDocumentTypeAnalyzer, PartnerIdAnalyzer>();
+        foreach (var analyzer in GenericCertificateAnalyzer.Defaults())
+        {
+            service.AddSingleton<IDocumentTypeAnalyzer>(analyzer);
+        }
+
+        service.AddScoped<IDocumentAnalysisService, DocumentAnalysisService>();
+        service.AddScoped<IPeriodComplianceService, PeriodComplianceService>();
 
         return service;
     }
@@ -112,6 +180,9 @@ public static class DependencyInjection
             {
                 config.ServiceURL = settings.ServiceUrl;
                 config.ForcePathStyle = settings.ForcePathStyle;
+                
+                config.RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED;
+                config.ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED;
             }
 
             return !string.IsNullOrWhiteSpace(settings.AccessKey) && !string.IsNullOrWhiteSpace(settings.SecretKey)

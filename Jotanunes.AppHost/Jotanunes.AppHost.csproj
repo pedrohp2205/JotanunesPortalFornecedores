@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Jotanunes.API.External\Jotanunes.API.External.csproj" />
     <ProjectReference Include="..\Jotanunes.API.Internal\Jotanunes.API.Internal.csproj" />
+    <ProjectReference Include="..\Jotanunes.Worker\Jotanunes.Worker.csproj" />
     <ProjectReference Include="..\Jotanunes.Infra.Data\Jotanunes.Infra.Data.csproj" IsAspireProjectResource="false" />
   </ItemGroup>
 

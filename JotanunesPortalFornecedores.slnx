@@ -13,14 +13,19 @@
   </Folder>
   <Folder Name="/INFRA/">
     <Project Path="Jotanunes.Infra.Data/Jotanunes.Infra.Data.csproj" />
+    <Project Path="Jotanunes.Infra.DocumentAi/Jotanunes.Infra.DocumentAi.csproj" />
     <Project Path="Jotanunes.Infra.Email/Jotanunes.Infra.Email.csproj" />
     <Project Path="Jotanunes.Infra.IoC/Jotanunes.Infra.IoC.csproj" />
     <Project Path="Jotanunes.Infra.Security/Jotanunes.Infra.Security.csproj" />
     <Project Path="Jotanunes.Infra.Storage/Jotanunes.Infra.Storage.csproj" />
   </Folder>
+  <Folder Name="/WORKER/">
+    <Project Path="Jotanunes.Worker/Jotanunes.Worker.csproj" />
+  </Folder>
   <Folder Name="/TESTS/">
     <Project Path="Jotanunes.External.BddTests/Jotanunes.External.BddTests.csproj" />
     <Project Path="Jotanunes.Internal.BddTests/Jotanunes.Internal.BddTests.csproj" />
     <Project Path="Jotanunes.Tests/Jotanunes.Tests.csproj" />
+    <Project Path="Jotanunes.Worker.Tests/Jotanunes.Worker.Tests.csproj" />
   </Folder>
 </Solution>

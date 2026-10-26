@@ -15,12 +15,18 @@ internal class LeituraDocumentStepDefinitions(
     DocumentGivenContext documentCtx,
     DocumentResultContext documentResultCtx)
 {
-    private PageListResponseDto<DocumentDto>? _documentos;
+    private PageListResponseDto<InternalDocumentDto>? _documentos;
 
     [When(@"eu listar os documentos da empresa cadastrada")]
     public async Task QuandoEuListarOsDocumentosDaEmpresaCadastrada()
     {
         _documentos = await documentFix.GetAsync($"?companyId={companyCtx.IdEmpresaCadastrada}");
+    }
+
+    [When(@"eu listar os documentos da empresa cadastrada com veredito da análise (\d+)")]
+    public async Task QuandoEuListarOsDocumentosDaEmpresaCadastradaComVereditoDaAnalise(int veredito)
+    {
+        _documentos = await documentFix.GetAsync($"?companyId={companyCtx.IdEmpresaCadastrada}&analysisVerdict={veredito}");
     }
 
     [When(@"eu consultar o documento cadastrado")]
@@ -50,5 +56,30 @@ internal class LeituraDocumentStepDefinitions(
         documentResultCtx.Documento!.Id.Should().Be(documentCtx.IdDocumentoCadastrado);
         documentResultCtx.Documento.CompanyId.Should().Be(companyCtx.IdEmpresaCadastrada);
         documentResultCtx.Documento.DocumentTypeCode.Should().Be("CNPJ_CARD");
+    }
+
+    [Then(@"a listagem de documentos está vazia")]
+    public void EntaoAListagemDeDocumentosEstaVazia()
+    {
+        _documentos.Should().NotBeNull();
+        _documentos!.Items.Should().BeEmpty();
+    }
+
+    [Then(@"o documento listado mostra a análise com veredito ""(.*)"" e (\d+) apontamento\(s\) bloqueante\(s\)")]
+    public void EntaoODocumentoListadoMostraAAnalise(string veredito, int bloqueantes)
+    {
+        _documentos.Should().NotBeNull();
+        var documento = _documentos!.Items.Should().ContainSingle().Which;
+        documento.Analysis.Should().NotBeNull();
+        documento.Analysis!.StatusDescription.Should().Be("Completed");
+        documento.Analysis.VerdictDescription.Should().Be(veredito);
+        documento.Analysis.BlockingCount.Should().Be(bloqueantes);
+    }
+
+    [Then(@"o documento retornado não tem resumo da análise")]
+    public void EntaoODocumentoRetornadoNaoTemResumoDaAnalise()
+    {
+        documentResultCtx.Documento.Should().NotBeNull();
+        documentResultCtx.Documento!.Analysis.Should().BeNull();
     }
 }
