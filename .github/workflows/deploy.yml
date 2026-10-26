@@ -1,7 +1,5 @@
 name: Deploy Azure
 
-# Roda a cada push na main (ou manualmente): testa, gera as 3 imagens,
-# envia para o ACR e atualiza os Container Apps em Spain Central.
 on:
   push:
     branches: [main]
@@ -11,17 +9,15 @@ on:
       - "Jotanunes.*.BddTests/**"
   workflow_dispatch:
 
-# Nunca roda dois deploys ao mesmo tempo; o seguinte espera o atual terminar.
 concurrency:
   group: deploy-production
   cancel-in-progress: false
 
 permissions:
-  id-token: write # login no Azure via OIDC, sem senha guardada no GitHub
+  id-token: write
   contents: read
 
 env:
-  # Identificadores (não são segredos): o login só funciona para este repo na branch main.
   AZURE_CLIENT_ID: 887fec3e-918c-475f-bdf6-fd1bc9f5641d
   AZURE_TENANT_ID: a06b3f6c-8017-4b3d-babd-fbdb8569d09d
   AZURE_SUBSCRIPTION_ID: a8d6d7bd-c28e-4095-b013-4094cc924795
@@ -70,7 +66,6 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}
 
-  # A API interna sobe primeiro porque é ela que aplica as migrations no banco.
   deploy-internal:
     name: Deploy internal
     needs: build

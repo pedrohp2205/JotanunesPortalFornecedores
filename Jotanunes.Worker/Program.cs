@@ -6,6 +6,8 @@ using Jotanunes.Worker.Schedules.Interface;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+builder.AddTelemetry("jotanunes-worker");
+
 builder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(5));
 
 builder.Services.AddOptions<WorkerSettings>()

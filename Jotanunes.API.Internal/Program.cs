@@ -4,6 +4,8 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddTelemetry("jotanunes-internal");
+
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.ApplyPendingMigrations();

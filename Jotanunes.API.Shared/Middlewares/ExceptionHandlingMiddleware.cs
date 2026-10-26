@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Jotanunes.Domain.Exceptions;
 using Microsoft.AspNetCore.Http;
@@ -33,6 +34,7 @@ public class ExceptionHandlingMiddleware
         if (exception is not (JotanunesException or UnauthorizedAccessException or KeyNotFoundException))
         {
             _logger.LogError(exception, "Erro não tratado ao processar {Method} {Path}", context.Request.Method, context.Request.Path);
+            RecordOnTrace(exception);
         }
 
         var response = context.Response;
@@ -55,5 +57,22 @@ public class ExceptionHandlingMiddleware
 
         var result = JsonSerializer.Serialize(errorResponse);
         await response.WriteAsync(result);
+    }
+
+    private static void RecordOnTrace(Exception exception)
+    {
+        var activity = Activity.Current;
+        if (activity is null)
+        {
+            return;
+        }
+
+        activity.SetStatus(ActivityStatusCode.Error, exception.Message);
+        activity.AddEvent(new ActivityEvent("exception", tags: new ActivityTagsCollection
+        {
+            { "exception.type", exception.GetType().FullName },
+            { "exception.message", exception.Message },
+            { "exception.stacktrace", exception.ToString() }
+        }));
     }
 }

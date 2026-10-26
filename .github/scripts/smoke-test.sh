@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Confirma que a API responde depois do deploy.
-# Como os apps escalam a zero, a primeira chamada pode demorar enquanto o container liga.
 set -euo pipefail
 
 app="$1"
