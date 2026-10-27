@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.WorkSiteTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/WorkSiteTests", "WorkSite - Exclusão", "Como membro da equipe da Jotanunes\nQuero excluir uma obra\nPara que ela deixe de a" +
-                "parecer nas consultas", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/WorkSiteTests", "WorkSite - Exclusão", "Como membro da equipe da Jotanunes\r\nQuero excluir uma obra\r\nPara que ela deixe de" +
+                " aparecer nas consultas", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "ExclusaoWorkSite.feature"
 #line hidden

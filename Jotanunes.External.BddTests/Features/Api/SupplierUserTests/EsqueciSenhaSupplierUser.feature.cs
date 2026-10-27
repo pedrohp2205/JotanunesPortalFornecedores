@@ -26,8 +26,8 @@ namespace Jotanunes.External.BddTests.Features.Api.SupplierUserTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserTests", "SupplierUser - Esqueci minha senha", "Como fornecedor que esqueceu a senha\nQuero pedir um link de redefinição por e-mai" +
-                "l\nPara voltar a acessar o portal", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserTests", "SupplierUser - Esqueci minha senha", "Como fornecedor que esqueceu a senha\r\nQuero pedir um link de redefinição por e-ma" +
+                "il\r\nPara voltar a acessar o portal", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "EsqueciSenhaSupplierUser.feature"
 #line hidden

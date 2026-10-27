@@ -26,9 +26,9 @@ namespace Jotanunes.External.BddTests.Features.Api.WorkerTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/WorkerTests", "Worker - Alocação", "Como fornecedor autenticado\nQuero informar quais trabalhadores estão alocados em " +
-                "cada obra\nPara que a Jotanunes saiba quem está na obra e cobre os documentos de " +
-                "cada um", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/WorkerTests", "Worker - Alocação", "Como fornecedor autenticado\r\nQuero informar quais trabalhadores estão alocados em" +
+                " cada obra\r\nPara que a Jotanunes saiba quem está na obra e cobre os documentos d" +
+                "e cada um", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "AlocacaoWorker.feature"
 #line hidden

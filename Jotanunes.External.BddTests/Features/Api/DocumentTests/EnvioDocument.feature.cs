@@ -26,8 +26,8 @@ namespace Jotanunes.External.BddTests.Features.Api.DocumentTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/DocumentTests", "Document - Envio", "Como fornecedor autenticado\nQuero enviar os documentos exigidos pela Jotanunes\nPa" +
-                "ra manter a minha empresa em conformidade", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/DocumentTests", "Document - Envio", "Como fornecedor autenticado\r\nQuero enviar os documentos exigidos pela Jotanunes\r\n" +
+                "Para manter a minha empresa em conformidade", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "EnvioDocument.feature"
 #line hidden

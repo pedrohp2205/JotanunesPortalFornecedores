@@ -26,8 +26,8 @@ namespace Jotanunes.External.BddTests.Features.TestingEnvironmentSetup
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/TestingEnvironmentSetup", "Verifica configuração da API externa", "Verifica configuração da API externa (Portal do Fornecedor)\npara garantir que o a" +
-                "mbiente de teste esteja corretamente configurado.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/TestingEnvironmentSetup", "Verifica configuração da API externa", "Verifica configuração da API externa (Portal do Fornecedor)\r\npara garantir que o " +
+                "ambiente de teste esteja corretamente configurado.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "VerificaConfiguracaoDaApi.feature"
 #line hidden

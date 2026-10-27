@@ -26,8 +26,8 @@ namespace Jotanunes.External.BddTests.Features.Api.SupplierUserSessionTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserSessionTests", "SupplierUserSession - Leitura", "Como fornecedor autenticado\nQuero consultar os dados do meu acesso\nPara que o por" +
-                "tal exiba quem está conectado e a empresa representada", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserSessionTests", "SupplierUserSession - Leitura", "Como fornecedor autenticado\r\nQuero consultar os dados do meu acesso\r\nPara que o p" +
+                "ortal exiba quem está conectado e a empresa representada", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "LeituraSupplierUserSession.feature"
 #line hidden

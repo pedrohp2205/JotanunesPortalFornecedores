@@ -26,8 +26,8 @@ namespace Jotanunes.External.BddTests.Features.Api.DocumentTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/DocumentTests", "Document - Checklist de conformidade", "Como fornecedor autenticado\nQuero ver o checklist de documentos de uma solicitaçã" +
-                "o da minha empresa\nPara saber o que já entreguei e o que ainda falta", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/DocumentTests", "Document - Checklist de conformidade", "Como fornecedor autenticado\r\nQuero ver o checklist de documentos de uma solicitaç" +
+                "ão da minha empresa\r\nPara saber o que já entreguei e o que ainda falta", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "ChecklistDocument.feature"
 #line hidden

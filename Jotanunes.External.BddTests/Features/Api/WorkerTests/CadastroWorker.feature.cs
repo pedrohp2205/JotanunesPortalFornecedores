@@ -26,9 +26,9 @@ namespace Jotanunes.External.BddTests.Features.Api.WorkerTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/WorkerTests", "Worker - Cadastro", "Como fornecedor autenticado\nQuero manter o cadastro dos trabalhadores da minha em" +
-                "presa\nPara alocá-los nas obras e enviar os documentos deles sem redigitar nome e" +
-                " CPF", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/WorkerTests", "Worker - Cadastro", "Como fornecedor autenticado\r\nQuero manter o cadastro dos trabalhadores da minha e" +
+                "mpresa\r\nPara alocá-los nas obras e enviar os documentos deles sem redigitar nome" +
+                " e CPF", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "CadastroWorker.feature"
 #line hidden

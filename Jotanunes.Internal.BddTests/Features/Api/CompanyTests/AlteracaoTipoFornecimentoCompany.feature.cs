@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.CompanyTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/CompanyTests", "Company - Alteração do tipo de fornecimento", "Como membro da equipe da Jotanunes\nQuero alterar o tipo de fornecimento de uma em" +
-                "presa\nPara refletir se ela fornece material, mão de obra ou os dois", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/CompanyTests", "Company - Alteração do tipo de fornecimento", "Como membro da equipe da Jotanunes\r\nQuero alterar o tipo de fornecimento de uma e" +
+                "mpresa\r\nPara refletir se ela fornece material, mão de obra ou os dois", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "AlteracaoTipoFornecimentoCompany.feature"
 #line hidden

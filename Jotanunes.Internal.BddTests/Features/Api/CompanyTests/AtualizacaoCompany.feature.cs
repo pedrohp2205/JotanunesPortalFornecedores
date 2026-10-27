@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.CompanyTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/CompanyTests", "Company - Atualização", "Como membro da equipe da Jotanunes\nQuero atualizar os dados cadastrais de uma emp" +
-                "resa fornecedora\nPara manter o cadastro correto", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/CompanyTests", "Company - Atualização", "Como membro da equipe da Jotanunes\r\nQuero atualizar os dados cadastrais de uma em" +
+                "presa fornecedora\r\nPara manter o cadastro correto", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "AtualizacaoCompany.feature"
 #line hidden

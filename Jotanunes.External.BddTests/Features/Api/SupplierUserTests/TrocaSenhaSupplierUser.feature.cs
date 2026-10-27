@@ -26,8 +26,8 @@ namespace Jotanunes.External.BddTests.Features.Api.SupplierUserTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserTests", "SupplierUser - Troca de senha", "Como fornecedor autenticado\nQuero trocar a minha senha\nPara substituir a senha pr" +
-                "ovisória recebida da Jotanunes", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserTests", "SupplierUser - Troca de senha", "Como fornecedor autenticado\r\nQuero trocar a minha senha\r\nPara substituir a senha " +
+                "provisória recebida da Jotanunes", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "TrocaSenhaSupplierUser.feature"
 #line hidden

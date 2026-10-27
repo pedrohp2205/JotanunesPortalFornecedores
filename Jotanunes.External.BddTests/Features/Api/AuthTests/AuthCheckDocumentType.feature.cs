@@ -26,9 +26,9 @@ namespace Jotanunes.External.BddTests.Features.Api.AuthTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/AuthTests", "Auth Check - DocumentType", "Como um usuário do sistema\nQuero ter a segurança de que o acesso aos tipos de doc" +
-                "umento está sendo corretamente verificado\nPara garantir que apenas fornecedores " +
-                "autenticados e com senha definitiva possam consultá-los", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/AuthTests", "Auth Check - DocumentType", "Como um usuário do sistema\r\nQuero ter a segurança de que o acesso aos tipos de do" +
+                "cumento está sendo corretamente verificado\r\nPara garantir que apenas fornecedore" +
+                "s autenticados e com senha definitiva possam consultá-los", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "AuthCheckDocumentType.feature"
 #line hidden

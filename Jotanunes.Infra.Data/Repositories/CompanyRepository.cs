@@ -49,7 +49,25 @@ public class CompanyRepository : GenericRepository<Company>, ICompanyRepository
 
         var totalCount = await query.CountAsync();
 
-        var items = await query.OrderBy(c => c.CorporateName)
+        if (!string.IsNullOrWhiteSpace(filter.OrderBy))
+        {
+            bool isDesc = filter.OrderDirection?.ToLower() == "desc";
+
+            query = filter.OrderBy.ToLower() switch
+            {
+                "corporatename" => isDesc ? query.OrderByDescending(c => c.CorporateName) : query.OrderBy(c => c.CorporateName),
+                "tradename" => isDesc ? query.OrderByDescending(c => c.TradeName) : query.OrderBy(c => c.TradeName),
+                "cnpj" => isDesc ? query.OrderByDescending(c => c.Cnpj) : query.OrderBy(c => c.Cnpj),
+                "status" => isDesc ? query.OrderByDescending(c => c.Status) : query.OrderBy(c => c.Status),
+                _ => query.OrderBy(c => c.CorporateName)
+            };
+        }
+        else
+        {
+            query = query.OrderBy(c => c.CorporateName);
+        }
+
+        var items = await query
                             .Skip((pageParams.PageNumber - 1) * pageParams.PageSize)
                             .Take(pageParams.PageSize)
                             .ToListAsync();

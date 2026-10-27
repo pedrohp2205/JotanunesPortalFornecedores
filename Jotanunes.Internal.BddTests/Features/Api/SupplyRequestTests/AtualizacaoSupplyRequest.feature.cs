@@ -26,9 +26,9 @@ namespace Jotanunes.Internal.BddTests.Features.Api.SupplyRequestTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplyRequestTests", "SupplyRequest - Atualização", "Como membro da equipe da Jotanunes\nQuero ajustar a quantidade de trabalhadores ex" +
-                "igida em uma solicitação de mão de obra\nPara acompanhar a meta de trabalhadores " +
-                "em dia", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplyRequestTests", "SupplyRequest - Atualização", "Como membro da equipe da Jotanunes\r\nQuero ajustar a quantidade de trabalhadores e" +
+                "xigida em uma solicitação de mão de obra\r\nPara acompanhar a meta de trabalhadore" +
+                "s em dia", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "AtualizacaoSupplyRequest.feature"
 #line hidden

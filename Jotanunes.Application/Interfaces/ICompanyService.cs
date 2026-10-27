@@ -10,6 +10,5 @@ public interface ICompanyService
     Task<CompanyDto> GetById(long id);
     Task<CompanyDto> Create(CompanyCreateDto model);
     Task<CompanyDto> Update(long id, CompanyUpdateDto model);
-    Task<CompanyDto> ChangeSupplierType(long id, CompanyChangeSupplierTypeDto model);
     Task<CompanyDto> Delete(long id);
 }

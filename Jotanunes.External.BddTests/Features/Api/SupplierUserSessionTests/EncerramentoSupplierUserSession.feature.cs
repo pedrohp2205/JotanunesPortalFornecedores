@@ -26,8 +26,8 @@ namespace Jotanunes.External.BddTests.Features.Api.SupplierUserSessionTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserSessionTests", "SupplierUserSession - Encerramento", "Como fornecedor autenticado\nQuero sair do portal\nPara que a minha sessão não poss" +
-                "a mais ser renovada", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserSessionTests", "SupplierUserSession - Encerramento", "Como fornecedor autenticado\r\nQuero sair do portal\r\nPara que a minha sessão não po" +
+                "ssa mais ser renovada", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "EncerramentoSupplierUserSession.feature"
 #line hidden

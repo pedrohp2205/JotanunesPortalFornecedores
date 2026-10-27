@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.CompanyTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/CompanyTests", "Company - Exclusão", "Como membro da equipe da Jotanunes\nQuero excluir uma empresa fornecedora\nPara que" +
-                " ela deixe de aparecer nas consultas", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/CompanyTests", "Company - Exclusão", "Como membro da equipe da Jotanunes\r\nQuero excluir uma empresa fornecedora\r\nPara q" +
+                "ue ela deixe de aparecer nas consultas", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "ExclusaoCompany.feature"
 #line hidden

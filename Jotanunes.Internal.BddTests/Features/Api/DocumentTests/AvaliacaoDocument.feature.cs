@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.DocumentTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/DocumentTests", "Document - Avaliação", "Como membro da equipe da Jotanunes\nQuero aprovar ou rejeitar os documentos enviad" +
-                "os\nPara validar a conformidade do fornecedor", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/DocumentTests", "Document - Avaliação", "Como membro da equipe da Jotanunes\r\nQuero aprovar ou rejeitar os documentos envia" +
+                "dos\r\nPara validar a conformidade do fornecedor", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "AvaliacaoDocument.feature"
 #line hidden

@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.SupplyRequestTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplyRequestTests", "SupplyRequest - Leitura", "Como membro da equipe da Jotanunes\nQuero consultar as solicitações de forneciment" +
-                "o\nPara acompanhar o que cada fornecedor ainda precisa entregar", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplyRequestTests", "SupplyRequest - Leitura", "Como membro da equipe da Jotanunes\r\nQuero consultar as solicitações de fornecimen" +
+                "to\r\nPara acompanhar o que cada fornecedor ainda precisa entregar", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "LeituraSupplyRequest.feature"
 #line hidden
