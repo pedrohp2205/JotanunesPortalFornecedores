@@ -51,6 +51,7 @@ public class SupplyRequestRepository : GenericRepository<SupplyRequest>, ISupply
                                 .FirstOrDefaultAsync(sr => sr.Id == id);
     }
 
+    // Indica se há solicitação ativa da empresa em algum dos tipos informados (aceita flags).
     public async Task<bool> HasActive(long companyId, SupplierType supplierTypes)
     {
         return await _context.SupplyRequests
@@ -76,15 +77,27 @@ public class SupplyRequestRepository : GenericRepository<SupplyRequest>, ISupply
                                 .Include(sr => sr.WorkSite)
                                 .AsQueryable();
 
+        if (filter.CompanyId.HasValue)
+        {
+            query = query.Where(sr => sr.CompanyId == filter.CompanyId.Value);
+        }
+
+        if (filter.WorkSiteId.HasValue)
+        {
+            query = query.Where(sr => sr.WorkSiteId == filter.WorkSiteId.Value);
+        }
+
         if (!string.IsNullOrWhiteSpace(filter.CompanyName))
         {
-            query = query.Where(sr => sr.Company.CorporateName.ToLower().Contains(filter.CompanyName.ToLower()) 
-                                   || sr.Company.TradeName.ToLower().Contains(filter.CompanyName.ToLower()));
+            var companyName = filter.CompanyName.ToLower();
+            query = query.Where(sr => sr.Company.CorporateName.ToLower().Contains(companyName)
+                                   || sr.Company.TradeName.ToLower().Contains(companyName));
         }
 
         if (!string.IsNullOrWhiteSpace(filter.WorkSiteName))
         {
-            query = query.Where(sr => sr.WorkSite.Name.ToLower().Contains(filter.WorkSiteName.ToLower()));
+            var workSiteName = filter.WorkSiteName.ToLower();
+            query = query.Where(sr => sr.WorkSite.Name.ToLower().Contains(workSiteName));
         }
 
         if (filter.SupplierType.HasValue)
