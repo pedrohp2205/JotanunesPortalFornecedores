@@ -27,6 +27,7 @@ public class SupplyRequestServiceTests
     private readonly Mock<ISupplierUserRepository> _users = new();
     private readonly Mock<IWorkSiteRepository> _workSites = new();
     private readonly Mock<IPasswordHasher> _passwordHasher = new();
+    private readonly Mock<IPasswordGenerator> _passwordGenerator = new();
     private readonly SupplyRequest _request = new(1, 1, SupplierType.ManpowerLabor, 3);
     private readonly SupplyRequestService _service;
 
@@ -39,11 +40,18 @@ public class SupplyRequestServiceTests
         _repository.Setup(r => r.GetById(It.IsAny<long>())).ReturnsAsync(_request);
         _workSites.Setup(w => w.GetById(It.IsAny<long>())).ReturnsAsync(new WorkSite("Obra Teste"));
         _passwordHasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("hash");
+        _passwordGenerator.Setup(g => g.Generate()).Returns("Provisoria#123");
         _mapper.Setup(m => m.Map<SupplyRequestDto>(It.IsAny<object>()))
             .Returns<object>(source => new SupplyRequestDto { Id = ((SupplyRequest)source).Id });
         _compliance.Setup(c => c.GetPendingBatch(It.IsAny<IReadOnlyCollection<SupplyRequest>>()))
             .ReturnsAsync(new Dictionary<long, SupplyRequestPendingDto>());
-        _service = new SupplyRequestService(_mapper.Object, _unitOfWork.Object, _compliance.Object, _notifications.Object, _passwordHasher.Object);
+        _service = new SupplyRequestService(
+            _mapper.Object,
+            _unitOfWork.Object,
+            _compliance.Object,
+            _notifications.Object,
+            _passwordHasher.Object,
+            _passwordGenerator.Object);
     }
 
     private static SupplyRequestPendingDto Pending(int onboarding = 0, int recurring = 0, int? required = null, int upToDate = 0)
@@ -137,7 +145,7 @@ public class SupplyRequestServiceTests
                 },
                 SupplierType = companyType
             },
-            User = new SupplierUserCreateDto { Name = "Maria Souza", Email = "maria@alfa.com.br", TemporaryPassword = "Senha@1234" },
+            User = new SupplierUserCreateDto { Name = "Maria Souza", Email = "maria@alfa.com.br" },
             WorkSiteId = 1,
             SupplierType = requestType
         };
@@ -161,7 +169,7 @@ public class SupplyRequestServiceTests
         Assert.Same(addedCompany, addedRequest!.Company);
         Assert.Equal(SupplyRequestStatus.Open, addedRequest.Status);
         _unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Once);
-        _notifications.Verify(n => n.Welcome(user, "Senha@1234"), Times.Once);
+        _notifications.Verify(n => n.Welcome(user, "Provisoria#123"), Times.Once);
         _notifications.Verify(n => n.SupplyRequestCreated(It.IsAny<SupplyRequest>()), Times.Once);
     }
 

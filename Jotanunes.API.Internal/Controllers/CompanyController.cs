@@ -76,9 +76,9 @@ public class CompanyController(ICompanyService companyService, ISupplierUserServ
     }
 
     [HttpPost("{id:long}/users/{userId:long}/reset-password")]
-    public async Task<ActionResult<SupplierUserDto>> ResetUserPassword(long id, long userId, [FromBody] SupplierUserResetPasswordDto resetDto)
+    public async Task<ActionResult<SupplierUserDto>> ResetUserPassword(long id, long userId)
     {
-        var user = await supplierUserService.ResetPassword(id, userId, resetDto);
+        var user = await supplierUserService.ResetPassword(id, userId);
         return Ok(user);
     }
 }

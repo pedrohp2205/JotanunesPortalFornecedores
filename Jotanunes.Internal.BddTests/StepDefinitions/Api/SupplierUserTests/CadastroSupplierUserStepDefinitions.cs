@@ -11,19 +11,19 @@ internal class CadastroSupplierUserStepDefinitions(
     CompanyGivenContext companyCtx,
     SupplierUserResultContext supplierUserResultCtx)
 {
-    [When(@"eu criar o acesso ""(.*)"" com a senha provisória ""(.*)"" para a empresa cadastrada")]
-    public async Task QuandoEuCriarOAcessoParaAEmpresaCadastrada(string email, string senhaProvisoria)
+    [When(@"eu criar o acesso ""(.*)"" para a empresa cadastrada")]
+    public async Task QuandoEuCriarOAcessoParaAEmpresaCadastrada(string email)
     {
         supplierUserResultCtx.Acesso = await supplierUserFix.CreateAsync(
             companyCtx.IdEmpresaCadastrada!.Value,
-            SupplierUserDomainDriver.CriarSupplierUserCreateDtoValido(email, senhaProvisoria));
+            SupplierUserDomainDriver.CriarSupplierUserCreateDtoValido(email));
     }
 
-    [When(@"eu criar o acesso ""(.*)"" com a senha provisória ""(.*)"" para uma empresa inexistente")]
-    public async Task QuandoEuCriarOAcessoParaUmaEmpresaInexistente(string email, string senhaProvisoria)
+    [When(@"eu criar o acesso ""(.*)"" para uma empresa inexistente")]
+    public async Task QuandoEuCriarOAcessoParaUmaEmpresaInexistente(string email)
     {
         await supplierUserFix.CreateAsync(
             TestConstants.ID_INEXISTENTE,
-            SupplierUserDomainDriver.CriarSupplierUserCreateDtoValido(email, senhaProvisoria));
+            SupplierUserDomainDriver.CriarSupplierUserCreateDtoValido(email));
     }
 }

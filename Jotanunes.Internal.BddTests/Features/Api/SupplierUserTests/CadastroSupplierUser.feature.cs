@@ -115,7 +115,7 @@ namespace Jotanunes.Internal.BddTests.Features.Api.SupplierUserTests
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/SupplierUserTests/CadastroSupplierUser.feature.ndjson", 6);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/SupplierUserTests/CadastroSupplierUser.feature.ndjson", 5);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -143,15 +143,15 @@ namespace Jotanunes.Internal.BddTests.Features.Api.SupplierUserTests
             await this.TestTearDownAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Criar um acesso com senha provisória")]
+        [global::Xunit.FactAttribute(DisplayName="Criar um acesso")]
         [global::Xunit.TraitAttribute("FeatureTitle", "SupplierUser - Cadastro")]
-        [global::Xunit.TraitAttribute("Description", "Criar um acesso com senha provisória")]
-        public async global::System.Threading.Tasks.Task CriarUmAcessoComSenhaProvisoria()
+        [global::Xunit.TraitAttribute("Description", "Criar um acesso")]
+        public async global::System.Threading.Tasks.Task CriarUmAcesso()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "0";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Criar um acesso com senha provisória", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Criar um acesso", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 11
@@ -168,8 +168,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 await this.FeatureBackgroundAsync();
 #line hidden
 #line 12
-    await testRunner.WhenAsync("eu criar o acesso \"maria@alfa.com.br\" com a senha provisória \"Provisoria@1\" para " +
-                        "a empresa cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+    await testRunner.WhenAsync("eu criar o acesso \"maria@alfa.com.br\" para a empresa cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
 #line 13
     await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
@@ -210,8 +209,7 @@ await this.FeatureBackgroundAsync();
                         "da", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
 #line hidden
 #line 18
-    await testRunner.WhenAsync("eu criar o acesso \"maria@alfa.com.br\" com a senha provisória \"Provisoria@1\" para " +
-                        "a empresa cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+    await testRunner.WhenAsync("eu criar o acesso \"maria@alfa.com.br\" para a empresa cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
 #line 19
     await testRunner.ThenAsync("eu recebo uma resposta 400 Bad Request", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
@@ -224,15 +222,15 @@ await this.FeatureBackgroundAsync();
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Não permitir criar acesso com senha provisória curta")]
+        [global::Xunit.FactAttribute(DisplayName="Criar acesso para uma empresa inexistente")]
         [global::Xunit.TraitAttribute("FeatureTitle", "SupplierUser - Cadastro")]
-        [global::Xunit.TraitAttribute("Description", "Não permitir criar acesso com senha provisória curta")]
-        public async global::System.Threading.Tasks.Task NaoPermitirCriarAcessoComSenhaProvisoriaCurta()
+        [global::Xunit.TraitAttribute("Description", "Criar acesso para uma empresa inexistente")]
+        public async global::System.Threading.Tasks.Task CriarAcessoParaUmaEmpresaInexistente()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "2";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Não permitir criar acesso com senha provisória curta", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Criar acesso para uma empresa inexistente", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 22
@@ -249,48 +247,12 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 await this.FeatureBackgroundAsync();
 #line hidden
 #line 23
-    await testRunner.WhenAsync("eu criar o acesso \"maria@alfa.com.br\" com a senha provisória \"curta\" para a empre" +
-                        "sa cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+    await testRunner.WhenAsync("eu criar o acesso \"maria@alfa.com.br\" para uma empresa inexistente", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
 #line 24
-    await testRunner.ThenAsync("eu recebo uma resposta 400 Bad Request", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
-#line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
-        [global::Xunit.FactAttribute(DisplayName="Criar acesso para uma empresa inexistente")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "SupplierUser - Cadastro")]
-        [global::Xunit.TraitAttribute("Description", "Criar acesso para uma empresa inexistente")]
-        public async global::System.Threading.Tasks.Task CriarAcessoParaUmaEmpresaInexistente()
-        {
-            string[] tagsOfScenario = ((string[])(null));
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "3";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Criar acesso para uma empresa inexistente", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 26
-this.ScenarioInitialize(scenarioInfo, ruleInfo);
-#line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
-#line 8
-await this.FeatureBackgroundAsync();
-#line hidden
-#line 27
-    await testRunner.WhenAsync("eu criar o acesso \"maria@alfa.com.br\" com a senha provisória \"Provisoria@1\" para " +
-                        "uma empresa inexistente", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
-#line hidden
-#line 28
     await testRunner.ThenAsync("eu recebo uma resposta 404 Not Found", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
-#line 29
+#line 25
     await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Empresa não encontrada\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }

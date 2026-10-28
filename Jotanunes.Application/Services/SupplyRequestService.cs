@@ -18,19 +18,22 @@ public class SupplyRequestService : ISupplyRequestService
     private readonly IDocumentComplianceService _complianceService;
     private readonly ISupplierNotificationService _notificationService;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IPasswordGenerator _passwordGenerator;
 
     public SupplyRequestService(
         IMapper mapper,
         IUnitOfWork unitOfWork,
         IDocumentComplianceService complianceService,
         ISupplierNotificationService notificationService,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        IPasswordGenerator passwordGenerator)
     {
         _mapper = mapper;
         _unitOfWork = unitOfWork;
         _complianceService = complianceService;
         _notificationService = notificationService;
         _passwordHasher = passwordHasher;
+        _passwordGenerator = passwordGenerator;
     }
 
     public async Task<PageList<SupplyRequestDto>> Get(PageParams pageParams, SupplyRequestFilter filter)
@@ -126,7 +129,9 @@ public class SupplyRequestService : ISupplyRequestService
             !company.Supplies(model.SupplierType),
             "A empresa não está cadastrada para fornecer este tipo de serviço.");
 
-        var user = new SupplierUser(0, model.User.Name, model.User.Email, _passwordHasher.Hash(model.User.TemporaryPassword));
+        var temporaryPassword = _passwordGenerator.Generate();
+
+        var user = new SupplierUser(0, model.User.Name, model.User.Email, _passwordHasher.Hash(temporaryPassword));
         company.AddUser(user);
 
         var supplyRequest = new SupplyRequest(company, model.WorkSiteId, model.SupplierType, model.RequiredWorkerCount);
@@ -138,7 +143,7 @@ public class SupplyRequestService : ISupplyRequestService
         // Recarrega com Company e WorkSite para montar o e-mail.
         var created = await GetExisting(supplyRequest.Id);
 
-        await _notificationService.Welcome(user, model.User.TemporaryPassword);
+        await _notificationService.Welcome(user, temporaryPassword);
         await _notificationService.SupplyRequestCreated(created);
 
         return await ToDto(created);

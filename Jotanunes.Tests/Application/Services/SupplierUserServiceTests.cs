@@ -14,6 +14,7 @@ public class SupplierUserServiceTests
     private readonly Mock<ISupplierUserRepository> _users = new();
     private readonly Mock<IMapper> _mapper = new();
     private readonly Mock<IPasswordHasher> _passwordHasher = new();
+    private readonly Mock<IPasswordGenerator> _passwordGenerator = new();
     private readonly Mock<ISupplierNotificationService> _notifications = new();
     private readonly SupplierUser _user = new(1, "Maria Souza", "maria@exemplo.com.br", "hash-atual");
     private readonly SupplierUserService _service;
@@ -23,7 +24,13 @@ public class SupplierUserServiceTests
         _unitOfWork.SetupGet(u => u.SupplierUserRepository).Returns(_users.Object);
         _users.Setup(r => r.GetById(It.IsAny<long>())).ReturnsAsync(_user);
         _passwordHasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("hash-provisorio");
-        _service = new SupplierUserService(_mapper.Object, _unitOfWork.Object, _passwordHasher.Object, _notifications.Object);
+        _passwordGenerator.Setup(g => g.Generate()).Returns("Provisoria#123");
+        _service = new SupplierUserService(
+            _mapper.Object,
+            _unitOfWork.Object,
+            _passwordHasher.Object,
+            _passwordGenerator.Object,
+            _notifications.Object);
     }
 
     [Fact]
@@ -54,7 +61,7 @@ public class SupplierUserServiceTests
     {
         _user.SetPassword("hash-atual");
 
-        await _service.ResetPassword(1, 10, new SupplierUserResetPasswordDto { TemporaryPassword = "Provisoria#123" });
+        await _service.ResetPassword(1, 10);
 
         Assert.Equal("hash-provisorio", _user.PasswordHash);
         Assert.True(_user.MustChangePassword);
@@ -68,7 +75,7 @@ public class SupplierUserServiceTests
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.Deactivate(999, 10));
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.Activate(999, 10));
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-            _service.ResetPassword(999, 10, new SupplierUserResetPasswordDto { TemporaryPassword = "Provisoria#123" }));
+            _service.ResetPassword(999, 10));
 
         _unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
         _notifications.Verify(n => n.TemporaryPasswordIssued(It.IsAny<SupplierUser>(), It.IsAny<string>()), Times.Never);

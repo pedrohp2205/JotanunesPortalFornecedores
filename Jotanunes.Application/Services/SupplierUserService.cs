@@ -8,22 +8,26 @@ using Jotanunes.Domain.Interfaces;
 namespace Jotanunes.Application.Services;
 
 // Provisionamento dos acessos ao Portal do Fornecedor, feito pela frente interna.
+// A senha provisória é sorteada aqui e só chega ao fornecedor por e-mail.
 public class SupplierUserService : ISupplierUserService
 {
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IPasswordGenerator _passwordGenerator;
     private readonly ISupplierNotificationService _notificationService;
 
     public SupplierUserService(
         IMapper mapper,
         IUnitOfWork unitOfWork,
         IPasswordHasher passwordHasher,
+        IPasswordGenerator passwordGenerator,
         ISupplierNotificationService notificationService)
     {
         _mapper = mapper;
         _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
+        _passwordGenerator = passwordGenerator;
         _notificationService = notificationService;
     }
 
@@ -51,18 +55,20 @@ public class SupplierUserService : ISupplierUserService
             await _unitOfWork.SupplierUserRepository.EmailInUse(model.Email),
             "Já existe um usuário cadastrado com este e-mail.");
 
+        var temporaryPassword = _passwordGenerator.Generate();
+
         var user = new SupplierUser(
             companyId,
             model.Name,
             model.Email,
-            _passwordHasher.Hash(model.TemporaryPassword));
+            _passwordHasher.Hash(temporaryPassword));
 
         company.AddUser(user);
 
         _unitOfWork.CompanyRepository.Update(company);
         await _unitOfWork.SaveChangesAsync();
 
-        await _notificationService.Welcome(user, model.TemporaryPassword);
+        await _notificationService.Welcome(user, temporaryPassword);
 
         return _mapper.Map<SupplierUserDto>(user);
     }
@@ -91,16 +97,18 @@ public class SupplierUserService : ISupplierUserService
         return _mapper.Map<SupplierUserDto>(user);
     }
 
-    public async Task<SupplierUserDto> ResetPassword(long companyId, long userId, SupplierUserResetPasswordDto model)
+    public async Task<SupplierUserDto> ResetPassword(long companyId, long userId)
     {
         var user = await GetUser(companyId, userId);
 
-        user.ResetPassword(_passwordHasher.Hash(model.TemporaryPassword));
+        var temporaryPassword = _passwordGenerator.Generate();
+
+        user.ResetPassword(_passwordHasher.Hash(temporaryPassword));
 
         _unitOfWork.SupplierUserRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
 
-        await _notificationService.TemporaryPasswordIssued(user, model.TemporaryPassword);
+        await _notificationService.TemporaryPasswordIssued(user, temporaryPassword);
 
         return _mapper.Map<SupplierUserDto>(user);
     }

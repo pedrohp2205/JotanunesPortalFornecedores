@@ -18,13 +18,12 @@ public class SupplierUserDomainDriver
         return usuario;
     }
 
-    public static SupplierUserCreateDto CriarSupplierUserCreateDtoValido(string email, string senhaProvisoria)
+    public static SupplierUserCreateDto CriarSupplierUserCreateDtoValido(string email)
     {
         return new SupplierUserCreateDto
         {
             Name = "Maria Souza",
-            Email = email,
-            TemporaryPassword = senhaProvisoria
+            Email = email
         };
     }
 }

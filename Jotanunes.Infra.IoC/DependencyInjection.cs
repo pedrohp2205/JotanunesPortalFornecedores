@@ -38,6 +38,7 @@ public static class DependencyInjection
         service.AddScoped<IUnitOfWork, UnitOfWork>();
 
         service.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
+        service.AddScoped<IPasswordGenerator, TemporaryPasswordGenerator>();
         service.AddScoped<ITokenService, JwtTokenService>();
 
         service.AddScoped<ICompanyService, CompanyService>();

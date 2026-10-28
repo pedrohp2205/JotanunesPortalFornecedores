@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.SupplierUserTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserTests", "SupplierUser - Redefinição de senha pela equipe", "Como membro da equipe da Jotanunes\r\nQuero definir uma senha provisória para um ac" +
-                "esso\r\nPara destravar um fornecedor que perdeu a senha", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserTests", "SupplierUser - Redefinição de senha pela equipe", "Como membro da equipe da Jotanunes\r\nQuero redefinir a senha de um acesso\r\nPara de" +
+                "stravar um fornecedor que perdeu a senha", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "RedefinicaoSenhaSupplierUser.feature"
 #line hidden
@@ -119,7 +119,7 @@ namespace Jotanunes.Internal.BddTests.Features.Api.SupplierUserTests
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/SupplierUserTests/RedefinicaoSenhaSupplierUser.feature.ndjson", 5);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/SupplierUserTests/RedefinicaoSenhaSupplierUser.feature.ndjson", 4);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -147,15 +147,15 @@ namespace Jotanunes.Internal.BddTests.Features.Api.SupplierUserTests
             await this.TestTearDownAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Definir uma senha provisória")]
+        [global::Xunit.FactAttribute(DisplayName="Redefinir a senha de um acesso")]
         [global::Xunit.TraitAttribute("FeatureTitle", "SupplierUser - Redefinição de senha pela equipe")]
-        [global::Xunit.TraitAttribute("Description", "Definir uma senha provisória")]
-        public async global::System.Threading.Tasks.Task DefinirUmaSenhaProvisoria()
+        [global::Xunit.TraitAttribute("Description", "Redefinir a senha de um acesso")]
+        public async global::System.Threading.Tasks.Task RedefinirASenhaDeUmAcesso()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "0";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Definir uma senha provisória", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Redefinir a senha de um acesso", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 12
@@ -172,7 +172,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 await this.FeatureBackgroundAsync();
 #line hidden
 #line 13
-    await testRunner.WhenAsync("eu redefinir a senha do acesso cadastrado para \"Provisoria@2\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+    await testRunner.WhenAsync("eu redefinir a senha do acesso cadastrado", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
 #line 14
     await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
@@ -184,15 +184,15 @@ await this.FeatureBackgroundAsync();
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Não permitir senha provisória curta")]
+        [global::Xunit.FactAttribute(DisplayName="Redefinir a senha de um acesso de outra empresa")]
         [global::Xunit.TraitAttribute("FeatureTitle", "SupplierUser - Redefinição de senha pela equipe")]
-        [global::Xunit.TraitAttribute("Description", "Não permitir senha provisória curta")]
-        public async global::System.Threading.Tasks.Task NaoPermitirSenhaProvisoriaCurta()
+        [global::Xunit.TraitAttribute("Description", "Redefinir a senha de um acesso de outra empresa")]
+        public async global::System.Threading.Tasks.Task RedefinirASenhaDeUmAcessoDeOutraEmpresa()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "1";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Não permitir senha provisória curta", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Redefinir a senha de um acesso de outra empresa", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 17
@@ -209,52 +209,18 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 await this.FeatureBackgroundAsync();
 #line hidden
 #line 18
-    await testRunner.WhenAsync("eu redefinir a senha do acesso cadastrado para \"curta\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
-#line hidden
-#line 19
-    await testRunner.ThenAsync("eu recebo uma resposta 400 Bad Request", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
-#line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
-        [global::Xunit.FactAttribute(DisplayName="Redefinir a senha de um acesso de outra empresa")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "SupplierUser - Redefinição de senha pela equipe")]
-        [global::Xunit.TraitAttribute("Description", "Redefinir a senha de um acesso de outra empresa")]
-        public async global::System.Threading.Tasks.Task RedefinirASenhaDeUmAcessoDeOutraEmpresa()
-        {
-            string[] tagsOfScenario = ((string[])(null));
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "2";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Redefinir a senha de um acesso de outra empresa", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 21
-this.ScenarioInitialize(scenarioInfo, ruleInfo);
-#line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
-#line 8
-await this.FeatureBackgroundAsync();
-#line hidden
-#line 22
     await testRunner.GivenAsync("que existe outra empresa cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
 #line hidden
-#line 23
+#line 19
     await testRunner.AndAsync("que existe um usuário de acesso \"joao@beta.com.br\" para a outra empresa", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
-#line 24
+#line 20
     await testRunner.WhenAsync("eu redefinir a senha do acesso da outra empresa pela empresa cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
-#line 25
+#line 21
     await testRunner.ThenAsync("eu recebo uma resposta 404 Not Found", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
-#line 26
+#line 22
     await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Usuário não encontrado\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }

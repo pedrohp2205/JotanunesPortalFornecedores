@@ -26,7 +26,7 @@ internal class CadastroComNovaEmpresaSupplyRequestStepDefinitions(
         supplyRequestResultCtx.Solicitacao = await supplyRequestFix.CreateWithNewCompanyAsync(new SupplyRequestWithNewCompanyCreateDto
         {
             Company = CompanyDomainDriver.CriarCompanyCreateDtoValido(cnpj, tipoFornecimento: supplierType),
-            User = SupplierUserDomainDriver.CriarSupplierUserCreateDtoValido(email, "Provisoria@1"),
+            User = SupplierUserDomainDriver.CriarSupplierUserCreateDtoValido(email),
             WorkSiteId = workSiteCtx.IdObraCadastrada!.Value,
             SupplierType = supplierType,
             RequiredWorkerCount = supplierType == SupplierType.ManpowerLabor ? 3 : null

@@ -1,4 +1,3 @@
-using Jotanunes.Application.DTOs.Users;
 using Jotanunes.Internal.BddTests.Support.Contexts;
 using Jotanunes.Internal.BddTests.Support.Fixtures.ApiClients;
 
@@ -11,13 +10,12 @@ internal class RedefinicaoSenhaSupplierUserStepDefinitions(
     SupplierUserGivenContext supplierUserCtx,
     SupplierUserResultContext supplierUserResultCtx)
 {
-    [When(@"eu redefinir a senha do acesso cadastrado para ""(.*)""")]
-    public async Task QuandoEuRedefinirASenhaDoAcessoCadastrado(string senhaProvisoria)
+    [When(@"eu redefinir a senha do acesso cadastrado")]
+    public async Task QuandoEuRedefinirASenhaDoAcessoCadastrado()
     {
         supplierUserResultCtx.Acesso = await supplierUserFix.ResetPasswordAsync(
             companyCtx.IdEmpresaCadastrada!.Value,
-            supplierUserCtx.IdUsuarioCadastrado!.Value,
-            new SupplierUserResetPasswordDto { TemporaryPassword = senhaProvisoria });
+            supplierUserCtx.IdUsuarioCadastrado!.Value);
     }
 
     [When(@"eu redefinir a senha do acesso da outra empresa pela empresa cadastrada")]
@@ -25,7 +23,6 @@ internal class RedefinicaoSenhaSupplierUserStepDefinitions(
     {
         await supplierUserFix.ResetPasswordAsync(
             companyCtx.IdEmpresaCadastrada!.Value,
-            supplierUserCtx.IdUsuarioOutraEmpresa!.Value,
-            new SupplierUserResetPasswordDto { TemporaryPassword = "Provisoria@2" });
+            supplierUserCtx.IdUsuarioOutraEmpresa!.Value);
     }
 }

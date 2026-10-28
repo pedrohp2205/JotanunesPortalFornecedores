@@ -40,10 +40,10 @@ internal class SupplierUserApiClientFixture(
         return await httpResponseCtx.TryReadFromJsonAsync<SupplierUserDto>();
     }
 
-    public async Task<SupplierUserDto?> ResetPasswordAsync(long companyId, long userId, SupplierUserResetPasswordDto? dto)
+    public async Task<SupplierUserDto?> ResetPasswordAsync(long companyId, long userId)
     {
         httpResponseCtx.Response = await apiClientFixture.Client
-            .PostAsJsonAsync($"{BaseUrl(companyId)}/{userId}/reset-password", dto);
+            .PostAsync($"{BaseUrl(companyId)}/{userId}/reset-password", null);
         return await httpResponseCtx.TryReadFromJsonAsync<SupplierUserDto>();
     }
 }
