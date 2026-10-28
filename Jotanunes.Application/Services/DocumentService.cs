@@ -7,6 +7,7 @@ using Jotanunes.Domain.Exceptions;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Domain.Pagination;
+using Jotanunes.Domain.Time;
 
 namespace Jotanunes.Application.Services;
 
@@ -99,7 +100,7 @@ public class DocumentService : IDocumentService
 
             if (documentType.Category == DocumentCategory.Recurring && (referencePeriodStart is null || referencePeriodEnd is null))
             {
-                var currentPeriod = supplyRequest.WorkSite.GetCurrentPeriod(DateOnly.FromDateTime(DateTime.UtcNow));
+                var currentPeriod = supplyRequest.WorkSite.GetCurrentPeriod(BrazilTime.Today());
                 referencePeriodStart ??= currentPeriod.Start;
                 referencePeriodEnd ??= currentPeriod.End;
             }
@@ -123,7 +124,7 @@ public class DocumentService : IDocumentService
             documentType.RequiresExpirationDate && model.ExpirationDate is null,
             "Data de validade é obrigatória para este tipo de documento.");
         JotanunesException.When(
-            model.ExpirationDate.HasValue && model.ExpirationDate.Value < DateOnly.FromDateTime(DateTime.UtcNow),
+            model.ExpirationDate.HasValue && model.ExpirationDate.Value < BrazilTime.Today(),
             "Documento já está vencido.");
 
         var storageKey = $"companies/{companyId}/documents/{Guid.NewGuid()}-{SanitizeFileName(originalFileName)}";

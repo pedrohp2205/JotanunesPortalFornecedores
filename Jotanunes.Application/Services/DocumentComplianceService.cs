@@ -3,6 +3,7 @@ using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Interfaces;
+using Jotanunes.Domain.Time;
 
 namespace Jotanunes.Application.Services;
 
@@ -102,7 +103,7 @@ public class DocumentComplianceService : IDocumentComplianceService
     private async Task<ChecklistData> LoadData(IReadOnlyCollection<SupplyRequest> supplyRequests)
     {
         var data = new ChecklistData();
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = BrazilTime.Today();
 
         var earliestPeriodStart = supplyRequests.Min(sr => sr.WorkSite.GetCurrentPeriod(today).Start);
 
@@ -212,7 +213,7 @@ public class DocumentComplianceService : IDocumentComplianceService
     private static ComplianceChecklistDto BuildChecklist(SupplyRequest supplyRequest, ChecklistData data)
     {
         var company = supplyRequest.Company;
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = BrazilTime.Today();
         var (periodStart, periodEnd) = supplyRequest.WorkSite.GetCurrentPeriod(today);
 
         // Os recorrentes seguem o tipo de fornecimento da solicitação; a habilitação, os tipos da empresa.

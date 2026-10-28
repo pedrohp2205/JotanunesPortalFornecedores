@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 
 using Jotanunes.Domain.Enums;
+using Jotanunes.Domain.Time;
 using Jotanunes.External.BddTests.Drivers;
 using Jotanunes.External.BddTests.Support;
 using Jotanunes.External.BddTests.Support.Contexts;
@@ -93,7 +94,7 @@ internal class EnvioDocumentStepDefinitions(
     [Then(@"o documento enviado deve estar vinculado à solicitação cadastrada no período de referência atual")]
     public void EntaoODocumentoEnviadoDeveEstarVinculadoASolicitacaoCadastradaNoPeriodoDeReferenciaAtual()
     {
-        var hoje = DateOnly.FromDateTime(DateTime.UtcNow);
+        var hoje = BrazilTime.Today();
 
         documentResultCtx.Documento.Should().NotBeNull();
         documentResultCtx.Documento!.SupplyRequestId.Should().Be(supplyRequestCtx.IdSolicitacaoCadastrada);

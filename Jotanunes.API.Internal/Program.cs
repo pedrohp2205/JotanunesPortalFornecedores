@@ -1,3 +1,4 @@
+using Jotanunes.API.Shared.Json;
 using Jotanunes.API.Shared.Middlewares;
 using Jotanunes.Infra.IoC;
 using Microsoft.OpenApi.Models;
@@ -10,7 +11,8 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.ApplyPendingMigrations();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+    options.JsonSerializerOptions.Converters.Add(new BrazilDateTimeConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

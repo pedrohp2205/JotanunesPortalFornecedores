@@ -6,6 +6,7 @@ using Jotanunes.Domain.Exceptions;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Domain.Pagination;
+using Jotanunes.Domain.Time;
 
 namespace Jotanunes.Application.Services;
 
@@ -22,7 +23,7 @@ public class WorkerService : IWorkerService
         _periodComplianceService = periodComplianceService;
     }
 
-    private static DateOnly Today => DateOnly.FromDateTime(DateTime.UtcNow);
+    private static DateOnly Today => BrazilTime.Today();
 
     public async Task<PageList<WorkerDto>> Get(PageParams pageParams, WorkerFilter filter)
     {

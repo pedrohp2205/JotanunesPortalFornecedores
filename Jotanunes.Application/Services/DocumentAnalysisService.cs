@@ -8,6 +8,7 @@ using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Domain.Projections;
+using Jotanunes.Domain.Time;
 using Microsoft.Extensions.Logging;
 
 namespace Jotanunes.Application.Services;
@@ -282,7 +283,7 @@ public class DocumentAnalysisService : IDocumentAnalysisService
             return false;
         }
 
-        var today = DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime);
+        var today = BrazilTime.Today(_timeProvider);
         var expirationFinding = ApplyExpirationDate(analyzer, engine, extraction, document);
         var findings = analyzer.Validate(extraction, document, today).ToList();
         if (expirationFinding is not null)

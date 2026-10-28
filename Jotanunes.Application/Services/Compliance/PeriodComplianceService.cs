@@ -5,6 +5,7 @@ using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Interfaces;
+using Jotanunes.Domain.Time;
 
 namespace Jotanunes.Application.Services.Compliance;
 
@@ -64,8 +65,8 @@ public class PeriodComplianceService : IPeriodComplianceService
         var allocations = await _unitOfWork.WorkerAllocationRepository.GetBySupplyRequest(report.SupplyRequestId, activeOnly: false);
 
         var allocatedWorkers = allocations
-            .Where(a => DateOnly.FromDateTime(a.AllocatedAt) <= report.PeriodEnd
-                && (a.ReleasedAt is null || DateOnly.FromDateTime(a.ReleasedAt.Value) >= report.PeriodStart))
+            .Where(a => BrazilTime.ToDateOnly(a.AllocatedAt) <= report.PeriodEnd
+                && (a.ReleasedAt is null || BrazilTime.ToDateOnly(a.ReleasedAt.Value) >= report.PeriodStart))
             .Select(a => a.Worker)
             .DistinctBy(w => w.Id)
             .ToList();
