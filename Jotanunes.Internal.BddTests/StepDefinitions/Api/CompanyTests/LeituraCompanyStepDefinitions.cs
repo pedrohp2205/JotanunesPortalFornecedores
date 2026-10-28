@@ -22,6 +22,12 @@ internal class LeituraCompanyStepDefinitions(
         _empresas = await companyFix.GetAsync($"?cnpj={Uri.EscapeDataString(cnpj)}");
     }
 
+    [When(@"eu listar as empresas ordenando por ""(.*)"" na direção ""(.*)""")]
+    public async Task QuandoEuListarAsEmpresasOrdenandoPor(string campo, string direcao)
+    {
+        _empresas = await companyFix.GetAsync($"?orderBy={Uri.EscapeDataString(campo)}&orderDirection={Uri.EscapeDataString(direcao)}");
+    }
+
     [When(@"eu consultar a empresa cadastrada")]
     public async Task QuandoEuConsultarAEmpresaCadastrada()
     {
@@ -40,6 +46,13 @@ internal class LeituraCompanyStepDefinitions(
         _empresas.Should().NotBeNull();
         _empresas!.Items.Select(e => e.Id).Should().ContainSingle()
             .Which.Should().Be(companyCtx.IdEmpresaCadastrada);
+    }
+
+    [Then(@"a primeira empresa da listagem deve ser a outra empresa cadastrada")]
+    public void EntaoAPrimeiraEmpresaDaListagemDeveSerAOutraEmpresaCadastrada()
+    {
+        _empresas.Should().NotBeNull();
+        _empresas!.Items.First().Id.Should().Be(companyCtx.IdOutraEmpresaCadastrada);
     }
 
     [Then(@"os dados retornados devem ser da empresa cadastrada")]

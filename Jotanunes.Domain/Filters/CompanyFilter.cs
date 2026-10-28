@@ -9,6 +9,6 @@ public class CompanyFilter
     public string Cnpj { get; set; } = string.Empty;
     public CompanyStatus? Status { get; set; }
     public SupplierType? SupplierType { get; set; }
-    public string? OrderBy { get; set; }
-    public string? OrderDirection { get; set; }
+    public CompanyOrderBy? OrderBy { get; set; }
+    public OrderDirection? OrderDirection { get; set; }
 }

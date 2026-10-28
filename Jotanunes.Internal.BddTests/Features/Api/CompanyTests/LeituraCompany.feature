@@ -14,6 +14,15 @@ Cenário: Listar empresas filtrando pelo CNPJ
     Então eu recebo uma resposta 200 OK
     E a listagem de empresas contém apenas a empresa cadastrada
 
+Cenário: Listar empresas ordenando pela razão social em ordem decrescente
+    Quando eu listar as empresas ordenando por "CorporateName" na direção "Descending"
+    Então eu recebo uma resposta 200 OK
+    E a primeira empresa da listagem deve ser a outra empresa cadastrada
+
+Cenário: Não permitir ordenar as empresas por um campo desconhecido
+    Quando eu listar as empresas ordenando por "RazaoSocial" na direção "Ascending"
+    Então eu recebo uma resposta 400 Bad Request
+
 Cenário: Consultar uma empresa pelo identificador
     Quando eu consultar a empresa cadastrada
     Então eu recebo uma resposta 200 OK
