@@ -26,6 +26,7 @@ public class SupplyRequestServiceTests
     private readonly Mock<ICompanyRepository> _companies = new();
     private readonly Mock<ISupplierUserRepository> _users = new();
     private readonly Mock<IWorkSiteRepository> _workSites = new();
+    private readonly Mock<IDocumentTypeRepository> _documentTypes = new();
     private readonly Mock<IPasswordHasher> _passwordHasher = new();
     private readonly Mock<IPasswordGenerator> _passwordGenerator = new();
     private readonly SupplyRequest _request = new(1, 1, SupplierType.ManpowerLabor, 3);
@@ -294,5 +295,91 @@ public class SupplyRequestServiceTests
         var result = await _service.GetById(7);
 
         Assert.Equal(2, result.Pending!.MissingOnboardingCount);
+    }
+
+    private static Company ManpowerCompany()
+    {
+        return new Company(
+            "11.222.333/0001-81",
+            "Construtora Alfa Ltda",
+            "Alfa",
+            "contato@alfa.com.br",
+            "81999998888",
+            "Maria Souza",
+            new Address("Rua A", "10", "Centro", "Recife", "PE", "50000000"),
+            SupplierType.ManpowerLabor)
+        { Id = 1 };
+    }
+
+    private static DocumentType ManpowerType(long id)
+    {
+        return new DocumentType($"COD{id}", $"Documento {id}", DocumentCategory.Recurring, SupplierType.ManpowerLabor, DocumentSubject.Company) { Id = id };
+    }
+
+    private void Applicable(params DocumentType[] types)
+    {
+        _unitOfWork.SetupGet(u => u.DocumentTypeRepository).Returns(_documentTypes.Object);
+        _documentTypes.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(types.ToList());
+    }
+
+    [Fact]
+    public async Task Should_Open_The_Request_Requiring_Only_The_Selected_Document_Types()
+    {
+        Applicable(ManpowerType(10), ManpowerType(20));
+        SupplyRequest? added = null;
+        _repository.Setup(r => r.Add(It.IsAny<SupplyRequest>())).Callback<SupplyRequest>(sr => added = sr);
+        _companies.Setup(c => c.GetById(It.IsAny<long>())).ReturnsAsync(ManpowerCompany());
+
+        await _service.Create(new SupplyRequestCreateDto
+        {
+            CompanyId = 1,
+            WorkSiteId = 1,
+            SupplierType = SupplierType.ManpowerLabor,
+            RequiredWorkerCount = 3,
+            RequiredDocumentTypeIds = [20]
+        });
+
+        Assert.Equal(new long[] { 20 }, added!.RequiredDocuments.Select(r => r.DocumentTypeId));
+    }
+
+    [Fact]
+    public async Task Should_Reject_A_Document_Type_That_Does_Not_Apply_To_The_Request()
+    {
+        Applicable(ManpowerType(10));
+        _companies.Setup(c => c.GetById(It.IsAny<long>())).ReturnsAsync(ManpowerCompany());
+
+        var ex = await Assert.ThrowsAsync<JotanunesException>(() => _service.Create(new SupplyRequestCreateDto
+        {
+            CompanyId = 1,
+            WorkSiteId = 1,
+            SupplierType = SupplierType.ManpowerLabor,
+            RequiredDocumentTypeIds = [10, 999]
+        }));
+
+        Assert.Contains("não existe, está inativo ou não se aplica", ex.Message);
+        _unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task Should_Replace_The_Selection_Of_An_Open_Request()
+    {
+        Applicable(ManpowerType(10), ManpowerType(20));
+        _request.SetRequiredDocuments([ManpowerType(10)]);
+
+        await _service.UpdateRequiredDocuments(7, new SupplyRequestDocumentsUpdateDto { DocumentTypeIds = [20] });
+
+        Assert.Equal(new long[] { 20 }, _request.RequiredDocuments.Select(r => r.DocumentTypeId));
+        _unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task Should_Clear_The_Selection_When_No_Document_Type_Is_Sent()
+    {
+        Applicable(ManpowerType(10));
+        _request.SetRequiredDocuments([ManpowerType(10)]);
+
+        await _service.UpdateRequiredDocuments(7, new SupplyRequestDocumentsUpdateDto());
+
+        Assert.Empty(_request.RequiredDocuments);
     }
 }

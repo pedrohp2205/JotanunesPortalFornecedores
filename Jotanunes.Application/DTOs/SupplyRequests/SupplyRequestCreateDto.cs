@@ -16,4 +16,7 @@ public class SupplyRequestCreateDto
     public SupplierType SupplierType { get; set; }
 
     public int? RequiredWorkerCount { get; set; }
+
+    // Tipos de documento que o fornecedor deverá enviar. Lista vazia não exige nada.
+    public List<long> RequiredDocumentTypeIds { get; set; } = [];
 }

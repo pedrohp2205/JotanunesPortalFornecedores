@@ -2,6 +2,7 @@ using Jotanunes.Application.DTOs.Compliance;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Enums;
+using Jotanunes.Domain.Exceptions;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Domain.Time;
 
@@ -100,12 +101,100 @@ public class DocumentComplianceService : IDocumentComplianceService
         };
     }
 
+    // Alimenta a tela em que o operacional monta a solicitação: todos os tipos
+    // aplicáveis, já marcando o que a empresa entregou na habilitação.
+    public async Task<DocumentOptionsDto> GetDocumentOptions(long companyId, SupplierType supplierType, long? supplyRequestId = null)
+    {
+        var company = await _unitOfWork.CompanyRepository.GetById(companyId);
+        if (company is null)
+        {
+            throw new KeyNotFoundException("Empresa não encontrada");
+        }
+
+        JotanunesException.When(
+            supplierType is not (SupplierType.Material or SupplierType.ManpowerLabor),
+            "Tipo de fornecimento deve ser Material ou Mão de obra.");
+
+        JotanunesException.When(
+            (company.SupplierType & supplierType) == 0,
+            "A empresa não está cadastrada para fornecer este tipo de serviço.");
+
+        HashSet<long>? selectedTypeIds = null;
+        if (supplyRequestId.HasValue)
+        {
+            var supplyRequest = await _unitOfWork.SupplyRequestRepository.GetById(supplyRequestId.Value);
+            if (supplyRequest is null || supplyRequest.CompanyId != companyId)
+            {
+                throw new KeyNotFoundException("Solicitação não encontrada");
+            }
+
+            var requirements = await _unitOfWork.SupplyRequestRepository.GetRequirements(new[] { supplyRequest.Id });
+            selectedTypeIds = requirements.Select(r => r.DocumentTypeId).ToHashSet();
+        }
+
+        var data = new ChecklistData();
+        var applicableTypes = await GetApplicableTypes(supplierType, data);
+        var onboardingDocs = await _unitOfWork.DocumentRepository.GetOnboardingByCompanies(new[] { companyId });
+        var onboardingItems = (await GetOnboardingItems(company, onboardingDocs, data)).ToDictionary(i => i.DocumentTypeId);
+
+        List<DocumentOptionDto> Options(DocumentCategory category, DocumentSubject subject)
+        {
+            return applicableTypes
+                .Where(t => t.Category == category && t.Subject == subject)
+                .Select(t => ToOption(t, onboardingItems.GetValueOrDefault(t.Id), selectedTypeIds))
+                .ToList();
+        }
+
+        return new DocumentOptionsDto
+        {
+            SupplyRequestId = supplyRequestId,
+            CompanyId = company.Id,
+            CompanyCorporateName = company.CorporateName,
+            SupplierType = supplierType,
+            CompanyOnboarding = Options(DocumentCategory.Onboarding, DocumentSubject.Company),
+            CompanyRecurring = Options(DocumentCategory.Recurring, DocumentSubject.Company),
+            WorkerOnboarding = Options(DocumentCategory.Onboarding, DocumentSubject.Worker),
+            WorkerRecurring = Options(DocumentCategory.Recurring, DocumentSubject.Worker)
+        };
+    }
+
+    // A habilitação é o único balde que a empresa carrega de uma solicitação
+    // para outra, então é o único em que "já tem" faz sentido.
+    private static DocumentOptionDto ToOption(DocumentType type, ChecklistItemDto? onboardingItem, HashSet<long>? selectedTypeIds)
+    {
+        var alreadyHas = onboardingItem?.IsSatisfied ?? false;
+        var suggested = !type.IsConditional && !alreadyHas;
+
+        return new DocumentOptionDto
+        {
+            DocumentTypeId = type.Id,
+            DocumentTypeCode = type.Code,
+            DocumentTypeName = type.Name,
+            Category = type.Category,
+            Subject = type.Subject,
+            IsConditional = type.IsConditional,
+            ConditionDescription = type.ConditionDescription,
+            Selected = selectedTypeIds?.Contains(type.Id) ?? suggested,
+            Suggested = suggested,
+            CompanyAlreadyHas = alreadyHas,
+            CompanyStatus = onboardingItem?.Status ?? ChecklistItemStatus.NotSent,
+            CompanyDocumentId = onboardingItem?.DocumentId,
+            CompanyDocumentExpirationDate = onboardingItem?.ExpirationDate
+        };
+    }
+
     private async Task<ChecklistData> LoadData(IReadOnlyCollection<SupplyRequest> supplyRequests)
     {
         var data = new ChecklistData();
         var today = BrazilTime.Today();
 
         var earliestPeriodStart = supplyRequests.Min(sr => sr.WorkSite.GetCurrentPeriod(today).Start);
+
+        var requirements = await _unitOfWork.SupplyRequestRepository.GetRequirements(supplyRequests.Select(sr => sr.Id).ToList());
+        foreach (var group in requirements.GroupBy(r => r.SupplyRequestId))
+        {
+            data.RequiredTypeIdsBySupplyRequest[group.Key] = group.Select(r => r.DocumentTypeId).ToHashSet();
+        }
 
         var documents = await _unitOfWork.DocumentRepository.GetBySupplyRequests(
             supplyRequests.Select(sr => sr.Id).ToList(),
@@ -216,14 +305,23 @@ public class DocumentComplianceService : IDocumentComplianceService
         var today = BrazilTime.Today();
         var (periodStart, periodEnd) = supplyRequest.WorkSite.GetCurrentPeriod(today);
 
-        // Os recorrentes seguem o tipo de fornecimento da solicitação; a habilitação, os tipos da empresa.
+        // Só entra no checklist o que a Jotanunes exigiu desta solicitação.
         var applicableTypes = data.TypesBySupplierType[supplyRequest.SupplierType];
+        var requiredTypeIds = data.RequiredTypeIdsBySupplyRequest.GetValueOrDefault(supplyRequest.Id, []);
+        var requiredTypes = applicableTypes.Where(t => requiredTypeIds.Contains(t.Id)).ToList();
 
-        var recurringCompanyTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Recurring && t.Subject == DocumentSubject.Company).ToList();
-        var recurringWorkerTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Recurring && t.Subject == DocumentSubject.Worker).ToList();
-        var onboardingWorkerTypes = applicableTypes.Where(t => t.Category == DocumentCategory.Onboarding && t.Subject == DocumentSubject.Worker).ToList();
+        var recurringCompanyTypes = requiredTypes.Where(t => t.Category == DocumentCategory.Recurring && t.Subject == DocumentSubject.Company).ToList();
+        var recurringWorkerTypes = requiredTypes.Where(t => t.Category == DocumentCategory.Recurring && t.Subject == DocumentSubject.Worker).ToList();
+        var onboardingWorkerTypes = requiredTypes.Where(t => t.Category == DocumentCategory.Onboarding && t.Subject == DocumentSubject.Worker).ToList();
 
-        var onboardingItems = data.OnboardingByCompany[company.Id];
+        var onboardingCompanyTypeIds = requiredTypes
+            .Where(t => t.Category == DocumentCategory.Onboarding && t.Subject == DocumentSubject.Company)
+            .Select(t => t.Id)
+            .ToHashSet();
+
+        var onboardingItems = data.OnboardingByCompany[company.Id]
+            .Where(i => onboardingCompanyTypeIds.Contains(i.DocumentTypeId))
+            .ToList();
 
         var recurringDocs = data.DocumentsBySupplyRequest
             .GetValueOrDefault(supplyRequest.Id, [])
@@ -286,5 +384,6 @@ public class DocumentComplianceService : IDocumentComplianceService
         public Dictionary<long, List<Document>> DocumentsBySupplyRequest { get; } = new();
         public Dictionary<long, List<WorkerAllocation>> AllocationsBySupplyRequest { get; } = new();
         public Dictionary<long, List<Document>> OnboardingByWorker { get; } = new();
+        public Dictionary<long, HashSet<long>> RequiredTypeIdsBySupplyRequest { get; } = new();
     }
 }

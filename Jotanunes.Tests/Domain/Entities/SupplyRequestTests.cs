@@ -120,4 +120,75 @@ public class SupplyRequestTests
         Assert.Equal(message, Assert.Throws<JotanunesException>(() => request.UpdateRequiredWorkerCount(10)).Message);
         Assert.Equal(message, Assert.Throws<JotanunesException>(() => request.EnsureNotClosed()).Message);
     }
+
+    private static DocumentType Type(long id, SupplierType appliesTo = SupplierType.ManpowerLabor)
+    {
+        return new DocumentType($"COD{id}", $"Documento {id}", DocumentCategory.Recurring, appliesTo, DocumentSubject.Company) { Id = id };
+    }
+
+    [Fact]
+    public void Should_Set_The_Required_Documents()
+    {
+        var request = ManpowerRequest();
+
+        request.SetRequiredDocuments([Type(10), Type(20)]);
+
+        Assert.Equal(new long[] { 10, 20 }, request.RequiredDocuments.Select(r => r.DocumentTypeId));
+    }
+
+    [Fact]
+    public void Should_Replace_The_Whole_Selection_Keeping_What_Stayed()
+    {
+        var request = ManpowerRequest();
+        request.SetRequiredDocuments([Type(10), Type(20)]);
+        var kept = request.RequiredDocuments.Single(r => r.DocumentTypeId == 10);
+
+        request.SetRequiredDocuments([Type(10), Type(30)]);
+
+        Assert.Equal(new long[] { 10, 30 }, request.RequiredDocuments.Select(r => r.DocumentTypeId));
+        Assert.Same(kept, request.RequiredDocuments.Single(r => r.DocumentTypeId == 10));
+    }
+
+    [Fact]
+    public void Should_Ignore_Repeated_Document_Types()
+    {
+        var request = ManpowerRequest();
+
+        request.SetRequiredDocuments([Type(10), Type(10)]);
+
+        Assert.Single(request.RequiredDocuments);
+    }
+
+    [Fact]
+    public void Should_Not_Require_A_Document_Type_From_Another_Supplier_Type()
+    {
+        var request = ManpowerRequest();
+
+        var ex = Assert.Throws<JotanunesException>(() => request.SetRequiredDocuments([Type(10, SupplierType.Material)]));
+
+        Assert.Equal("O tipo de documento \"Documento 10\" não se aplica a este tipo de fornecimento.", ex.Message);
+    }
+
+    [Fact]
+    public void Should_Not_Require_An_Inactive_Document_Type()
+    {
+        var request = ManpowerRequest();
+        var type = Type(10);
+        type.Deactivate();
+
+        var ex = Assert.Throws<JotanunesException>(() => request.SetRequiredDocuments([type]));
+
+        Assert.Equal("O tipo de documento \"Documento 10\" está inativo.", ex.Message);
+    }
+
+    [Fact]
+    public void Should_Not_Change_The_Selection_Of_A_Closed_Request()
+    {
+        var request = ManpowerRequest();
+        request.Complete();
+
+        Assert.Equal(
+            "Solicitação encerrada não aceita alterações nem novos documentos.",
+            Assert.Throws<JotanunesException>(() => request.SetRequiredDocuments([Type(10)])).Message);
+    }
 }

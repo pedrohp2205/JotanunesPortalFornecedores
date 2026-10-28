@@ -17,6 +17,7 @@ public class SupplyRequest : BaseEntity
     public int? RequiredWorkerCount { get; private set; }
     public SupplyRequestStatus Status { get; private set; }
     public DateTime? ClosedAt { get; private set; }
+    public List<DocumentRequirement> RequiredDocuments { get; private set; } = [];
 
     protected SupplyRequest() { }
 
@@ -38,6 +39,32 @@ public class SupplyRequest : BaseEntity
     }
 
     public bool IsClosed => Status is SupplyRequestStatus.Completed or SupplyRequestStatus.Cancelled;
+
+    // Substitui a seleção inteira: o que sai da lista deixa de ser cobrado do fornecedor.
+    public void SetRequiredDocuments(IReadOnlyCollection<DocumentType> documentTypes)
+    {
+        EnsureNotClosed();
+
+        foreach (var type in documentTypes)
+        {
+            JotanunesException.When(
+                !type.Active,
+                $"O tipo de documento \"{type.Name}\" está inativo.");
+
+            JotanunesException.When(
+                (type.AppliesTo & SupplierType) == 0,
+                $"O tipo de documento \"{type.Name}\" não se aplica a este tipo de fornecimento.");
+        }
+
+        var selectedIds = documentTypes.Select(t => t.Id).Distinct().ToList();
+
+        RequiredDocuments.RemoveAll(r => !selectedIds.Contains(r.DocumentTypeId));
+
+        foreach (var documentTypeId in selectedIds.Where(id => RequiredDocuments.All(r => r.DocumentTypeId != id)))
+        {
+            RequiredDocuments.Add(new DocumentRequirement(Id, documentTypeId));
+        }
+    }
 
     public void UpdateRequiredWorkerCount(int? requiredWorkerCount)
     {

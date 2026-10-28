@@ -21,6 +21,7 @@ public class DocumentComplianceServiceTests
     private readonly DocumentType _onboardingType = new("CNPJ", "Cartão CNPJ", DocumentCategory.Onboarding, SupplierType.Material, DocumentSubject.Company) { Id = 10 };
     private readonly DocumentType _recurringType = new("FOLHA", "Folha de pagamento", DocumentCategory.Recurring, SupplierType.Material, DocumentSubject.Company) { Id = 20 };
     private readonly DocumentComplianceService _service;
+    private List<DocumentType> _applicableTypes = [];
 
     public DocumentComplianceServiceTests()
     {
@@ -44,9 +45,17 @@ public class DocumentComplianceServiceTests
         _documents.Setup(d => d.GetOnboardingByWorkers(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document>());
         _companies.Setup(c => c.GetById(1)).ReturnsAsync(_company);
         _requests.Setup(r => r.GetById(1)).ReturnsAsync(() => Request(1));
-        _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { _onboardingType, _recurringType });
+        _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).Returns(() => Task.FromResult(_applicableTypes));
         _documents.Setup(d => d.GetOnboardingByCompanies(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document>());
         _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>())).ReturnsAsync(new List<Document>());
+
+        // Por padrão a solicitação exige tudo que se aplica a ela, que é o que o
+        // backfill gravou para as solicitações que já existiam.
+        _requests.Setup(r => r.GetRequirements(It.IsAny<IReadOnlyCollection<long>>()))
+            .ReturnsAsync((IReadOnlyCollection<long> ids) =>
+                ids.SelectMany(id => _applicableTypes.Select(t => new DocumentRequirement(id, t.Id))).ToList());
+
+        _applicableTypes = [_onboardingType, _recurringType];
 
         _service = new DocumentComplianceService(_unitOfWork.Object);
     }
@@ -284,7 +293,7 @@ public class DocumentComplianceServiceTests
     public async Task Should_Show_Conditional_Types_As_Optional_Without_Counting_As_Pending()
     {
         var simples = new DocumentType("SIMPLES", "Comprovante do Simples", DocumentCategory.Onboarding, SupplierType.Material, DocumentSubject.Company, isConditional: true, conditionDescription: "Optante do Simples Nacional") { Id = 30 };
-        _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { simples, _onboardingType, _recurringType });
+        _applicableTypes = [simples, _onboardingType, _recurringType];
         var period = CurrentPeriod();
         _documents.Setup(d => d.GetOnboardingByCompanies(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { ApprovedOnboarding() });
         _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>())).ReturnsAsync(new List<Document> { ApprovedRecurring(1, period.Start, period.End) });
@@ -306,7 +315,7 @@ public class DocumentComplianceServiceTests
     {
         var timesheet = WorkerType(40, "TIMESHEET");
         var receipt = WorkerType(41, "RECEIPT");
-        _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { _onboardingType, _recurringType, timesheet, receipt });
+        _applicableTypes = [_onboardingType, _recurringType, timesheet, receipt];
         var period = CurrentPeriod();
         Allocate(ManpowerRequest(1), Cicero());
         var approved = WorkerDocument(timesheet, 7, 1, period.Start, period.End, 1, d => d.Approve());
@@ -326,7 +335,7 @@ public class DocumentComplianceServiceTests
     public async Task Should_List_Allocated_Workers_Even_Without_Documents()
     {
         var timesheet = WorkerType(40, "TIMESHEET");
-        _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { timesheet });
+        _applicableTypes = [timesheet];
         Allocate(ManpowerRequest(1), Cicero(), Josefa());
 
         var checklist = await _service.GetChecklist(1);
@@ -344,7 +353,7 @@ public class DocumentComplianceServiceTests
     public async Task Should_Ignore_Documents_Of_Workers_No_Longer_Allocated()
     {
         var timesheet = WorkerType(40, "TIMESHEET");
-        _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { timesheet });
+        _applicableTypes = [timesheet];
         var period = CurrentPeriod();
         Allocate(ManpowerRequest(1), Josefa());
         _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>()))
@@ -362,7 +371,7 @@ public class DocumentComplianceServiceTests
     {
         var aso = WorkerType(50, "ASO", DocumentCategory.Onboarding);
         var timesheet = WorkerType(40, "TIMESHEET");
-        _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { aso, timesheet });
+        _applicableTypes = [aso, timesheet];
         var period = CurrentPeriod();
         Allocate(ManpowerRequest(1), Cicero());
         _documents.Setup(d => d.GetOnboardingByWorkers(It.IsAny<IReadOnlyCollection<long>>()))
@@ -382,7 +391,7 @@ public class DocumentComplianceServiceTests
     public async Task Should_Mark_Expired_Worker_Onboarding_Document_As_Not_Satisfied()
     {
         var aso = WorkerType(50, "ASO", DocumentCategory.Onboarding);
-        _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { aso });
+        _applicableTypes = [aso];
         Allocate(ManpowerRequest(1), Cicero());
         _documents.Setup(d => d.GetOnboardingByWorkers(It.IsAny<IReadOnlyCollection<long>>()))
             .ReturnsAsync(new List<Document> { WorkerOnboardingDocument(aso, 7, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1), 1) });
@@ -399,10 +408,107 @@ public class DocumentComplianceServiceTests
     public async Task Should_Not_Require_Worker_Onboarding_Types_For_Company_Onboarding()
     {
         var aso = WorkerType(50, "ASO", DocumentCategory.Onboarding);
-        _types.Setup(t => t.GetApplicable(It.IsAny<SupplierType>())).ReturnsAsync(new List<DocumentType> { _onboardingType, aso });
+        _applicableTypes = [_onboardingType, aso];
         _documents.Setup(d => d.GetOnboardingByCompanies(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { ApprovedOnboarding() });
 
         Assert.True(await _service.IsOnboardingComplete(1));
         Assert.Equal(new[] { "CNPJ" }, (await _service.GetChecklist(1)).OnboardingItems.Select(i => i.DocumentTypeCode));
+    }
+
+    private void Require(long supplyRequestId, params DocumentType[] types)
+    {
+        _requests.Setup(r => r.GetRequirements(It.IsAny<IReadOnlyCollection<long>>()))
+            .ReturnsAsync(types.Select(t => new DocumentRequirement(supplyRequestId, t.Id)).ToList());
+    }
+
+    [Fact]
+    public async Task Should_Only_Charge_The_Document_Types_Selected_For_The_Request()
+    {
+        Require(1, _recurringType);
+
+        var checklist = await _service.GetChecklist(1);
+
+        Assert.Empty(checklist.OnboardingItems);
+        Assert.Equal(new[] { "FOLHA" }, checklist.RecurringCompanyItems.Select(i => i.DocumentTypeCode));
+    }
+
+    [Fact]
+    public async Task Should_Not_Report_Unselected_Types_As_Pending()
+    {
+        Require(1, _recurringType);
+        var (start, end) = CurrentPeriod();
+        _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>()))
+            .ReturnsAsync(new List<Document> { ApprovedRecurring(1, start, end) });
+
+        // A habilitação não foi enviada, mas também não foi exigida desta solicitação.
+        Assert.Null(await _service.GetPending(1));
+    }
+
+    [Fact]
+    public async Task Should_Charge_Nothing_When_No_Document_Type_Was_Selected()
+    {
+        Require(1);
+
+        var checklist = await _service.GetChecklist(1);
+
+        Assert.Empty(checklist.OnboardingItems);
+        Assert.Empty(checklist.RecurringCompanyItems);
+        Assert.Null(await _service.GetPending(1));
+    }
+
+    [Fact]
+    public async Task Should_Keep_Company_Eligibility_Out_Of_The_Request_Selection()
+    {
+        Require(1, _recurringType);
+        _documents.Setup(d => d.GetOnboardingByCompanies(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document>());
+
+        // Desmarcar a habilitação numa solicitação não pode habilitar a empresa.
+        Assert.False(await _service.IsOnboardingComplete(1));
+    }
+
+    [Fact]
+    public async Task Should_Flag_Onboarding_The_Company_Already_Delivered_In_The_Options()
+    {
+        _documents.Setup(d => d.GetOnboardingByCompanies(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { ApprovedOnboarding() });
+
+        var options = await _service.GetDocumentOptions(1, SupplierType.Material);
+
+        var onboarding = Assert.Single(options.CompanyOnboarding);
+        Assert.True(onboarding.CompanyAlreadyHas);
+        Assert.Equal(ChecklistItemStatus.Approved, onboarding.CompanyStatus);
+        Assert.Equal(100, onboarding.CompanyDocumentId);
+        Assert.False(onboarding.Suggested);
+        Assert.False(onboarding.Selected);
+
+        var recurring = Assert.Single(options.CompanyRecurring);
+        Assert.False(recurring.CompanyAlreadyHas);
+        Assert.True(recurring.Suggested);
+        Assert.True(recurring.Selected);
+    }
+
+    [Fact]
+    public async Task Should_Not_Suggest_Conditional_Types_In_The_Options()
+    {
+        var simples = new DocumentType("SIMPLES", "Comprovante do Simples", DocumentCategory.Onboarding, SupplierType.Material, DocumentSubject.Company, isConditional: true, conditionDescription: "Optante do Simples Nacional") { Id = 30 };
+        _applicableTypes = [simples, _onboardingType, _recurringType];
+
+        var options = await _service.GetDocumentOptions(1, SupplierType.Material);
+
+        var option = Assert.Single(options.CompanyOnboarding, o => o.DocumentTypeCode == "SIMPLES");
+        Assert.True(option.IsConditional);
+        Assert.Equal("Optante do Simples Nacional", option.ConditionDescription);
+        Assert.False(option.Suggested);
+        Assert.False(option.Selected);
+    }
+
+    [Fact]
+    public async Task Should_Mark_The_Current_Selection_When_Options_Are_For_An_Existing_Request()
+    {
+        Require(1, _recurringType);
+
+        var options = await _service.GetDocumentOptions(1, SupplierType.Material, 1);
+
+        Assert.False(Assert.Single(options.CompanyOnboarding).Selected);
+        Assert.True(Assert.Single(options.CompanyRecurring).Selected);
     }
 }

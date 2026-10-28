@@ -48,7 +48,16 @@ public class SupplyRequestRepository : GenericRepository<SupplyRequest>, ISupply
         return await _context.SupplyRequests
                                 .Include(sr => sr.Company)
                                 .Include(sr => sr.WorkSite)
+                                .Include(sr => sr.RequiredDocuments)
                                 .FirstOrDefaultAsync(sr => sr.Id == id);
+    }
+
+    public async Task<List<DocumentRequirement>> GetRequirements(IReadOnlyCollection<long> supplyRequestIds)
+    {
+        return await _context.DocumentRequirements
+                                .AsNoTracking()
+                                .Where(r => supplyRequestIds.Contains(r.SupplyRequestId))
+                                .ToListAsync();
     }
 
     // Indica se há solicitação ativa da empresa em algum dos tipos informados (aceita flags).

@@ -221,6 +221,40 @@ namespace Jotanunes.Infra.Data.Migrations
                     b.ToTable("document_analyses", (string)null);
                 });
 
+            modelBuilder.Entity("Jotanunes.Domain.Entities.DocumentRequirement", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("DocumentTypeId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("SupplyRequestId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentTypeId");
+
+                    b.HasIndex("SupplyRequestId", "DocumentTypeId")
+                        .IsUnique()
+                        .HasFilter("[DeletedAt] IS NULL");
+
+                    b.ToTable("document_requirements", (string)null);
+                });
+
             modelBuilder.Entity("Jotanunes.Domain.Entities.DocumentType", b =>
                 {
                     b.Property<long>("Id")
@@ -788,6 +822,25 @@ namespace Jotanunes.Infra.Data.Migrations
                     b.Navigation("Findings");
                 });
 
+            modelBuilder.Entity("Jotanunes.Domain.Entities.DocumentRequirement", b =>
+                {
+                    b.HasOne("Jotanunes.Domain.Entities.DocumentType", "DocumentType")
+                        .WithMany()
+                        .HasForeignKey("DocumentTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Jotanunes.Domain.Entities.SupplyRequest", "SupplyRequest")
+                        .WithMany("RequiredDocuments")
+                        .HasForeignKey("SupplyRequestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DocumentType");
+
+                    b.Navigation("SupplyRequest");
+                });
+
             modelBuilder.Entity("Jotanunes.Domain.Entities.PeriodComplianceReport", b =>
                 {
                     b.HasOne("Jotanunes.Domain.Entities.SupplyRequest", "SupplyRequest")
@@ -910,6 +963,11 @@ namespace Jotanunes.Infra.Data.Migrations
             modelBuilder.Entity("Jotanunes.Domain.Entities.Document", b =>
                 {
                     b.Navigation("Analysis");
+                });
+
+            modelBuilder.Entity("Jotanunes.Domain.Entities.SupplyRequest", b =>
+                {
+                    b.Navigation("RequiredDocuments");
                 });
 
             modelBuilder.Entity("Jotanunes.Domain.Entities.WorkSite", b =>

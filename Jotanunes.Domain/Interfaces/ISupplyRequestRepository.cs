@@ -9,6 +9,7 @@ public interface ISupplyRequestRepository : IGenericRepository<SupplyRequest>
     Task<PageList<SupplyRequest>> Get(PageParams pageParams, SupplyRequestFilter filter);
     Task<List<SupplyRequest>> GetAll(SupplyRequestFilter filter, bool activeOnly = false);
     Task<SupplyRequest?> GetById(long id);
+    Task<List<DocumentRequirement>> GetRequirements(IReadOnlyCollection<long> supplyRequestIds);
     Task<bool> HasActive(long companyId, Enums.SupplierType supplierTypes);
     Task<bool> ActiveExists(long companyId, long workSiteId, Enums.SupplierType supplierType);
 }

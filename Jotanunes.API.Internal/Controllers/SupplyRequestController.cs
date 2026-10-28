@@ -2,6 +2,7 @@ using Jotanunes.Application.DTOs.Compliance;
 using Jotanunes.Application.DTOs.SupplyRequests;
 using Jotanunes.Application.DTOs.Workers;
 using Jotanunes.Application.Interfaces;
+using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Pagination;
 using Microsoft.AspNetCore.Mvc;
@@ -13,7 +14,8 @@ namespace Jotanunes.API.Internal.Controllers;
 public class SupplyRequestController(
     ISupplyRequestService supplyRequestService,
     IWorkerService workerService,
-    IPeriodComplianceService periodComplianceService) : ControllerBase
+    IPeriodComplianceService periodComplianceService,
+    IDocumentComplianceService complianceService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PageList<SupplyRequestDto>>> Get([FromQuery] PageParams pageParams, [FromQuery] SupplyRequestFilter filter)
@@ -26,6 +28,30 @@ public class SupplyRequestController(
     public async Task<ActionResult<SupplyRequestDto>> GetById(long id)
     {
         var supplyRequest = await supplyRequestService.GetById(id);
+        return Ok(supplyRequest);
+    }
+
+    // Monta a tela de seleção antes de abrir a solicitação.
+    [HttpGet("document-options")]
+    public async Task<ActionResult<DocumentOptionsDto>> GetDocumentOptions([FromQuery] long companyId, [FromQuery] SupplierType supplierType)
+    {
+        var options = await complianceService.GetDocumentOptions(companyId, supplierType);
+        return Ok(options);
+    }
+
+    // A mesma tela para uma solicitação já aberta, com a seleção atual marcada.
+    [HttpGet("{id:long}/document-options")]
+    public async Task<ActionResult<DocumentOptionsDto>> GetDocumentOptionsForRequest(long id)
+    {
+        var supplyRequest = await supplyRequestService.GetById(id);
+        var options = await complianceService.GetDocumentOptions(supplyRequest.CompanyId, supplyRequest.SupplierType, id);
+        return Ok(options);
+    }
+
+    [HttpPut("{id:long}/documents")]
+    public async Task<ActionResult<SupplyRequestDto>> UpdateRequiredDocuments(long id, [FromBody] SupplyRequestDocumentsUpdateDto model)
+    {
+        var supplyRequest = await supplyRequestService.UpdateRequiredDocuments(id, model);
         return Ok(supplyRequest);
     }
 

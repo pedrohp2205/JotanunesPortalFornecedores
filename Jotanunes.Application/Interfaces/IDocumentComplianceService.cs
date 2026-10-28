@@ -10,4 +10,6 @@ public interface IDocumentComplianceService
     Task<SupplyRequestPendingDto?> GetPending(long supplyRequestId);
     Task<Dictionary<long, SupplyRequestPendingDto>> GetPendingBatch(IReadOnlyCollection<SupplyRequest> supplyRequests);
     Task<bool> IsOnboardingComplete(long companyId);
+    // Tipos aplicáveis para o operacional escolher, com o que a empresa já entregou.
+    Task<DocumentOptionsDto> GetDocumentOptions(long companyId, Domain.Enums.SupplierType supplierType, long? supplyRequestId = null);
 }

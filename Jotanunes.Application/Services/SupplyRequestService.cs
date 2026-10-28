@@ -3,6 +3,7 @@ using Jotanunes.Application.DTOs.Compliance;
 using Jotanunes.Application.DTOs.SupplyRequests;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Entities;
+using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Exceptions;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
@@ -94,7 +95,10 @@ public class SupplyRequestService : ISupplyRequestService
             await _unitOfWork.SupplyRequestRepository.ActiveExists(model.CompanyId, model.WorkSiteId, model.SupplierType),
             "Já existe uma solicitação ativa desta empresa para esta obra e este tipo de fornecimento.");
 
+        var documentTypes = await ResolveRequiredDocuments(model.RequiredDocumentTypeIds, model.SupplierType);
+
         var supplyRequest = new SupplyRequest(model.CompanyId, model.WorkSiteId, model.SupplierType, model.RequiredWorkerCount);
+        supplyRequest.SetRequiredDocuments(documentTypes);
 
         _unitOfWork.SupplyRequestRepository.Add(supplyRequest);
         await _unitOfWork.SaveChangesAsync();
@@ -135,6 +139,7 @@ public class SupplyRequestService : ISupplyRequestService
         company.AddUser(user);
 
         var supplyRequest = new SupplyRequest(company, model.WorkSiteId, model.SupplierType, model.RequiredWorkerCount);
+        supplyRequest.SetRequiredDocuments(await ResolveRequiredDocuments(model.RequiredDocumentTypeIds, model.SupplierType));
 
         _unitOfWork.CompanyRepository.Add(company);
         _unitOfWork.SupplyRequestRepository.Add(supplyRequest);
@@ -238,6 +243,39 @@ public class SupplyRequestService : ISupplyRequestService
     private static string Plural(int count, string singular, string plural)
     {
         return count == 1 ? singular : plural;
+    }
+
+    public async Task<SupplyRequestDto> UpdateRequiredDocuments(long id, SupplyRequestDocumentsUpdateDto model)
+    {
+        var supplyRequest = await GetExisting(id);
+
+        var documentTypes = await ResolveRequiredDocuments(model.DocumentTypeIds, supplyRequest.SupplierType);
+
+        supplyRequest.SetRequiredDocuments(documentTypes);
+
+        await _unitOfWork.SaveChangesAsync();
+
+        return await ToDto(supplyRequest);
+    }
+
+    // Filtra pelos aplicáveis em vez de buscar por id: de quebra valida que o tipo
+    // está ativo e atende o fornecimento da solicitação.
+    private async Task<List<DocumentType>> ResolveRequiredDocuments(IReadOnlyCollection<long> documentTypeIds, SupplierType supplierType)
+    {
+        var ids = documentTypeIds.Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        var applicable = await _unitOfWork.DocumentTypeRepository.GetApplicable(supplierType);
+        var selected = applicable.Where(t => ids.Contains(t.Id)).ToList();
+
+        JotanunesException.When(
+            selected.Count != ids.Count,
+            "Algum tipo de documento informado não existe, está inativo ou não se aplica a este tipo de fornecimento.");
+
+        return selected;
     }
 
     private async Task<SupplyRequest> GetExisting(long id, long? companyId = null)

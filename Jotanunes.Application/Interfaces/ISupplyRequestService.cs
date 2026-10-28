@@ -11,6 +11,7 @@ public interface ISupplyRequestService
     Task<SupplyRequestDto> Create(SupplyRequestCreateDto model);
     Task<SupplyRequestDto> CreateWithNewCompany(SupplyRequestWithNewCompanyCreateDto model);
     Task<SupplyRequestDto> Update(long id, SupplyRequestUpdateDto model);
+    Task<SupplyRequestDto> UpdateRequiredDocuments(long id, SupplyRequestDocumentsUpdateDto model);
     Task<SupplyRequestDto> Complete(long id);
     Task<SupplyRequestDto> Cancel(long id);
 }

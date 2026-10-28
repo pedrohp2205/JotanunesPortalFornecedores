@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Jotanunes.Internal.BddTests.Drivers;
 using Jotanunes.Internal.BddTests.Support.Contexts;
 using Jotanunes.Internal.BddTests.Support.Fixtures;
@@ -24,6 +25,13 @@ internal class SupplyRequestStepDefinitions(
         await using var context = databaseFixture.CreateDbContext();
 
         var solicitacao = SupplyRequestDomainDriver.CriarSolicitacaoValida(idEmpresa, idObra, SupplyRequestDomainDriver.TipoFornecimento(tipoFornecimento));
+
+        // Exige tudo que se aplica, que é o que o backfill gravou nas solicitações antigas.
+        var tiposAplicaveis = await context.DocumentTypes
+            .Where(t => t.Active && (t.AppliesTo & solicitacao.SupplierType) != 0)
+            .ToListAsync();
+
+        solicitacao.SetRequiredDocuments(tiposAplicaveis);
         if (situacao == "concluída")
         {
             solicitacao.Complete();
