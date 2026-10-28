@@ -63,11 +63,6 @@ public class CompanyService : ICompanyService
             throw new KeyNotFoundException("Empresa não encontrada");
         }
 
-        var removedTypes = company.SupplierType & ~model.SupplierType;
-        JotanunesException.When(
-            removedTypes != 0 && await _unitOfWork.SupplyRequestRepository.HasActive(id, removedTypes),
-            "Existem solicitações ativas do tipo de fornecimento que está sendo removido. Conclua ou cancele antes de alterar.");
-
         company.Update(
             model.CorporateName,
             model.TradeName,
@@ -77,7 +72,16 @@ public class CompanyService : ICompanyService
             CompanyFactory.BuildAddress(model.Address),
             model.StateRegistration);
 
-        company.ChangeSupplierType(model.SupplierType);
+        if (model.SupplierType.HasValue)
+        {
+            // Tipos que a empresa deixa de fornecer não podem ter solicitação ativa.
+            var removedTypes = company.SupplierType & ~model.SupplierType.Value;
+            JotanunesException.When(
+                removedTypes != 0 && await _unitOfWork.SupplyRequestRepository.HasActive(id, removedTypes),
+                "Existem solicitações ativas do tipo de fornecimento que está sendo removido. Conclua ou cancele antes de alterar.");
+
+            company.ChangeSupplierType(model.SupplierType.Value);
+        }
 
         _unitOfWork.CompanyRepository.Update(company);
         await _unitOfWork.SaveChangesAsync();

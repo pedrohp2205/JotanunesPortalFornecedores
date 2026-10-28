@@ -115,7 +115,7 @@ namespace Jotanunes.Internal.BddTests.Features.Api.CompanyTests
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/CompanyTests/AtualizacaoCompany.feature.ndjson", 5);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/CompanyTests/AtualizacaoCompany.feature.ndjson", 6);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -184,15 +184,15 @@ await this.FeatureBackgroundAsync();
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Não permitir atualizar a empresa com telefone inválido")]
+        [global::Xunit.FactAttribute(DisplayName="Manter o tipo de fornecimento quando a atualização não informa o tipo")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Company - Atualização")]
-        [global::Xunit.TraitAttribute("Description", "Não permitir atualizar a empresa com telefone inválido")]
-        public async global::System.Threading.Tasks.Task NaoPermitirAtualizarAEmpresaComTelefoneInvalido()
+        [global::Xunit.TraitAttribute("Description", "Manter o tipo de fornecimento quando a atualização não informa o tipo")]
+        public async global::System.Threading.Tasks.Task ManterOTipoDeFornecimentoQuandoAAtualizacaoNaoInformaOTipo()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "1";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Não permitir atualizar a empresa com telefone inválido", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Manter o tipo de fornecimento quando a atualização não informa o tipo", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 17
@@ -209,28 +209,28 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 await this.FeatureBackgroundAsync();
 #line hidden
 #line 18
-    await testRunner.WhenAsync("eu atualizar a empresa cadastrada com o telefone \"123\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+    await testRunner.WhenAsync("eu atualizar a empresa cadastrada com a razão social \"Construtora Renomeada Ltda\"" +
+                        "", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
 #line 19
-    await testRunner.ThenAsync("eu recebo uma resposta 400 Bad Request", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+    await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
 #line 20
-    await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Telefone deve ter 10 ou 11 dígitos" +
-                        " (com DDD).\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+    await testRunner.AndAsync("a empresa retornada deve fornecer material", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Atualizar uma empresa inexistente")]
+        [global::Xunit.FactAttribute(DisplayName="Não permitir atualizar a empresa com telefone inválido")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Company - Atualização")]
-        [global::Xunit.TraitAttribute("Description", "Atualizar uma empresa inexistente")]
-        public async global::System.Threading.Tasks.Task AtualizarUmaEmpresaInexistente()
+        [global::Xunit.TraitAttribute("Description", "Não permitir atualizar a empresa com telefone inválido")]
+        public async global::System.Threading.Tasks.Task NaoPermitirAtualizarAEmpresaComTelefoneInvalido()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "2";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Atualizar uma empresa inexistente", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Não permitir atualizar a empresa com telefone inválido", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 22
@@ -247,12 +247,50 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 await this.FeatureBackgroundAsync();
 #line hidden
 #line 23
-    await testRunner.WhenAsync("eu atualizar uma empresa inexistente", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+    await testRunner.WhenAsync("eu atualizar a empresa cadastrada com o telefone \"123\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
 #line 24
-    await testRunner.ThenAsync("eu recebo uma resposta 404 Not Found", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+    await testRunner.ThenAsync("eu recebo uma resposta 400 Bad Request", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
 #line 25
+    await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Telefone deve ter 10 ou 11 dígitos" +
+                        " (com DDD).\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Atualizar uma empresa inexistente")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Company - Atualização")]
+        [global::Xunit.TraitAttribute("Description", "Atualizar uma empresa inexistente")]
+        public async global::System.Threading.Tasks.Task AtualizarUmaEmpresaInexistente()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "3";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Atualizar uma empresa inexistente", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 27
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 8
+await this.FeatureBackgroundAsync();
+#line hidden
+#line 28
+    await testRunner.WhenAsync("eu atualizar uma empresa inexistente", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+#line hidden
+#line 29
+    await testRunner.ThenAsync("eu recebo uma resposta 404 Not Found", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+#line hidden
+#line 30
     await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Empresa não encontrada\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }
