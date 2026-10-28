@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.DocumentTypeTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/DocumentTypeTests", "DocumentType - Atualização", "Como membro da equipe da Jotanunes\nQuero atualizar um tipo de documento\nPara ajus" +
-                "tar o nome e as regras de aplicação", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/DocumentTypeTests", "DocumentType - Atualização", "Como membro da equipe da Jotanunes\r\nQuero atualizar um tipo de documento\r\nPara aj" +
+                "ustar o nome e as regras de aplicação", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "AtualizacaoDocumentType.feature"
 #line hidden

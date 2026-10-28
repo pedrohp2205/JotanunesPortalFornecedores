@@ -26,9 +26,9 @@ namespace Jotanunes.Internal.BddTests.Features.Api.DocumentTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/DocumentTests", "Document - Análise automática", "Como membro da equipe da Jotanunes\nQuero consultar o parecer automático de um doc" +
-                "umento e pedir uma nova análise\nPara avaliar os documentos com apoio da leitura " +
-                "automática", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/DocumentTests", "Document - Análise automática", "Como membro da equipe da Jotanunes\r\nQuero consultar o parecer automático de um do" +
+                "cumento e pedir uma nova análise\r\nPara avaliar os documentos com apoio da leitur" +
+                "a automática", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "AnaliseDocument.feature"
 #line hidden

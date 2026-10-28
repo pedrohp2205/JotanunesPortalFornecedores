@@ -26,10 +26,10 @@ namespace Jotanunes.External.BddTests.Features.Api.AuthTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/AuthTests", "Auth Check - SupplyRequest", "Como um usuário do sistema\nQuero ter a segurança de que o acesso às solicitações " +
-                "de fornecimento está sendo corretamente verificado\nPara garantir que apenas forn" +
-                "ecedores autenticados, com senha definitiva e da própria empresa possam consultá" +
-                "-las", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/AuthTests", "Auth Check - SupplyRequest", "Como um usuário do sistema\r\nQuero ter a segurança de que o acesso às solicitações" +
+                " de fornecimento está sendo corretamente verificado\r\nPara garantir que apenas fo" +
+                "rnecedores autenticados, com senha definitiva e da própria empresa possam consul" +
+                "tá-las", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "AuthCheckSupplyRequest.feature"
 #line hidden

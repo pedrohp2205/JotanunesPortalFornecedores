@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.SupplierUserTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserTests", "SupplierUser - Ativação e desativação", "Como membro da equipe da Jotanunes\nQuero ativar e desativar os acessos ao portal\n" +
-                "Para controlar quem pode entrar em nome da empresa", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserTests", "SupplierUser - Ativação e desativação", "Como membro da equipe da Jotanunes\r\nQuero ativar e desativar os acessos ao portal" +
+                "\r\nPara controlar quem pode entrar em nome da empresa", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "AtivacaoSupplierUser.feature"
 #line hidden

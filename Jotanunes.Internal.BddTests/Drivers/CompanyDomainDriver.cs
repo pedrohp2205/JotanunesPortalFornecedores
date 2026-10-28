@@ -26,10 +26,14 @@ public class CompanyDomainDriver
         };
     }
 
-    public static CompanyUpdateDto CriarCompanyUpdateDtoValido(string razaoSocial, string telefone = "79988887777")
+    public static CompanyUpdateDto CriarCompanyUpdateDtoValido(
+        string razaoSocial,
+        string telefone = "79988887777",
+        SupplierType? tipoFornecimento = null)
     {
         return new CompanyUpdateDto
         {
+            SupplierType = tipoFornecimento,
             CorporateName = razaoSocial,
             TradeName = "Construtora Atualizada",
             Email = "atualizado@teste.com.br",

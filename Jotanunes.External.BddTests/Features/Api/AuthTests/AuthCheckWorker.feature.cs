@@ -26,9 +26,9 @@ namespace Jotanunes.External.BddTests.Features.Api.AuthTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/AuthTests", "Auth Check - Worker", "Como um usuário do sistema\nQuero ter a segurança de que o acesso ao cadastro de t" +
-                "rabalhadores está sendo corretamente verificado\nPara garantir que apenas fornece" +
-                "dores autenticados, com senha definitiva e da própria empresa possam mantê-lo", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/AuthTests", "Auth Check - Worker", "Como um usuário do sistema\r\nQuero ter a segurança de que o acesso ao cadastro de " +
+                "trabalhadores está sendo corretamente verificado\r\nPara garantir que apenas forne" +
+                "cedores autenticados, com senha definitiva e da própria empresa possam mantê-lo", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "AuthCheckWorker.feature"
 #line hidden

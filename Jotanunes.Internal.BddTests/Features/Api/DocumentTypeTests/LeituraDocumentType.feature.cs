@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.DocumentTypeTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/DocumentTypeTests", "DocumentType - Leitura", "Como membro da equipe da Jotanunes\nQuero consultar os tipos de documento cadastra" +
-                "dos\nPara saber o que é exigido de cada fornecedor", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/DocumentTypeTests", "DocumentType - Leitura", "Como membro da equipe da Jotanunes\r\nQuero consultar os tipos de documento cadastr" +
+                "ados\r\nPara saber o que é exigido de cada fornecedor", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "LeituraDocumentType.feature"
 #line hidden

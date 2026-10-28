@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.SupplierUserTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserTests", "SupplierUser - Redefinição de senha pela equipe", "Como membro da equipe da Jotanunes\nQuero definir uma senha provisória para um ace" +
-                "sso\nPara destravar um fornecedor que perdeu a senha", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserTests", "SupplierUser - Redefinição de senha pela equipe", "Como membro da equipe da Jotanunes\r\nQuero definir uma senha provisória para um ac" +
+                "esso\r\nPara destravar um fornecedor que perdeu a senha", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "RedefinicaoSenhaSupplierUser.feature"
 #line hidden

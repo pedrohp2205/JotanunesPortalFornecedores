@@ -41,13 +41,6 @@ internal class CompanyApiClientFixture(
         return await httpResponseCtx.TryReadFromJsonAsync<CompanyDto>();
     }
 
-    public async Task<CompanyDto?> ChangeSupplierTypeAsync(long id, CompanyChangeSupplierTypeDto? dto)
-    {
-        httpResponseCtx.Response = await apiClientFixture.Client
-            .PutAsJsonAsync($"{BASE_URL}/{id}/supplier-type", dto);
-        return await httpResponseCtx.TryReadFromJsonAsync<CompanyDto>();
-    }
-
     public async Task<CompanyDto?> DeleteAsync(long id)
     {
         httpResponseCtx.Response = await apiClientFixture.Client

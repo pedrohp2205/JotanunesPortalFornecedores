@@ -1,4 +1,5 @@
 using Jotanunes.Domain.Entities;
+using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Domain.Pagination;
@@ -49,7 +50,7 @@ public class CompanyRepository : GenericRepository<Company>, ICompanyRepository
 
         var totalCount = await query.CountAsync();
 
-        var items = await query.OrderBy(c => c.CorporateName)
+        var items = await Order(query, filter)
                             .Skip((pageParams.PageNumber - 1) * pageParams.PageSize)
                             .Take(pageParams.PageSize)
                             .ToListAsync();
@@ -82,5 +83,20 @@ public class CompanyRepository : GenericRepository<Company>, ICompanyRepository
         var digits = Cnpj.Normalize(cnpj);
         return await _context.Companies
                                 .AnyAsync(c => c.Cnpj == digits && (!ignoreCompanyId.HasValue || c.Id != ignoreCompanyId.Value));
+    }
+
+    private static IQueryable<Company> Order(IQueryable<Company> query, CompanyFilter filter)
+    {
+        bool descending = filter.OrderDirection == OrderDirection.Descending;
+
+        IOrderedQueryable<Company> ordered = filter.OrderBy switch
+        {
+            CompanyOrderBy.TradeName => descending ? query.OrderByDescending(c => c.TradeName) : query.OrderBy(c => c.TradeName),
+            CompanyOrderBy.Cnpj => descending ? query.OrderByDescending(c => c.Cnpj) : query.OrderBy(c => c.Cnpj),
+            CompanyOrderBy.Status => descending ? query.OrderByDescending(c => c.Status) : query.OrderBy(c => c.Status),
+            _ => descending ? query.OrderByDescending(c => c.CorporateName) : query.OrderBy(c => c.CorporateName)
+        };
+
+        return ordered.ThenBy(c => c.Id);
     }
 }

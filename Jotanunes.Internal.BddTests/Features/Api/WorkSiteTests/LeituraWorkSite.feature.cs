@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.WorkSiteTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/WorkSiteTests", "WorkSite - Leitura", "Como membro da equipe da Jotanunes\nQuero consultar as obras cadastradas\nPara esco" +
-                "lher a obra ao abrir uma solicitação", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/WorkSiteTests", "WorkSite - Leitura", "Como membro da equipe da Jotanunes\r\nQuero consultar as obras cadastradas\r\nPara es" +
+                "colher a obra ao abrir uma solicitação", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "LeituraWorkSite.feature"
 #line hidden

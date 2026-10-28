@@ -26,8 +26,8 @@ namespace Jotanunes.External.BddTests.Features.Api.SupplierUserSessionTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserSessionTests", "SupplierUserSession - Renovação", "Como fornecedor autenticado\nQuero renovar meu token de acesso com o refresh token" +
-                "\nPara continuar usando o portal sem entrar novamente", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserSessionTests", "SupplierUserSession - Renovação", "Como fornecedor autenticado\r\nQuero renovar meu token de acesso com o refresh toke" +
+                "n\r\nPara continuar usando o portal sem entrar novamente", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "RenovacaoSupplierUserSession.feature"
 #line hidden

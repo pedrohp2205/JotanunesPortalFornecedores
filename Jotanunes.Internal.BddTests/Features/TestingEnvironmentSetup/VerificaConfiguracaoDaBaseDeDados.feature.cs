@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.TestingEnvironmentSetup
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/TestingEnvironmentSetup", "Verifica configuração da base de dados", "Verifica que a base de dados de teste está configurada\ne que o cenário roda dentr" +
-                "o de uma transação.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/TestingEnvironmentSetup", "Verifica configuração da base de dados", "Verifica que a base de dados de teste está configurada\r\ne que o cenário roda dent" +
+                "ro de uma transação.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "VerificaConfiguracaoDaBaseDeDados.feature"
 #line hidden

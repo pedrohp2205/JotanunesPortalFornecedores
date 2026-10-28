@@ -14,6 +14,11 @@ Cenário: Atualizar os dados da empresa
     E a empresa retornada deve ter a razão social "Construtora Renomeada Ltda"
     E a empresa retornada deve manter o CNPJ "11222333000181"
 
+Cenário: Manter o tipo de fornecimento quando a atualização não informa o tipo
+    Quando eu atualizar a empresa cadastrada com a razão social "Construtora Renomeada Ltda"
+    Então eu recebo uma resposta 200 OK
+    E a empresa retornada deve fornecer material
+
 Cenário: Não permitir atualizar a empresa com telefone inválido
     Quando eu atualizar a empresa cadastrada com o telefone "123"
     Então eu recebo uma resposta 400 Bad Request

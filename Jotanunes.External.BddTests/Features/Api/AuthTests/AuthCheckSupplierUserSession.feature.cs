@@ -26,9 +26,9 @@ namespace Jotanunes.External.BddTests.Features.Api.AuthTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/AuthTests", "Auth Check - SupplierUserSession", "Como um usuário do sistema\nQuero ter a segurança de que os endpoints da sessão ex" +
-                "igem autenticação\nPara garantir que apenas fornecedores autenticados consultem e" +
-                " alterem o próprio acesso", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/AuthTests", "Auth Check - SupplierUserSession", "Como um usuário do sistema\r\nQuero ter a segurança de que os endpoints da sessão e" +
+                "xigem autenticação\r\nPara garantir que apenas fornecedores autenticados consultem" +
+                " e alterem o próprio acesso", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "AuthCheckSupplierUserSession.feature"
 #line hidden

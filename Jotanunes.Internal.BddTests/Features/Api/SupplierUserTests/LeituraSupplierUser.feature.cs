@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.SupplierUserTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserTests", "SupplierUser - Leitura", "Como membro da equipe da Jotanunes\nQuero consultar os acessos ao portal de uma em" +
-                "presa\nPara saber quem pode enviar documentos em nome dela", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplierUserTests", "SupplierUser - Leitura", "Como membro da equipe da Jotanunes\r\nQuero consultar os acessos ao portal de uma e" +
+                "mpresa\r\nPara saber quem pode enviar documentos em nome dela", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "LeituraSupplierUser.feature"
 #line hidden

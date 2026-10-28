@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.CompanyTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/CompanyTests", "Company - Leitura", "Como membro da equipe da Jotanunes\nQuero consultar as empresas fornecedoras cadas" +
-                "tradas\nPara acompanhar a situação de cada uma", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/CompanyTests", "Company - Leitura", "Como membro da equipe da Jotanunes\r\nQuero consultar as empresas fornecedoras cada" +
+                "stradas\r\nPara acompanhar a situação de cada uma", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "LeituraCompany.feature"
 #line hidden
@@ -118,7 +118,7 @@ namespace Jotanunes.Internal.BddTests.Features.Api.CompanyTests
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/CompanyTests/LeituraCompany.feature.ndjson", 5);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/CompanyTests/LeituraCompany.feature.ndjson", 7);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -183,15 +183,15 @@ await this.FeatureBackgroundAsync();
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Consultar uma empresa pelo identificador")]
+        [global::Xunit.FactAttribute(DisplayName="Listar empresas ordenando pela razão social em ordem decrescente")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Company - Leitura")]
-        [global::Xunit.TraitAttribute("Description", "Consultar uma empresa pelo identificador")]
-        public async global::System.Threading.Tasks.Task ConsultarUmaEmpresaPeloIdentificador()
+        [global::Xunit.TraitAttribute("Description", "Listar empresas ordenando pela razão social em ordem decrescente")]
+        public async global::System.Threading.Tasks.Task ListarEmpresasOrdenandoPelaRazaoSocialEmOrdemDecrescente()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "1";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Consultar uma empresa pelo identificador", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Listar empresas ordenando pela razão social em ordem decrescente", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 17
@@ -208,27 +208,27 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 await this.FeatureBackgroundAsync();
 #line hidden
 #line 18
-    await testRunner.WhenAsync("eu consultar a empresa cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+    await testRunner.WhenAsync("eu listar as empresas ordenando por \"CorporateName\" na direção \"Descending\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
 #line 19
     await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
 #line 20
-    await testRunner.AndAsync("os dados retornados devem ser da empresa cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+    await testRunner.AndAsync("a primeira empresa da listagem deve ser a outra empresa cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Consultar uma empresa inexistente")]
+        [global::Xunit.FactAttribute(DisplayName="Não permitir ordenar as empresas por um campo desconhecido")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Company - Leitura")]
-        [global::Xunit.TraitAttribute("Description", "Consultar uma empresa inexistente")]
-        public async global::System.Threading.Tasks.Task ConsultarUmaEmpresaInexistente()
+        [global::Xunit.TraitAttribute("Description", "Não permitir ordenar as empresas por um campo desconhecido")]
+        public async global::System.Threading.Tasks.Task NaoPermitirOrdenarAsEmpresasPorUmCampoDesconhecido()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "2";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Consultar uma empresa inexistente", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Não permitir ordenar as empresas por um campo desconhecido", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 22
@@ -245,12 +245,83 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 await this.FeatureBackgroundAsync();
 #line hidden
 #line 23
-    await testRunner.WhenAsync("eu consultar uma empresa inexistente", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+    await testRunner.WhenAsync("eu listar as empresas ordenando por \"RazaoSocial\" na direção \"Ascending\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
 #line 24
+    await testRunner.ThenAsync("eu recebo uma resposta 400 Bad Request", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Consultar uma empresa pelo identificador")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Company - Leitura")]
+        [global::Xunit.TraitAttribute("Description", "Consultar uma empresa pelo identificador")]
+        public async global::System.Threading.Tasks.Task ConsultarUmaEmpresaPeloIdentificador()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "3";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Consultar uma empresa pelo identificador", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 26
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 8
+await this.FeatureBackgroundAsync();
+#line hidden
+#line 27
+    await testRunner.WhenAsync("eu consultar a empresa cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+#line hidden
+#line 28
+    await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+#line hidden
+#line 29
+    await testRunner.AndAsync("os dados retornados devem ser da empresa cadastrada", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Consultar uma empresa inexistente")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Company - Leitura")]
+        [global::Xunit.TraitAttribute("Description", "Consultar uma empresa inexistente")]
+        public async global::System.Threading.Tasks.Task ConsultarUmaEmpresaInexistente()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "4";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Consultar uma empresa inexistente", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 31
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 8
+await this.FeatureBackgroundAsync();
+#line hidden
+#line 32
+    await testRunner.WhenAsync("eu consultar uma empresa inexistente", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+#line hidden
+#line 33
     await testRunner.ThenAsync("eu recebo uma resposta 404 Not Found", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
-#line 25
+#line 34
     await testRunner.AndAsync("eu recebo uma resposta de erro com a mensagem \"Empresa não encontrada\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
             }

@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.DocumentTypeTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/DocumentTypeTests", "DocumentType - Exclusão", "Como membro da equipe da Jotanunes\nQuero desativar um tipo de documento\nPara que " +
-                "ele deixe de ser exigido sem perder o histórico de envios", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/DocumentTypeTests", "DocumentType - Exclusão", "Como membro da equipe da Jotanunes\r\nQuero desativar um tipo de documento\r\nPara qu" +
+                "e ele deixe de ser exigido sem perder o histórico de envios", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "ExclusaoDocumentType.feature"
 #line hidden

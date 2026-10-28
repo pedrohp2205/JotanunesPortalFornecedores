@@ -26,9 +26,9 @@ namespace Jotanunes.Internal.BddTests.Features.Api.SupplyRequestTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplyRequestTests", "SupplyRequest - Cruzamento de documentos do período", "Como membro da equipe da Jotanunes\nQuero pedir e consultar o cruzamento dos docum" +
-                "entos de cada período de uma solicitação\nPara ver inconsistências entre recibos," +
-                " pagamentos, folhas de ponto e FGTS", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplyRequestTests", "SupplyRequest - Cruzamento de documentos do período", "Como membro da equipe da Jotanunes\r\nQuero pedir e consultar o cruzamento dos docu" +
+                "mentos de cada período de uma solicitação\r\nPara ver inconsistências entre recibo" +
+                "s, pagamentos, folhas de ponto e FGTS", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "CruzamentoSupplyRequest.feature"
 #line hidden

@@ -26,8 +26,8 @@ namespace Jotanunes.Internal.BddTests.Features.Api.SupplyRequestTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplyRequestTests", "SupplyRequest - Cancelamento", "Como membro da equipe da Jotanunes\nQuero cancelar uma solicitação de fornecimento" +
-                "\nPara encerrá-la mesmo que ainda existam pendências", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplyRequestTests", "SupplyRequest - Cancelamento", "Como membro da equipe da Jotanunes\r\nQuero cancelar uma solicitação de forneciment" +
+                "o\r\nPara encerrá-la mesmo que ainda existam pendências", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "CancelamentoSupplyRequest.feature"
 #line hidden

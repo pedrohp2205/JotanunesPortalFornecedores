@@ -87,6 +87,19 @@ public class SupplyRequestRepository : GenericRepository<SupplyRequest>, ISupply
             query = query.Where(sr => sr.WorkSiteId == filter.WorkSiteId.Value);
         }
 
+        if (!string.IsNullOrWhiteSpace(filter.CompanyName))
+        {
+            var companyName = filter.CompanyName.ToLower();
+            query = query.Where(sr => sr.Company.CorporateName.ToLower().Contains(companyName)
+                                   || sr.Company.TradeName.ToLower().Contains(companyName));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.WorkSiteName))
+        {
+            var workSiteName = filter.WorkSiteName.ToLower();
+            query = query.Where(sr => sr.WorkSite.Name.ToLower().Contains(workSiteName));
+        }
+
         if (filter.SupplierType.HasValue)
         {
             query = query.Where(sr => sr.SupplierType == filter.SupplierType.Value);

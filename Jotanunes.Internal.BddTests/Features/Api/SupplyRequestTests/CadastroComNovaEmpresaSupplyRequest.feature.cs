@@ -26,9 +26,9 @@ namespace Jotanunes.Internal.BddTests.Features.Api.SupplyRequestTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplyRequestTests", "SupplyRequest - Cadastro com nova empresa", "Como membro da equipe da Jotanunes\nQuero abrir uma solicitação para uma empresa q" +
-                "ue ainda não está cadastrada\nPara cadastrar a empresa, o acesso ao portal e a so" +
-                "licitação de uma só vez", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/SupplyRequestTests", "SupplyRequest - Cadastro com nova empresa", "Como membro da equipe da Jotanunes\r\nQuero abrir uma solicitação para uma empresa " +
+                "que ainda não está cadastrada\r\nPara cadastrar a empresa, o acesso ao portal e a " +
+                "solicitação de uma só vez", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "CadastroComNovaEmpresaSupplyRequest.feature"
 #line hidden

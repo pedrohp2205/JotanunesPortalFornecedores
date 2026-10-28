@@ -29,6 +29,16 @@ internal class AtualizacaoCompanyStepDefinitions(
             CompanyDomainDriver.CriarCompanyUpdateDtoValido("Construtora Teste Ltda", telefone));
     }
 
+    [When(@"^eu atualizar a empresa cadastrada para fornecer (material|mão de obra|material e mão de obra)$")]
+    public async Task QuandoEuAtualizarAEmpresaCadastradaParaFornecer(string tipoFornecimento)
+    {
+        companyResultCtx.Empresa = await companyFix.UpdateAsync(
+            companyCtx.IdEmpresaCadastrada!.Value,
+            CompanyDomainDriver.CriarCompanyUpdateDtoValido(
+                "Construtora Teste Ltda",
+                tipoFornecimento: SupplyRequestDomainDriver.TipoFornecimento(tipoFornecimento)));
+    }
+
     [When(@"eu atualizar uma empresa inexistente")]
     public async Task QuandoEuAtualizarUmaEmpresaInexistente()
     {
@@ -42,6 +52,13 @@ internal class AtualizacaoCompanyStepDefinitions(
     {
         companyResultCtx.Empresa.Should().NotBeNull();
         companyResultCtx.Empresa!.CorporateName.Should().Be(razaoSocial);
+    }
+
+    [Then(@"^a empresa retornada deve fornecer (material|mão de obra|material e mão de obra)$")]
+    public void EntaoAEmpresaRetornadaDeveFornecer(string tipoFornecimento)
+    {
+        companyResultCtx.Empresa.Should().NotBeNull();
+        companyResultCtx.Empresa!.SupplierType.Should().Be(SupplyRequestDomainDriver.TipoFornecimento(tipoFornecimento));
     }
 
     [Then(@"a empresa retornada deve manter o CNPJ ""(.*)""")]

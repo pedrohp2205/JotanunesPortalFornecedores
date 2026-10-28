@@ -17,7 +17,7 @@ namespace Jotanunes.Internal.BddTests.Features.Api.CompanyTests
     
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public partial class Company_AlteracaoDoTipoDeFornecimentoFeature : object, Xunit.IClassFixture<Company_AlteracaoDoTipoDeFornecimentoFeature.FixtureData>, Xunit.IAsyncLifetime
+    public partial class Company_AtualizacaoDoTipoDeFornecimentoFeature : object, Xunit.IClassFixture<Company_AtualizacaoDoTipoDeFornecimentoFeature.FixtureData>, Xunit.IAsyncLifetime
     {
         
         private global::Reqnroll.ITestRunner testRunner;
@@ -26,13 +26,13 @@ namespace Jotanunes.Internal.BddTests.Features.Api.CompanyTests
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/CompanyTests", "Company - Alteração do tipo de fornecimento", "Como membro da equipe da Jotanunes\nQuero alterar o tipo de fornecimento de uma em" +
-                "presa\nPara refletir se ela fornece material, mão de obra ou os dois", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("pt-BR"), "Features/Api/CompanyTests", "Company - Atualização do tipo de fornecimento", "Como membro da equipe da Jotanunes\r\nQuero atualizar o tipo de fornecimento de uma" +
+                " empresa\r\nPara refletir se ela fornece material, mão de obra ou os dois", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
-#line 1 "AlteracaoTipoFornecimentoCompany.feature"
+#line 1 "AtualizacaoTipoFornecimentoCompany.feature"
 #line hidden
         
-        public Company_AlteracaoDoTipoDeFornecimentoFeature(Company_AlteracaoDoTipoDeFornecimentoFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
+        public Company_AtualizacaoDoTipoDeFornecimentoFeature(Company_AtualizacaoDoTipoDeFornecimentoFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
         {
             this._testOutputHelper = testOutputHelper;
         }
@@ -106,7 +106,7 @@ namespace Jotanunes.Internal.BddTests.Features.Api.CompanyTests
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/CompanyTests/AlteracaoTipoFornecimentoCompany.feature.ndjson", 6);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Api/CompanyTests/AtualizacaoTipoFornecimentoCompany.feature.ndjson", 5);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -135,7 +135,7 @@ namespace Jotanunes.Internal.BddTests.Features.Api.CompanyTests
         }
         
         [global::Xunit.FactAttribute(DisplayName="Incluir mão de obra no tipo de fornecimento da empresa")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Company - Alteração do tipo de fornecimento")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Company - Atualização do tipo de fornecimento")]
         [global::Xunit.TraitAttribute("Description", "Incluir mão de obra no tipo de fornecimento da empresa")]
         public async global::System.Threading.Tasks.Task IncluirMaoDeObraNoTipoDeFornecimentoDaEmpresa()
         {
@@ -160,8 +160,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                         "ial", ((string)(null)), ((global::Reqnroll.Table)(null)), "Dado ");
 #line hidden
 #line 10
-    await testRunner.WhenAsync("eu alterar o tipo de fornecimento da empresa cadastrada para material e mão de ob" +
-                        "ra", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+    await testRunner.WhenAsync("eu atualizar a empresa cadastrada para fornecer material e mão de obra", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
 #line 11
     await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
@@ -174,7 +173,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
         }
         
         [global::Xunit.FactAttribute(DisplayName="Não permitir remover um tipo de fornecimento com solicitação ativa")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Company - Alteração do tipo de fornecimento")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Company - Atualização do tipo de fornecimento")]
         [global::Xunit.TraitAttribute("Description", "Não permitir remover um tipo de fornecimento com solicitação ativa")]
         public async global::System.Threading.Tasks.Task NaoPermitirRemoverUmTipoDeFornecimentoComSolicitacaoAtiva()
         {
@@ -206,7 +205,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                         "das", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
 #line 18
-    await testRunner.WhenAsync("eu alterar o tipo de fornecimento da empresa cadastrada para material", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+    await testRunner.WhenAsync("eu atualizar a empresa cadastrada para fornecer material", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
 #line 19
     await testRunner.ThenAsync("eu recebo uma resposta 400 Bad Request", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
@@ -221,7 +220,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
         }
         
         [global::Xunit.FactAttribute(DisplayName="Permitir remover um tipo de fornecimento cuja solicitação já foi encerrada")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Company - Alteração do tipo de fornecimento")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Company - Atualização do tipo de fornecimento")]
         [global::Xunit.TraitAttribute("Description", "Permitir remover um tipo de fornecimento cuja solicitação já foi encerrada")]
         public async global::System.Threading.Tasks.Task PermitirRemoverUmTipoDeFornecimentoCujaSolicitacaoJaFoiEncerrada()
         {
@@ -253,44 +252,13 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                         "tradas", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
 #line 26
-    await testRunner.WhenAsync("eu alterar o tipo de fornecimento da empresa cadastrada para material", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
+    await testRunner.WhenAsync("eu atualizar a empresa cadastrada para fornecer material", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
 #line 27
     await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
 #line 28
     await testRunner.AndAsync("a empresa retornada deve fornecer material", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
-#line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
-        [global::Xunit.FactAttribute(DisplayName="Alterar o tipo de fornecimento de uma empresa inexistente")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Company - Alteração do tipo de fornecimento")]
-        [global::Xunit.TraitAttribute("Description", "Alterar o tipo de fornecimento de uma empresa inexistente")]
-        public async global::System.Threading.Tasks.Task AlterarOTipoDeFornecimentoDeUmaEmpresaInexistente()
-        {
-            string[] tagsOfScenario = ((string[])(null));
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "3";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Alterar o tipo de fornecimento de uma empresa inexistente", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 30
-this.ScenarioInitialize(scenarioInfo, ruleInfo);
-#line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
-#line 31
-    await testRunner.WhenAsync("eu alterar o tipo de fornecimento de uma empresa inexistente", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
-#line hidden
-#line 32
-    await testRunner.ThenAsync("eu recebo uma resposta 404 Not Found", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -303,12 +271,12 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             
             async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
             {
-                await Company_AlteracaoDoTipoDeFornecimentoFeature.FeatureSetupAsync();
+                await Company_AtualizacaoDoTipoDeFornecimentoFeature.FeatureSetupAsync();
             }
             
             async System.Threading.Tasks.ValueTask System.IAsyncDisposable.DisposeAsync()
             {
-                await Company_AlteracaoDoTipoDeFornecimentoFeature.FeatureTearDownAsync();
+                await Company_AtualizacaoDoTipoDeFornecimentoFeature.FeatureTearDownAsync();
             }
         }
     }
