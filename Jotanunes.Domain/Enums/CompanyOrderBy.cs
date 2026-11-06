@@ -2,8 +2,10 @@ namespace Jotanunes.Domain.Enums;
 
 public enum CompanyOrderBy
 {
-    CorporateName = 1,
-    TradeName = 2,
-    Cnpj = 3,
-    Status = 4
+    CreatedAt = 1,
+    UpdatedAt = 2,
+    CorporateName = 3,
+    TradeName = 4,
+    Cnpj = 5,
+    Status = 6
 }

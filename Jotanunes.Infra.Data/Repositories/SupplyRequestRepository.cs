@@ -23,7 +23,7 @@ public class SupplyRequestRepository : GenericRepository<SupplyRequest>, ISupply
 
         var totalCount = await query.CountAsync();
 
-        var items = await Order(query)
+        var items = await Order(query, filter)
                             .Skip((pageParams.PageNumber - 1) * pageParams.PageSize)
                             .Take(pageParams.PageSize)
                             .ToListAsync();
@@ -40,7 +40,7 @@ public class SupplyRequestRepository : GenericRepository<SupplyRequest>, ISupply
             query = query.Where(sr => sr.Status == SupplyRequestStatus.Open || sr.Status == SupplyRequestStatus.InProgress);
         }
 
-        return await Order(query).ToListAsync();
+        return await Order(query, filter).ToListAsync();
     }
 
     public async Task<SupplyRequest?> GetById(long id)
@@ -122,12 +122,21 @@ public class SupplyRequestRepository : GenericRepository<SupplyRequest>, ISupply
         return query;
     }
 
-    private static IQueryable<SupplyRequest> Order(IQueryable<SupplyRequest> query)
+    private static IQueryable<SupplyRequest> Order(IQueryable<SupplyRequest> query, SupplyRequestFilter filter)
     {
-        return query
-                .OrderBy(sr => sr.WorkSite.Name)
-                .ThenBy(sr => sr.Company.CorporateName)
-                .ThenBy(sr => sr.SupplierType)
-                .ThenBy(sr => sr.Id);
+        bool descending = filter.OrderDirection == OrderDirection.Descending;
+
+        IOrderedQueryable<SupplyRequest> ordered = filter.OrderBy switch
+        {
+            SupplyRequestOrderBy.CreatedAt => descending ? query.OrderByDescending(sr => sr.CreatedAt) : query.OrderBy(sr => sr.CreatedAt),
+            SupplyRequestOrderBy.UpdatedAt => descending ? query.OrderByDescending(sr => sr.UpdatedAt) : query.OrderBy(sr => sr.UpdatedAt),
+            SupplyRequestOrderBy.CompanyName => descending ? query.OrderByDescending(sr => sr.Company.CorporateName) : query.OrderBy(sr => sr.Company.CorporateName),
+            SupplyRequestOrderBy.WorkSiteName => descending ? query.OrderByDescending(sr => sr.WorkSite.Name) : query.OrderBy(sr => sr.WorkSite.Name),
+            SupplyRequestOrderBy.SupplierType => descending ? query.OrderByDescending(sr => sr.SupplierType) : query.OrderBy(sr => sr.SupplierType),
+            SupplyRequestOrderBy.Status => descending ? query.OrderByDescending(sr => sr.Status) : query.OrderBy(sr => sr.Status),
+            _ => descending ? query.OrderByDescending(sr => sr.WorkSite.Name).ThenByDescending(sr => sr.Company.CorporateName) : query.OrderBy(sr => sr.WorkSite.Name).ThenBy(sr => sr.Company.CorporateName)
+        };
+
+        return ordered.ThenBy(sr => sr.Id);
     }
 }
