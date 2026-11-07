@@ -29,7 +29,7 @@ public class CompanyDomainDriver
     public static CompanyUpdateDto CriarCompanyUpdateDtoValido(
         string razaoSocial,
         string telefone = "79988887777",
-        SupplierType? tipoFornecimento = null)
+        SupplierType? tipoFornecimento = SupplierType.Material)
     {
         return new CompanyUpdateDto
         {

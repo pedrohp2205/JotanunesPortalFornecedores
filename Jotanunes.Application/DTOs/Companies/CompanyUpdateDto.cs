@@ -28,6 +28,6 @@ public class CompanyUpdateDto
     [Required(ErrorMessage = "Endereço é obrigatório.")]
     public AddressDto Address { get; set; } = new();
 
-    // Opcional: quando não informado, a empresa mantém o tipo de fornecimento atual.
+    [Required(ErrorMessage = "Tipo de fornecedor é obrigatório.")]
     public SupplierType? SupplierType { get; set; }
 }

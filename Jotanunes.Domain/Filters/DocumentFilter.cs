@@ -13,4 +13,6 @@ public class DocumentFilter
     public DocumentStatus? Status { get; set; }
     public DateOnly? PeriodStart { get; set; }
     public DateOnly? PeriodEnd { get; set; }
+    public DocumentOrderBy? OrderBy { get; set; }
+    public OrderDirection? OrderDirection { get; set; }
 }

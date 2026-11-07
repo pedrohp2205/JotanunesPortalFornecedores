@@ -33,7 +33,7 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
 
         var totalCount = await query.CountAsync();
 
-        var items = await query.OrderByDescending(d => d.CreatedAt)
+        var items = await Order(query, filter)
                             .Skip((pageParams.PageNumber - 1) * pageParams.PageSize)
                             .Take(pageParams.PageSize)
                             .ToListAsync();
@@ -45,7 +45,7 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
     {
         IQueryable<Document> query = ApplyFilter(_context.Documents.AsNoTracking(), filter);
 
-        return await query.OrderByDescending(d => d.CreatedAt).ToListAsync();
+        return await Order(query, filter).ToListAsync();
     }
 
     public async Task<List<Document>> GetBySupplyRequests(IReadOnlyCollection<long> supplyRequestIds, DateOnly? referencePeriodFrom = null)
@@ -192,5 +192,26 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
         }
 
         return query;
+    }
+
+    private static IQueryable<Document> Order(IQueryable<Document> query, DocumentFilter filter)
+    {
+        // Sem ordenação pedida a lista continua como sempre foi: mais recente primeiro.
+        if (filter.OrderBy is null && filter.OrderDirection is null)
+        {
+            return query.OrderByDescending(d => d.CreatedAt).ThenBy(d => d.Id);
+        }
+
+        bool descending = filter.OrderDirection == OrderDirection.Descending;
+
+        IOrderedQueryable<Document> ordered = filter.OrderBy switch
+        {
+            DocumentOrderBy.CreatedAt => descending ? query.OrderByDescending(d => d.CreatedAt) : query.OrderBy(d => d.CreatedAt),
+            DocumentOrderBy.UpdatedAt => descending ? query.OrderByDescending(d => d.UpdatedAt) : query.OrderBy(d => d.UpdatedAt),
+            DocumentOrderBy.Status => descending ? query.OrderByDescending(d => d.Status) : query.OrderBy(d => d.Status),
+            _ => descending ? query.OrderByDescending(d => d.CreatedAt) : query.OrderBy(d => d.CreatedAt)
+        };
+
+        return ordered.ThenBy(d => d.Id);
     }
 }

@@ -1,4 +1,5 @@
 using Jotanunes.Domain.Entities;
+using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
 using Jotanunes.Domain.Pagination;
@@ -54,8 +55,7 @@ public class WorkerRepository : GenericRepository<Worker>, IWorkerRepository
 
         var totalCount = await query.CountAsync();
 
-        var items = await query.OrderBy(w => w.Name)
-                            .ThenBy(w => w.Id)
+        var items = await Order(query, filter)
                             .Skip((pageParams.PageNumber - 1) * pageParams.PageSize)
                             .Take(pageParams.PageSize)
                             .ToListAsync();
@@ -75,5 +75,22 @@ public class WorkerRepository : GenericRepository<Worker>, IWorkerRepository
         var normalized = Cpf.Normalize(cpf);
         return await _context.Workers
                                 .AnyAsync(w => w.CompanyId == companyId && w.Cpf == normalized);
+    }
+
+    private static IQueryable<Worker> Order(IQueryable<Worker> query, WorkerFilter filter)
+    {
+        bool descending = filter.OrderDirection == OrderDirection.Descending;
+
+        IOrderedQueryable<Worker> ordered = filter.OrderBy switch
+        {
+            WorkerOrderBy.CreatedAt => descending ? query.OrderByDescending(w => w.CreatedAt) : query.OrderBy(w => w.CreatedAt),
+            WorkerOrderBy.UpdatedAt => descending ? query.OrderByDescending(w => w.UpdatedAt) : query.OrderBy(w => w.UpdatedAt),
+            WorkerOrderBy.Cpf => descending ? query.OrderByDescending(w => w.Cpf) : query.OrderBy(w => w.Cpf),
+            WorkerOrderBy.Active => descending ? query.OrderByDescending(w => w.Active) : query.OrderBy(w => w.Active),
+            WorkerOrderBy.Name => descending ? query.OrderByDescending(w => w.Name) : query.OrderBy(w => w.Name),
+            _ => descending ? query.OrderByDescending(w => w.Name) : query.OrderBy(w => w.Name)
+        };
+
+        return ordered.ThenBy(w => w.Id);
     }
 }

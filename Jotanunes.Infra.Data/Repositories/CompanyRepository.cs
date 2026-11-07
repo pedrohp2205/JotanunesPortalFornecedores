@@ -91,6 +91,8 @@ public class CompanyRepository : GenericRepository<Company>, ICompanyRepository
 
         IOrderedQueryable<Company> ordered = filter.OrderBy switch
         {
+            CompanyOrderBy.CreatedAt => descending ? query.OrderByDescending(c => c.CreatedAt) : query.OrderBy(c => c.CreatedAt),
+            CompanyOrderBy.UpdatedAt => descending ? query.OrderByDescending(c => c.UpdatedAt) : query.OrderBy(c => c.UpdatedAt),
             CompanyOrderBy.TradeName => descending ? query.OrderByDescending(c => c.TradeName) : query.OrderBy(c => c.TradeName),
             CompanyOrderBy.Cnpj => descending ? query.OrderByDescending(c => c.Cnpj) : query.OrderBy(c => c.Cnpj),
             CompanyOrderBy.Status => descending ? query.OrderByDescending(c => c.Status) : query.OrderBy(c => c.Status),

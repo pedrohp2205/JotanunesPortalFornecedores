@@ -72,16 +72,17 @@ public class CompanyService : ICompanyService
             CompanyFactory.BuildAddress(model.Address),
             model.StateRegistration);
 
-        if (model.SupplierType.HasValue)
-        {
-            // Tipos que a empresa deixa de fornecer não podem ter solicitação ativa.
-            var removedTypes = company.SupplierType & ~model.SupplierType.Value;
-            JotanunesException.When(
-                removedTypes != 0 && await _unitOfWork.SupplyRequestRepository.HasActive(id, removedTypes),
-                "Existem solicitações ativas do tipo de fornecimento que está sendo removido. Conclua ou cancele antes de alterar.");
+        JotanunesException.When(model.SupplierType is null, "Tipo de fornecedor é obrigatório.");
 
-            company.ChangeSupplierType(model.SupplierType.Value);
-        }
+        var supplierType = model.SupplierType!.Value;
+
+        // Tipos que a empresa deixa de fornecer não podem ter solicitação ativa.
+        var removedTypes = company.SupplierType & ~supplierType;
+        JotanunesException.When(
+            removedTypes != 0 && await _unitOfWork.SupplyRequestRepository.HasActive(id, removedTypes),
+            "Existem solicitações ativas do tipo de fornecimento que está sendo removido. Conclua ou cancele antes de alterar.");
+
+        company.ChangeSupplierType(supplierType);
 
         _unitOfWork.CompanyRepository.Update(company);
         await _unitOfWork.SaveChangesAsync();

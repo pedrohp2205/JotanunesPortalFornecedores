@@ -11,4 +11,6 @@ public class SupplyRequestFilter
     public SupplierType? SupplierType { get; set; }
     public SupplyRequestStatus? Status { get; set; }
     public bool? HasPending { get; set; }
+    public SupplyRequestOrderBy? OrderBy { get; set; }
+    public OrderDirection? OrderDirection { get; set; }
 }
