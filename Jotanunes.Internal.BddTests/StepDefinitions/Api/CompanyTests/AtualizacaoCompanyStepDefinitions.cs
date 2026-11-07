@@ -39,6 +39,14 @@ internal class AtualizacaoCompanyStepDefinitions(
                 tipoFornecimento: SupplyRequestDomainDriver.TipoFornecimento(tipoFornecimento)));
     }
 
+    [When(@"eu atualizar a empresa cadastrada sem informar o tipo de fornecimento")]
+    public async Task QuandoEuAtualizarAEmpresaCadastradaSemInformarOTipoDeFornecimento()
+    {
+        companyResultCtx.Empresa = await companyFix.UpdateAsync(
+            companyCtx.IdEmpresaCadastrada!.Value,
+            CompanyDomainDriver.CriarCompanyUpdateDtoValido("Construtora Teste Ltda", tipoFornecimento: null));
+    }
+
     [When(@"eu atualizar uma empresa inexistente")]
     public async Task QuandoEuAtualizarUmaEmpresaInexistente()
     {

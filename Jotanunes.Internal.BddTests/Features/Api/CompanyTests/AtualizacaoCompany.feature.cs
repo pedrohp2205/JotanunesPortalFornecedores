@@ -180,22 +180,25 @@ await this.FeatureBackgroundAsync();
 #line 15
     await testRunner.AndAsync("a empresa retornada deve manter o CNPJ \"11222333000181\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
 #line hidden
+#line 16
+    await testRunner.AndAsync("a empresa retornada deve fornecer material", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+#line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Manter o tipo de fornecimento quando a atualização não informa o tipo")]
+        [global::Xunit.FactAttribute(DisplayName="Não permitir atualizar a empresa sem informar o tipo de fornecimento")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Company - Atualização")]
-        [global::Xunit.TraitAttribute("Description", "Manter o tipo de fornecimento quando a atualização não informa o tipo")]
-        public async global::System.Threading.Tasks.Task ManterOTipoDeFornecimentoQuandoAAtualizacaoNaoInformaOTipo()
+        [global::Xunit.TraitAttribute("Description", "Não permitir atualizar a empresa sem informar o tipo de fornecimento")]
+        public async global::System.Threading.Tasks.Task NaoPermitirAtualizarAEmpresaSemInformarOTipoDeFornecimento()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "1";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Manter o tipo de fornecimento quando a atualização não informa o tipo", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Não permitir atualizar a empresa sem informar o tipo de fornecimento", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 17
+#line 18
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -208,15 +211,11 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-#line 18
-    await testRunner.WhenAsync("eu atualizar a empresa cadastrada com a razão social \"Construtora Renomeada Ltda\"" +
-                        "", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
-#line hidden
 #line 19
-    await testRunner.ThenAsync("eu recebo uma resposta 200 OK", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
+    await testRunner.WhenAsync("eu atualizar a empresa cadastrada sem informar o tipo de fornecimento", ((string)(null)), ((global::Reqnroll.Table)(null)), "Quando ");
 #line hidden
 #line 20
-    await testRunner.AndAsync("a empresa retornada deve fornecer material", ((string)(null)), ((global::Reqnroll.Table)(null)), "E ");
+    await testRunner.ThenAsync("eu recebo uma resposta 400 Bad Request", ((string)(null)), ((global::Reqnroll.Table)(null)), "Então ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

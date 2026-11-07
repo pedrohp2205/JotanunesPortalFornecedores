@@ -29,5 +29,5 @@ public class CompanyUpdateDto
     public AddressDto Address { get; set; } = new();
 
     [Required(ErrorMessage = "Tipo de fornecedor é obrigatório.")]
-    public SupplierType SupplierType { get; set; }
+    public SupplierType? SupplierType { get; set; }
 }
