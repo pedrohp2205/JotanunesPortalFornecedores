@@ -87,6 +87,7 @@ public class WorkerRepository : GenericRepository<Worker>, IWorkerRepository
             WorkerOrderBy.UpdatedAt => descending ? query.OrderByDescending(w => w.UpdatedAt) : query.OrderBy(w => w.UpdatedAt),
             WorkerOrderBy.Cpf => descending ? query.OrderByDescending(w => w.Cpf) : query.OrderBy(w => w.Cpf),
             WorkerOrderBy.Active => descending ? query.OrderByDescending(w => w.Active) : query.OrderBy(w => w.Active),
+            WorkerOrderBy.Name => descending ? query.OrderByDescending(w => w.Name) : query.OrderBy(w => w.Name),
             _ => descending ? query.OrderByDescending(w => w.Name) : query.OrderBy(w => w.Name)
         };
 

@@ -134,7 +134,9 @@ public class SupplyRequestRepository : GenericRepository<SupplyRequest>, ISupply
             SupplyRequestOrderBy.WorkSiteName => descending ? query.OrderByDescending(sr => sr.WorkSite.Name) : query.OrderBy(sr => sr.WorkSite.Name),
             SupplyRequestOrderBy.SupplierType => descending ? query.OrderByDescending(sr => sr.SupplierType) : query.OrderBy(sr => sr.SupplierType),
             SupplyRequestOrderBy.Status => descending ? query.OrderByDescending(sr => sr.Status) : query.OrderBy(sr => sr.Status),
-            _ => descending ? query.OrderByDescending(sr => sr.WorkSite.Name).ThenByDescending(sr => sr.Company.CorporateName) : query.OrderBy(sr => sr.WorkSite.Name).ThenBy(sr => sr.Company.CorporateName)
+            _ => descending
+                ? query.OrderByDescending(sr => sr.WorkSite.Name).ThenByDescending(sr => sr.Company.CorporateName).ThenByDescending(sr => sr.SupplierType)
+                : query.OrderBy(sr => sr.WorkSite.Name).ThenBy(sr => sr.Company.CorporateName).ThenBy(sr => sr.SupplierType)
         };
 
         return ordered.ThenBy(sr => sr.Id);

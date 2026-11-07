@@ -196,6 +196,12 @@ public class DocumentRepository : GenericRepository<Document>, IDocumentReposito
 
     private static IQueryable<Document> Order(IQueryable<Document> query, DocumentFilter filter)
     {
+        // Sem ordenação pedida a lista continua como sempre foi: mais recente primeiro.
+        if (filter.OrderBy is null && filter.OrderDirection is null)
+        {
+            return query.OrderByDescending(d => d.CreatedAt).ThenBy(d => d.Id);
+        }
+
         bool descending = filter.OrderDirection == OrderDirection.Descending;
 
         IOrderedQueryable<Document> ordered = filter.OrderBy switch
