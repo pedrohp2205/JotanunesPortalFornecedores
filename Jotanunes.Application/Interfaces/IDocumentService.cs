@@ -17,6 +17,7 @@ public interface IDocumentService
         Stream fileContent,
         string originalFileName);
     Task<DocumentDownloadDto> Download(long id, long? companyId = null);
+    Task<InternalDocumentDto> UpdateExpirationDate(long id, DateOnly expirationDate);
     Task<InternalDocumentDto> Approve(long id);
     Task<InternalDocumentDto> Reject(long id, string reason);
 }

@@ -116,6 +116,9 @@ namespace Jotanunes.Infra.Data.Migrations
                     b.Property<DateOnly?>("ExpirationDate")
                         .HasColumnType("date");
 
+                    b.Property<DateTime?>("ExpirationDateReviewedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("OriginalFileName")
                         .IsRequired()
                         .HasMaxLength(255)

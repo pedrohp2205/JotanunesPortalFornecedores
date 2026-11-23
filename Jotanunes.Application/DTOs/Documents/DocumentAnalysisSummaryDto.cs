@@ -10,5 +10,6 @@ public class DocumentAnalysisSummaryDto
     public string? VerdictDescription { get; set; }
     public int BlockingCount { get; set; }
     public int WarningCount { get; set; }
+    public DateOnly? ExtractedExpirationDate { get; set; }
     public DateTime? AnalyzedAt { get; set; }
 }
