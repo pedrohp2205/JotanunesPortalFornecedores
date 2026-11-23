@@ -24,7 +24,7 @@ public class MappingProfile : Profile
         CreateMap<Company, CompanyDto>()
             .ForMember(dest => dest.FormattedCnpj, opt => opt.MapFrom(src => Cnpj.Format(src.Cnpj)))
             .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()))
-            .ForMember(dest => dest.SupplierTypeDescription, opt => opt.MapFrom(src => src.SupplierType.ToString()));
+            .ForMember(dest => dest.SupplierTypeDescription, opt => opt.MapFrom(src => DescribeSupplierType(src.SupplierType)));
 
         CreateMap<SupplierUser, SupplierUserDto>();
 
@@ -40,17 +40,17 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.CompanyFormattedCnpj, opt => opt.MapFrom(src => Cnpj.Format(src.Company.Cnpj)))
             .ForMember(dest => dest.WorkSiteName, opt => opt.MapFrom(src => src.WorkSite.Name))
             .ForMember(dest => dest.RenewalPeriodDays, opt => opt.MapFrom(src => src.WorkSite.RenewalPeriodDays))
-            .ForMember(dest => dest.SupplierTypeDescription, opt => opt.MapFrom(src => src.SupplierType.ToString()))
+            .ForMember(dest => dest.SupplierTypeDescription, opt => opt.MapFrom(src => DescribeSupplierType(src.SupplierType)))
             .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()));
 
         CreateMap<DocumentType, SupplierDocumentTypeDto>()
             .ForMember(dest => dest.CategoryDescription, opt => opt.MapFrom(src => src.Category.ToString()))
-            .ForMember(dest => dest.AppliesToDescription, opt => opt.MapFrom(src => src.AppliesTo.ToString()))
+            .ForMember(dest => dest.AppliesToDescription, opt => opt.MapFrom(src => DescribeSupplierType(src.AppliesTo)))
             .ForMember(dest => dest.SubjectDescription, opt => opt.MapFrom(src => src.Subject.ToString()));
 
         CreateMap<DocumentType, DocumentTypeDto>()
             .ForMember(dest => dest.CategoryDescription, opt => opt.MapFrom(src => src.Category.ToString()))
-            .ForMember(dest => dest.AppliesToDescription, opt => opt.MapFrom(src => src.AppliesTo.ToString()))
+            .ForMember(dest => dest.AppliesToDescription, opt => opt.MapFrom(src => DescribeSupplierType(src.AppliesTo)))
             .ForMember(dest => dest.SubjectDescription, opt => opt.MapFrom(src => src.Subject.ToString()));
 
         CreateMap<Document, DocumentDto>()
@@ -100,5 +100,11 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.StatusDescription, opt => opt.MapFrom(src => src.Status.ToString()))
             .ForMember(dest => dest.VerdictDescription, opt => opt.MapFrom(src => src.Verdict != null ? src.Verdict.ToString() : null))
             .ForMember(dest => dest.EngineDescription, opt => opt.MapFrom(src => src.Engine != null ? src.Engine.ToString() : null));
+    }
+
+    // Mantém o texto que a API já devolvia para a combinação, sem expor o nome Both ao front.
+    private static string DescribeSupplierType(SupplierType type)
+    {
+        return type == SupplierType.Both ? "Material, ManpowerLabor" : type.ToString();
     }
 }

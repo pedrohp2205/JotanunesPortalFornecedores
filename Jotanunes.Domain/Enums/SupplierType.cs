@@ -4,5 +4,6 @@ namespace Jotanunes.Domain.Enums;
 public enum SupplierType
 {
     Material = 1,
-    ManpowerLabor = 2
+    ManpowerLabor = 2,
+    Both = Material | ManpowerLabor
 }
