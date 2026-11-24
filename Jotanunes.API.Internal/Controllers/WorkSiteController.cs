@@ -1,5 +1,6 @@
 using Jotanunes.Application.DTOs.WorkSites;
 using Jotanunes.Application.Interfaces;
+using Jotanunes.Domain.Filters;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Jotanunes.API.Internal.Controllers;
@@ -9,9 +10,9 @@ namespace Jotanunes.API.Internal.Controllers;
 public class WorkSiteController(IWorkSiteService workSiteService) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<WorkSiteDto>>> Get()
+    public async Task<ActionResult<List<WorkSiteDto>>> Get([FromQuery] WorkSiteFilter filter)
     {
-        var result = await workSiteService.Get();
+        var result = await workSiteService.Get(filter);
         return Ok(result);
     }
 

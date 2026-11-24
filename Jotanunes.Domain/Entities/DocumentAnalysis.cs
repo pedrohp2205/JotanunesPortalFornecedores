@@ -1,3 +1,4 @@
+using System.Globalization;
 using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Exceptions;
 
@@ -6,6 +7,7 @@ namespace Jotanunes.Domain.Entities;
 public class DocumentAnalysis : BaseEntity
 {
     public const string WrongDocumentTypeCode = "WRONG_DOCUMENT_TYPE";
+    public const string ExpirationFieldName = "validUntil";
     public const int MaxAttempts = 3;
     public const int MaxFailureReasonLength = 500;
     public static readonly TimeSpan FirstRetryDelay = TimeSpan.FromSeconds(30);
@@ -25,6 +27,15 @@ public class DocumentAnalysis : BaseEntity
     public DateTime? AnalyzedAt { get; private set; }
 
     public bool FoundWrongDocument => Findings.Any(f => f.Code == WrongDocumentTypeCode);
+
+    public DateOnly? ExtractedExpirationDate => DateOnly.TryParseExact(
+        Fields.FirstOrDefault(f => f.Name == ExpirationFieldName)?.Value,
+        "dd/MM/yyyy",
+        CultureInfo.InvariantCulture,
+        DateTimeStyles.None,
+        out var date)
+            ? date
+            : null;
 
     protected DocumentAnalysis() { }
 

@@ -27,6 +27,11 @@ public class Document : BaseEntity
     public DateOnly? ReferencePeriodStart { get; private set; }
     public DateOnly? ReferencePeriodEnd { get; private set; }
     public DateOnly? ExpirationDate { get; private set; }
+    public DateTime? ExpirationDateReviewedAt { get; private set; }
+
+    public DateOnly? ExpirationDateForReview => ExpirationDateReviewedAt is null
+        ? Analysis?.ExtractedExpirationDate ?? ExpirationDate
+        : ExpirationDate;
 
     public DocumentAnalysis? Analysis { get; private set; }
 
@@ -71,6 +76,8 @@ public class Document : BaseEntity
     {
         JotanunesException.When(Status != DocumentStatus.Pending, "Documento já foi avaliado.");
 
+        // Aprovar sem editar confirma a data que o admin estava vendo.
+        ExpirationDate = ExpirationDateForReview;
         Status = DocumentStatus.Approved;
         RejectionReason = null;
         ReviewedAt = DateTime.UtcNow;
@@ -91,6 +98,14 @@ public class Document : BaseEntity
         JotanunesException.When(Status != DocumentStatus.Pending, "Documento já foi avaliado.");
 
         ExpirationDate = expirationDate;
+    }
+
+    public void ReviewExpirationDate(DateOnly expirationDate)
+    {
+        JotanunesException.When(Status != DocumentStatus.Pending, "Documento já foi avaliado.");
+
+        ExpirationDate = expirationDate;
+        ExpirationDateReviewedAt = DateTime.UtcNow;
     }
 
     public bool IsExpired(DateOnly referenceDate)

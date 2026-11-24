@@ -121,9 +121,6 @@ public class DocumentService : IDocumentService
         }
 
         JotanunesException.When(
-            documentType.RequiresExpirationDate && model.ExpirationDate is null,
-            "Data de validade é obrigatória para este tipo de documento.");
-        JotanunesException.When(
             model.ExpirationDate.HasValue && model.ExpirationDate.Value < BrazilTime.Today(),
             "Documento já está vencido.");
 
@@ -177,9 +174,26 @@ public class DocumentService : IDocumentService
         };
     }
 
+    public async Task<InternalDocumentDto> UpdateExpirationDate(long id, DateOnly expirationDate)
+    {
+        var document = await GetExisting(id);
+
+        document.ReviewExpirationDate(expirationDate);
+
+        _unitOfWork.DocumentRepository.Update(document);
+        await _unitOfWork.SaveChangesAsync();
+
+        return _mapper.Map<InternalDocumentDto>(document);
+    }
+
     public async Task<InternalDocumentDto> Approve(long id)
     {
         var document = await GetExisting(id);
+
+        // A validade não é mais exigida no envio: se a IA não leu, o admin precisa informar.
+        JotanunesException.When(
+            document.DocumentType.RequiresExpirationDate && document.ExpirationDateForReview is null,
+            "Informe a data de validade antes de aprovar este documento.");
 
         document.Approve();
 

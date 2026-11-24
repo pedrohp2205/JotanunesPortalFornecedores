@@ -2,6 +2,7 @@ using AutoMapper;
 using Jotanunes.Application.DTOs.WorkSites;
 using Jotanunes.Application.Interfaces;
 using Jotanunes.Domain.Entities;
+using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
 
 namespace Jotanunes.Application.Services;
@@ -17,9 +18,9 @@ public class WorkSiteService : IWorkSiteService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<List<WorkSiteDto>> Get()
+    public async Task<List<WorkSiteDto>> Get(WorkSiteFilter filter)
     {
-        var workSites = await _unitOfWork.WorkSiteRepository.Get();
+        var workSites = await _unitOfWork.WorkSiteRepository.Get(filter);
         return _mapper.Map<List<WorkSiteDto>>(workSites);
     }
 

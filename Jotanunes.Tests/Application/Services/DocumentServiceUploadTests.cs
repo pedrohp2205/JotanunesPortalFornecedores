@@ -134,11 +134,29 @@ public class DocumentServiceUploadTests
     }
 
     [Fact]
-    public async Task Should_Require_Expiration_Date_When_Type_Demands_It()
+    public async Task Should_Accept_Upload_Without_Expiration_Date_When_Type_Demands_It()
     {
-        var ex = await Assert.ThrowsAsync<JotanunesException>(() => _service.Upload(1, 5, Aso(null), Pdf(), "aso.pdf"));
+        Document? added = null;
+        _documents.Setup(d => d.Add(It.IsAny<Document>())).Callback<Document>(d => added = d);
+        _documents.Setup(d => d.GetById(It.IsAny<long>())).ReturnsAsync(() => added);
 
-        Assert.Equal("Data de validade é obrigatória para este tipo de documento.", ex.Message);
+        await _service.Upload(1, 5, Aso(null), Pdf(), "aso.pdf");
+
+        Assert.Null(added!.ExpirationDate);
+    }
+
+    [Fact]
+    public async Task Should_Not_Approve_Without_Expiration_Date_When_Type_Demands_It()
+    {
+        var document = new Document(1, 11, 5, DocumentCategory.Onboarding, DocumentSubject.Worker, "chave", "aso.pdf", "application/pdf", workerId: 7);
+        var type = new DocumentType("ASO", "Atestado de saúde ocupacional", DocumentCategory.Onboarding, SupplierType.Material, DocumentSubject.Worker, requiresExpirationDate: true);
+        typeof(Document).GetProperty(nameof(Document.DocumentType))!.SetValue(document, type);
+        _documents.Setup(d => d.GetById(20)).ReturnsAsync(document);
+
+        var ex = await Assert.ThrowsAsync<JotanunesException>(() => _service.Approve(20));
+
+        Assert.Equal("Informe a data de validade antes de aprovar este documento.", ex.Message);
+        Assert.Equal(DocumentStatus.Pending, document.Status);
     }
 
     [Fact]

@@ -309,6 +309,7 @@ public class DocumentAnalysisService : IDocumentAnalysisService
         if (analyzer is not IExpiringDocumentAnalyzer expiring
             || engine == TextExtractionEngine.Vision
             || document.Status != DocumentStatus.Pending
+            || document.ExpirationDateReviewedAt is not null
             || expiring.ReadExpirationDate(extraction) is not { } expirationDate
             || document.ExpirationDate == expirationDate)
         {

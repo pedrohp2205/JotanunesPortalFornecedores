@@ -36,6 +36,13 @@ public class DocumentController(
         return File(download.Content, download.ContentType, download.FileName);
     }
 
+    [HttpPut("{id:long}/expiration-date")]
+    public async Task<ActionResult<InternalDocumentDto>> UpdateExpirationDate(long id, [FromBody] DocumentExpirationDateUpdateDto model)
+    {
+        var document = await documentService.UpdateExpirationDate(id, model.ExpirationDate!.Value);
+        return Ok(document);
+    }
+
     [HttpPost("{id:long}/approve")]
     public async Task<ActionResult<InternalDocumentDto>> Approve(long id)
     {
