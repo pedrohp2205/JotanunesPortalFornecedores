@@ -6,6 +6,7 @@ using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Exceptions;
 using Jotanunes.Domain.Interfaces;
+using Jotanunes.Domain.Time;
 using Moq;
 
 namespace Jotanunes.Tests.Application.Services;
@@ -54,7 +55,7 @@ public class WorkerServiceTests
 
         await _service.Allocate(10, 1, new WorkerAllocateDto { WorkerId = 7 });
 
-        _periodCompliance.Verify(p => p.RequestRecalculationFrom(10, DateOnly.FromDateTime(DateTime.UtcNow)), Times.Once);
+        _periodCompliance.Verify(p => p.RequestRecalculationFrom(10, BrazilTime.Today()), Times.Once);
     }
 
     [Fact]

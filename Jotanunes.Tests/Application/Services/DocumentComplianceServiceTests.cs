@@ -4,6 +4,7 @@ using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Filters;
 using Jotanunes.Domain.Interfaces;
+using Jotanunes.Domain.Time;
 using Moq;
 
 namespace Jotanunes.Tests.Application.Services;
@@ -89,7 +90,7 @@ public class DocumentComplianceServiceTests
 
     private (DateOnly Start, DateOnly End) CurrentPeriod()
     {
-        return _workSite.GetCurrentPeriod(DateOnly.FromDateTime(DateTime.UtcNow));
+        return _workSite.GetCurrentPeriod(BrazilTime.Today());
     }
 
     [Fact]
@@ -124,7 +125,7 @@ public class DocumentComplianceServiceTests
     public async Task Should_Ignore_Recurring_Documents_From_Another_Period()
     {
         var request = Request(1);
-        var previousMonth = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(-2);
+        var previousMonth = BrazilTime.Today().AddMonths(-2);
         _documents.Setup(d => d.GetOnboardingByCompanies(It.IsAny<IReadOnlyCollection<long>>())).ReturnsAsync(new List<Document> { ApprovedOnboarding() });
         _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>()))
             .ReturnsAsync(new List<Document> { ApprovedRecurring(1, previousMonth.AddDays(-5), previousMonth) });
@@ -375,7 +376,7 @@ public class DocumentComplianceServiceTests
         var period = CurrentPeriod();
         Allocate(ManpowerRequest(1), Cicero());
         _documents.Setup(d => d.GetOnboardingByWorkers(It.IsAny<IReadOnlyCollection<long>>()))
-            .ReturnsAsync(new List<Document> { WorkerOnboardingDocument(aso, 7, DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(6), 1) });
+            .ReturnsAsync(new List<Document> { WorkerOnboardingDocument(aso, 7, BrazilTime.Today().AddMonths(6), 1) });
         _documents.Setup(d => d.GetBySupplyRequests(It.IsAny<IReadOnlyCollection<long>>(), It.IsAny<DateOnly?>()))
             .ReturnsAsync(new List<Document> { WorkerDocument(timesheet, 7, 1, period.Start, period.End, 2, d => d.Approve()) });
 
@@ -394,7 +395,7 @@ public class DocumentComplianceServiceTests
         _applicableTypes = [aso];
         Allocate(ManpowerRequest(1), Cicero());
         _documents.Setup(d => d.GetOnboardingByWorkers(It.IsAny<IReadOnlyCollection<long>>()))
-            .ReturnsAsync(new List<Document> { WorkerOnboardingDocument(aso, 7, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1), 1) });
+            .ReturnsAsync(new List<Document> { WorkerOnboardingDocument(aso, 7, BrazilTime.Today().AddDays(-1), 1) });
 
         var checklist = await _service.GetChecklist(1);
 

@@ -6,6 +6,7 @@ using Jotanunes.Domain.Entities;
 using Jotanunes.Domain.Enums;
 using Jotanunes.Domain.Exceptions;
 using Jotanunes.Domain.Interfaces;
+using Jotanunes.Domain.Time;
 using Moq;
 
 namespace Jotanunes.Tests.Application.Services;
@@ -118,7 +119,7 @@ public class DocumentServiceUploadTests
     private DocumentUploadDto Aso(DateOnly? expirationDate) =>
         new() { DocumentTypeId = 11, WorkerId = 7, ExpirationDate = expirationDate };
 
-    private static DateOnly InSixMonths() => DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(6);
+    private static DateOnly InSixMonths() => BrazilTime.Today().AddMonths(6);
 
     [Fact]
     public async Task Should_Accept_Worker_Onboarding_Document_Without_SupplyRequest()
@@ -163,7 +164,7 @@ public class DocumentServiceUploadTests
     public async Task Should_Reject_Already_Expired_Document()
     {
         var ex = await Assert.ThrowsAsync<JotanunesException>(() =>
-            _service.Upload(1, 5, Aso(DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1)), Pdf(), "aso.pdf"));
+            _service.Upload(1, 5, Aso(BrazilTime.Today().AddDays(-1)), Pdf(), "aso.pdf"));
 
         Assert.Equal("Documento já está vencido.", ex.Message);
     }
